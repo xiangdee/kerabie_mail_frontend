@@ -1,26 +1,96 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@theme {
+  /* Light mode (default) */
+  --color-background: oklch(from hsl(0 0% 100%) l c h);
+  --color-foreground: oklch(from hsl(160 15% 20%) l c h);
+
+  --color-card: oklch(from hsl(0 0% 100%) l c h);
+  --color-card-foreground: oklch(from hsl(160 15% 20%) l c h);
+
+  --color-popover: oklch(from hsl(0 0% 100%) l c h);
+  --color-popover-foreground: oklch(from hsl(160 15% 20%) l c h);
+
+  --color-primary: oklch(from hsl(160 22% 33%) l c h);
+  --color-primary-hover: oklch(from hsl(160 22% 26%) l c h);
+  --color-primary-foreground: oklch(from hsl(0 0% 100%) l c h);
+  --color-primary-muted: oklch(from hsl(160 22% 94%) l c h);
+
+  --color-secondary: oklch(from hsl(160 22% 63%) l c h);
+  --color-secondary-hover: oklch(from hsl(160 22% 55%) l c h);
+  --color-secondary-foreground: oklch(from hsl(0 0% 100%) l c h);
+  --color-secondary-muted: oklch(from hsl(160 22% 97%) l c h);
+
+  --color-muted: oklch(from hsl(160 10% 96%) l c h);
+  --color-muted-foreground: oklch(from hsl(160 10% 45%) l c h);
+
+  --color-accent: oklch(from hsl(160 22% 63%) l c h);
+  --color-accent-foreground: oklch(from hsl(160 15% 20%) l c h);
+
+  --color-destructive: oklch(from hsl(0 84.2% 60.2%) l c h);
+  --color-destructive-foreground: oklch(from hsl(0 0% 100%) l c h);
+
+  --color-border: oklch(from hsl(160 15% 90%) l c h);
+  --color-input: oklch(from hsl(160 15% 90%) l c h);
+  --color-ring: oklch(from hsl(160 22% 33%) l c h);
+
+  --radius: 0.75rem;
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+   --font-sans: var(--font-signika-sans);
+  --font-mono: var(--font-signika-mono);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* .dark {
+  @theme {
+    --color-background: oklch(from hsl(160 25% 8%) l c h);
+    --color-foreground: oklch(from hsl(160 10% 95%) l c h);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --color-card: oklch(from hsl(160 20% 12%) l c h);
+    --color-card-foreground: oklch(from hsl(160 10% 95%) l c h);
+
+    --color-popover: oklch(from hsl(160 20% 12%) l c h);
+    --color-popover-foreground: oklch(from hsl(160 10% 95%) l c h);
+
+    --color-primary: oklch(from hsl(160 22% 63%) l c h);
+    --color-primary-hover: oklch(from hsl(160 22% 55%) l c h);
+    --color-primary-foreground: oklch(from hsl(160 25% 8%) l c h);
+    --color-primary-muted: oklch(from hsl(160 22% 20%) l c h);
+
+    --color-secondary: oklch(from hsl(160 22% 33%) l c h);
+    --color-secondary-hover: oklch(from hsl(160 22% 26%) l c h);
+    --color-secondary-foreground: oklch(from hsl(0 0% 100%) l c h);
+    --color-secondary-muted: oklch(from hsl(160 22% 15%) l c h);
+
+    --color-muted: oklch(from hsl(160 20% 18%) l c h);
+    --color-muted-foreground: oklch(from hsl(160 10% 65%) l c h);
+
+    --color-accent: oklch(from hsl(160 22% 33%) l c h);
+    --color-accent-foreground: oklch(from hsl(160 10% 95%) l c h);
+
+    --color-destructive: oklch(from hsl(0 62.8% 50%) l c h);
+    --color-destructive-foreground: oklch(from hsl(0 0% 100%) l c h);
+
+    --color-border: oklch(from hsl(160 20% 22%) l c h);
+    --color-input: oklch(from hsl(160 20% 22%) l c h);
+    --color-ring: oklch(from hsl(160 22% 63%) l c h);
   }
+} */
+
+/* Base styles */
+* {
+  border-color: var(--color-border);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-signika), sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}
+html {
+  color-scheme: light;
 }
