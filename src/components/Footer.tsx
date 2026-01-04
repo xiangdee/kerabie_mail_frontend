@@ -47,9 +47,29 @@ export const Footer = () => {
                   Contact
                 </NavLink>
               </li>
+              
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="mb-4 text-sm font-semibold">Privacy &amp; Legal</h4>
+            <ul className="space-y-2 text-sm">
+             
               <li>
                 <NavLink href="/privacy" className="opacity-90 hover:opacity-100">
                   Privacy
+                </NavLink>
+              </li>
+
+              <li>
+                <NavLink href="/refund-policy" className="opacity-90 hover:opacity-100">
+                  Refund Policy
+                </NavLink>
+              </li>
+
+              <li>
+                <NavLink href="/terms" className="opacity-90 hover:opacity-100">
+                  Terms
                 </NavLink>
               </li>
             </ul>
