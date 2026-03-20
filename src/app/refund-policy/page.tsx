@@ -11,13 +11,13 @@ import Link from "next/link";
 const refundEligibility = [
   {
     icon: CheckCircle,
-    title: "7-Day Money-Back Guarantee",
-    description: "Try any paid plan risk-free. Cancel within 7 days for a full refund, no questions asked."
+    title: "14-Day Money-Back Guarantee",
+    description: "Try any paid plan risk-free. Cancel within 14 days for a full refund, no questions asked."
   },
   {
     icon: Clock,
     title: "Pro-Rated Annual Refunds",
-    description: "For yearly plans canceled after 7 days, receive a refund for the unused months."
+    description: "For yearly plans canceled after 14 days, receive a refund for the unused months."
   },
   {
     icon: Shield,
@@ -139,13 +139,13 @@ const RefundPolicy = () => {
               <h2 className="text-2xl font-bold mb-4">7-Day Money-Back Guarantee</h2>
               <div className="prose prose-gray max-w-none">
                 <p className="text-muted-foreground mb-4">
-                  We offer a full refund if you cancel your Pro or Premium plan within 7 days of your 
+                  We offer a full refund if you cancel your Pro or Premium plan within 14 days of your 
                   initial purchase. This applies to both monthly and annual subscriptions.
                 </p>
                 <div className="bg-card border rounded-xl p-6">
                   <h3 className="text-lg font-semibold mb-3">How it works:</h3>
                   <ol className="space-y-2 text-muted-foreground ml-5 list-decimal">
-                    <li>Cancel your subscription within 7 days of your first payment</li>
+                    <li>Cancel your subscription within 14 days of your first payment</li>
                     <li>Email our support team at <a href="mailto:refunds@kerabie.com" className="text-primary hover:underline font-medium">refunds@kerabie.com</a> with your account email</li>
                     <li>Receive your full refund within 5-7 business days to your original payment method</li>
                   </ol>
@@ -218,7 +218,7 @@ const RefundPolicy = () => {
                   <div>
                     <h3 className="font-semibold mb-2">Pro Monthly: $2/mailbox/month</h3>
                     <p className="text-sm text-muted-foreground">
-                      Cancel anytime. Continue using until your billing date. No mid-month refunds after 7 days.
+                      Cancel anytime. Continue using until your billing date. No mid-month refunds after 14 days.
                     </p>
                   </div>
                 </div>
@@ -231,7 +231,7 @@ const RefundPolicy = () => {
                   <div>
                     <h3 className="font-semibold mb-2">Premium Monthly: $5/mailbox/month</h3>
                     <p className="text-sm text-muted-foreground">
-                      Cancel anytime. Continue using until your billing date. No mid-month refunds after 7 days.
+                      Cancel anytime. Continue using until your billing date. No mid-month refunds after 14 days.
                     </p>
                   </div>
                 </div>
