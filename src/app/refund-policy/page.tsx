@@ -28,7 +28,7 @@ const refundEligibility = [
 
 const notEligible = [
   "Free plan users (no payment, no refund applicable)",
-  "Monthly subscriptions canceled after the 7-day guarantee period",
+  "Monthly subscriptions canceled after the 14-day guarantee period",
   "Partial month refunds for monthly plans",
   "Add-on purchases (extra storage, extra mailboxes) bought separately",
   "Domain registrations or third-party service fees",
@@ -134,9 +134,9 @@ const RefundPolicy = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto space-y-12">
             
-            {/* 7-Day Money Back */}
+            {/* 14-day Money Back */}
             <div>
-              <h2 className="text-2xl font-bold mb-4">7-Day Money-Back Guarantee</h2>
+              <h2 className="text-2xl font-bold mb-4">14-day Money-Back Guarantee</h2>
               <div className="prose prose-gray max-w-none">
                 <p className="text-muted-foreground mb-4">
                   We offer a full refund if you cancel your Pro or Premium plan within 14 days of your 
@@ -160,7 +160,7 @@ const RefundPolicy = () => {
             <div>
               <h2 className="text-2xl font-bold mb-4">Annual Plan Refunds</h2>
               <p className="text-muted-foreground mb-4">
-                For annual subscriptions canceled after the 7-day guarantee period, we offer pro-rated 
+                For annual subscriptions canceled after the 14-day guarantee period, we offer pro-rated 
                 refunds based on complete unused months remaining in your subscription.
               </p>
               <div className="bg-card border rounded-xl p-6 space-y-4">
@@ -206,7 +206,7 @@ const RefundPolicy = () => {
               <p className="text-muted-foreground mb-4">
                 Monthly subscriptions can be canceled at any time. You&apos;ll retain full access to Kerabie 
                 until the end of your current billing period, but no refund will be issued for the current 
-                month beyond the 7-day guarantee.
+                month beyond the 14-day guarantee.
               </p>
               <div className="bg-card border rounded-xl p-6 space-y-4">
                 <div className="flex gap-4 items-start">
@@ -262,7 +262,7 @@ const RefundPolicy = () => {
               <div className="bg-card border rounded-xl p-6">
                 <h3 className="text-lg font-semibold mb-3">Add-on Refund Rules:</h3>
                 <ul className="space-y-2 text-muted-foreground ml-5 list-disc">
-                  <li>7-day money-back guarantee applies to new add-on purchases</li>
+                  <li>14-day money-back guarantee applies to new add-on purchases</li>
                   <li>For annual add-ons, pro-rated refunds available based on unused months</li>
                   <li>Monthly add-ons follow the same rules as monthly plan subscriptions</li>
                   <li>Add-ons purchased mid-cycle are pro-rated from purchase date</li>
