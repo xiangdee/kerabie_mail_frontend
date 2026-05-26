@@ -1,4 +1,5 @@
 import React from 'react'
+import Link from 'next/link'
 import { Button } from './ui/button'
 import { CheckCircle2 } from 'lucide-react'
 
@@ -7,7 +8,7 @@ function PartnerSection() {
     <section className="relative bg-secondary-muted py-24">
   <div className="container mx-auto px-4">
     <div className="grid items-center gap-16 lg:grid-cols-2">
-      
+
       {/* Left: Copy */}
       <div>
         <span className="mb-3 inline-block rounded-full bg-secondary/10 px-4 py-1 text-sm font-medium text-secondary">
@@ -29,15 +30,17 @@ function PartnerSection() {
           <Button
             size="lg"
             className="bg-secondary hover:bg-secondary-hover text-secondary-foreground"
+            asChild
           >
-            Become a hosting partner
+            <Link href="/partner">Become a hosting partner</Link>
           </Button>
 
           <Button
             size="lg"
             variant="outline"
+            asChild
           >
-            Talk to partnerships
+            <Link href="/contact">Talk to partnerships</Link>
           </Button>
         </div>
       </div>

@@ -92,6 +92,20 @@ export const Header = ({ variant = 'default' }: HeaderProps) => {
             Downloads
           </NavLink>
           <NavLink
+            href="/blog"
+            className={`text-sm font-medium ${textClass} transition-colors ${hoverClass}`}
+            activeClassName={activeClass}
+          >
+            Blog
+          </NavLink>
+          <NavLink
+            href="/help"
+            className={`text-sm font-medium ${textClass} transition-colors ${hoverClass}`}
+            activeClassName={activeClass}
+          >
+            Help
+          </NavLink>
+          <NavLink
             href="/contact"
             className={`text-sm font-medium ${textClass} transition-colors ${hoverClass}`}
             activeClassName={activeClass}
@@ -147,6 +161,22 @@ export const Header = ({ variant = 'default' }: HeaderProps) => {
               onClick={() => setMobileMenuOpen(false)}
             >
               Downloads
+            </NavLink>
+            <NavLink
+              href="/blog"
+              className="block rounded-md px-3 py-2 text-base font-medium text-foreground hover:bg-muted"
+              activeClassName="bg-muted text-primary"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Blog
+            </NavLink>
+            <NavLink
+              href="/help"
+              className="block rounded-md px-3 py-2 text-base font-medium text-foreground hover:bg-muted"
+              activeClassName="bg-muted text-primary"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Help
             </NavLink>
             <NavLink
               href="/contact"

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Signika } from "next/font/google";
+import { Providers } from "@/components/providers/Providers";
 import "./globals.css";
 
 const signika = Signika({
@@ -75,7 +76,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${signika.variable} antialiased`}>
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
