@@ -1,13 +1,12 @@
 'use client';
 import { format, parseISO } from 'date-fns';
-import { CreditCard, Zap, Crown, Building2, AlertTriangle, CheckCircle2, Loader2, ExternalLink } from 'lucide-react';
-import Link from 'next/link';
+import { CreditCard, Zap, Crown, Building2, AlertTriangle, CheckCircle2, Loader2, ExternalLink, RotateCcw, Clock, CheckCheck, XCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import type { Subscription } from '@/lib/types/api.types';
+import type { RefundRequest } from '@/lib/hooks/useBilling';
 
 const PLAN_ICONS = {
   free: Zap,
@@ -22,19 +21,31 @@ const STATUS_CONFIG = {
   trial: { label: 'Trial', class: 'bg-blue-100 text-blue-700 border-blue-200' },
 };
 
+const REFUND_STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; class: string }> = {
+  pending:   { label: 'Pending review', icon: Clock,        class: 'text-amber-600 bg-amber-50 border-amber-200' },
+  approved:  { label: 'Approved',       icon: CheckCheck,   class: 'text-blue-600 bg-blue-50 border-blue-200' },
+  processed: { label: 'Refunded',       icon: CheckCircle2, class: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
+  rejected:  { label: 'Rejected',       icon: XCircle,      class: 'text-red-600 bg-red-50 border-red-200' },
+  failed:    { label: 'Failed',         icon: AlertTriangle,class: 'text-red-600 bg-red-50 border-red-200' },
+};
+
 interface BillingViewProps {
   subscription: Subscription | null | undefined;
   isLoading: boolean;
   isCancelling: boolean;
   isReactivating: boolean;
   planType?: string;
+  refunds?: RefundRequest[];
+  refundsLoading?: boolean;
   onCancel: () => void;
   onReactivate: () => void;
+  onRequestRefund: () => void;
+  onUpgrade: () => void;
 }
 
 export function BillingView({
   subscription, isLoading, isCancelling, isReactivating,
-  planType, onCancel, onReactivate,
+  planType, refunds, refundsLoading, onCancel, onReactivate, onRequestRefund, onUpgrade,
 }: BillingViewProps) {
   const plan = (planType ?? 'free') as keyof typeof PLAN_ICONS;
   const PlanIcon = PLAN_ICONS[plan] ?? Zap;
@@ -102,11 +113,9 @@ export function BillingView({
           {/* Actions */}
           <div className="flex flex-wrap gap-3 pt-1">
             {plan === 'free' && (
-              <Button asChild size="sm">
-                <Link href="/pricing">
-                  <Crown className="mr-1.5 h-3.5 w-3.5" />
-                  Upgrade plan
-                </Link>
+              <Button size="sm" onClick={onUpgrade}>
+                <Crown className="mr-1.5 h-3.5 w-3.5" />
+                Upgrade plan
               </Button>
             )}
             {plan !== 'free' && subscription?.cancel_at_period_end && (
@@ -133,6 +142,17 @@ export function BillingView({
                 Cancel plan
               </Button>
             )}
+            {plan !== 'free' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onRequestRefund}
+                className="gap-1.5"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Request refund
+              </Button>
+            )}
             <Button variant="outline" size="sm" className="gap-1.5" asChild>
               <a href="https://billing.kerabie.email" target="_blank" rel="noopener">
                 <CreditCard className="h-3.5 w-3.5" />
@@ -152,15 +172,55 @@ export function BillingView({
             <div className="flex-1">
               <p className="font-medium text-sm">Unlock more with Pro</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                5 mailboxes, unlimited email, AI compose, custom domain, and more.
+                3 mailboxes, AI compose, calendar, contacts, read receipts, and more.
               </p>
             </div>
-            <Button asChild size="sm">
-              <Link href="/pricing">See plans</Link>
-            </Button>
+            <Button size="sm" onClick={onUpgrade}>Upgrade</Button>
           </div>
         </Card>
       )}
+
+      {/* Refund history */}
+      {refunds && refunds.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold">Refund requests</h3>
+          <div className="space-y-2">
+            {refundsLoading ? (
+              <Skeleton className="h-12 w-full rounded-lg" />
+            ) : (
+              refunds.map((r) => {
+                const cfg = REFUND_STATUS_CONFIG[r.status] ?? REFUND_STATUS_CONFIG.pending;
+                const StatusIcon = cfg.icon;
+                const currencySymbol = r.currency === 'NGN' ? '₦' : '$';
+                return (
+                  <div key={r.id} className="flex items-center justify-between rounded-lg border px-4 py-3 text-sm">
+                    <div className="flex items-center gap-3">
+                      <StatusIcon className={cn('h-4 w-4', cfg.class.split(' ')[0])} />
+                      <div>
+                        <p className="font-medium capitalize">{r.reason.replace(/_/g, ' ')}</p>
+                        <p className="text-xs text-muted-foreground">{fmt(r.requested_at)}</p>
+                        {r.admin_note && (
+                          <p className="text-xs text-muted-foreground italic mt-0.5">{r.admin_note}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 text-right">
+                      <span className="font-semibold">{currencySymbol}{Number(r.amount_requested).toLocaleString()}</span>
+                      <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border font-medium', cfg.class)}>
+                        {cfg.label}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      <p className="text-xs text-muted-foreground text-center">
+        Cancel anytime · Refund requests are reviewed within 3–5 business days · Payments processed securely
+      </p>
     </div>
   );
 }

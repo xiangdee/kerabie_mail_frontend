@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -10,6 +10,14 @@ import { Label } from '@/components/ui/label';
 import { authService } from '@/lib/services/auth.service';
 
 export default function ResetPasswordPage() {
+  return (
+    <Suspense>
+      <ResetPasswordForm />
+    </Suspense>
+  );
+}
+
+function ResetPasswordForm() {
   const params = useSearchParams();
   const router = useRouter();
   const token = params.get('token') ?? '';

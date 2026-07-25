@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios, { AxiosRequestConfig, AxiosError, AxiosRequestHeaders } from "axios";
+import { refreshAccessToken } from "./tokenRefresh";
 
 export interface CustomAxiosResponse {
   status: boolean | number | string;
@@ -82,7 +83,8 @@ const makeRequest = async (
   options: Required<RequestOptions>
 ): Promise<CustomAxiosResponse> => {
   let lastError: AxiosError | null = null;
-  
+  let hasRetriedAuth = false;
+
   for (let attempt = 0; attempt <= options.retries; attempt++) {
     try {
       const axiosInstance = createAxiosInstance(options.timeout);
@@ -97,15 +99,28 @@ const makeRequest = async (
       };
     } catch (error: any) {
       lastError = error as AxiosError;
-      
+
+      // One-time refresh-and-retry on 401 — auth is httpOnly-cookie based, so
+      // a successful refresh just needs the request retried as-is (the fresh
+      // access_token cookie is picked up automatically via withCredentials).
+      // Not gated on an Authorization header being present — most calls
+      // don't carry one anymore and rely on the cookie alone.
+      if (error.response?.status === 401 && !hasRetriedAuth) {
+        hasRetriedAuth = true;
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+          continue;
+        }
+      }
+
       // If this is the last attempt or error shouldn't be retried, break
       if (attempt === options.retries || !options.retryCondition(error)) {
         break;
       }
-      
+
       // Call retry callback
       options.onRetry(attempt + 1, error);
-      
+
       // Calculate delay and wait before retry
       const delay = calculateDelay(attempt, options.retryDelay);
       await sleep(delay);

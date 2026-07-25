@@ -4,51 +4,60 @@ import type { SendEmailRequest } from '@/lib/types/api.types';
 
 const base = apiLink;
 
+// customAxiosDelete/customAxiosRequest only take a request body, not a
+// separate params object — but /inbox/{uid}'s email+folder are query
+// params on the backend, so they have to be embedded in the URL itself.
+function withQuery(path: string, params: Record<string, string>): string {
+  return `${path}?${new URLSearchParams(params).toString()}`;
+}
+
+// NOTE: as of this fix, MailCompose.tsx (the only consumer of the
+// message/mailbox methods below) is not imported/rendered anywhere in this
+// app — these previously pointed at routes that don't exist on the real
+// backend at all (/mail/messages, /mail/mailboxes, /mail/folders) and never
+// got caught because nothing live ever called them. Fixed to match the real
+// /inbox + /mail/user-emails routes (see kerabie-mail-backend's
+// app/routes/inbox.py and app/routes/mail.py) in case this gets wired up.
 export const mailService = {
+  // Forwarding
+  confirmForwarding: (token: string) =>
+    customAxiosPost(`${base}/mail/forwarding/confirm/${token}`, {}),
+
   // Mailboxes
   getMailboxes: (token: string) =>
-    customAxiosGet(`${base}/mail/mailboxes`, undefined, token),
+    customAxiosGet(`${base}/mail/user-emails`, undefined, token),
 
-  createMailbox: (token: string, data: { email: string; display_name: string; password: string; quota?: number }) =>
-    customAxiosPost(`${base}/mail/mailboxes`, data, '', token),
+  // Messages — identified by mailbox email + folder + IMAP uid, not a
+  // global message id (no DB-backed message table; IMAP is the store).
+  getMessages: (token: string, params: { mailbox: string; folder?: string; page?: number; per_page?: number }) =>
+    customAxiosGet(`${base}/inbox`, {
+      email: params.mailbox, folder: params.folder ?? 'INBOX',
+      page: params.page ?? 1, per_page: params.per_page ?? 50,
+    }, token),
 
-  deleteMailbox: (token: string, email: string) =>
-    customAxiosDelete(`${base}/mail/mailboxes/${encodeURIComponent(email)}`, undefined, token),
+  getMessage: (token: string, mailbox: string, uid: string, folder = 'INBOX') =>
+    customAxiosGet(`${base}/inbox/${uid}`, { email: mailbox, folder }, token),
 
-  updateMailbox: (token: string, email: string, data: Record<string, unknown>) =>
-    customAxiosRequest('patch', `${base}/mail/mailboxes/${encodeURIComponent(email)}`, data, '', token),
+  sendEmail: (token: string | null | undefined, data: SendEmailRequest) =>
+    customAxiosPost(`${base}/mail/send`, data, '', token ?? undefined),
 
-  // Messages
-  getMessages: (token: string, params: { mailbox: string; folder?: string; page?: number; page_size?: number; search?: string }) =>
-    customAxiosGet(`${base}/mail/messages`, params, token),
+  deleteMessage: (token: string, mailbox: string, uid: string, folder = 'INBOX') =>
+    customAxiosDelete(withQuery(`${base}/inbox/${uid}`, { email: mailbox, folder }), undefined, token),
 
-  getMessage: (token: string, id: string) =>
-    customAxiosGet(`${base}/mail/messages/${id}`, undefined, token),
+  moveMessage: (token: string, mailbox: string, uid: string, folder: string, moveTo: string) =>
+    customAxiosRequest('patch', withQuery(`${base}/inbox/${uid}`, { email: mailbox, folder }), { move_to: moveTo }, '', token),
 
-  sendEmail: (token: string, data: SendEmailRequest) =>
-    customAxiosPost(`${base}/mail/send`, data, '', token),
+  markSeen: (token: string, mailbox: string, uid: string, folder: string, seen: boolean) =>
+    customAxiosRequest('patch', withQuery(`${base}/inbox/${uid}`, { email: mailbox, folder }), { is_read: seen }, '', token),
 
-  deleteMessage: (token: string, id: string) =>
-    customAxiosDelete(`${base}/mail/messages/${id}`, undefined, token),
+  flagMessage: (token: string, mailbox: string, uid: string, folder: string, flagged: boolean) =>
+    customAxiosRequest('patch', withQuery(`${base}/inbox/${uid}`, { email: mailbox, folder }), { is_starred: flagged }, '', token),
 
-  moveMessage: (token: string, id: string, folder: string) =>
-    customAxiosPost(`${base}/mail/messages/${id}/move`, { folder }, '', token),
-
-  markSeen: (token: string, id: string, seen: boolean) =>
-    customAxiosRequest('patch', `${base}/mail/messages/${id}`, { seen }, '', token),
-
-  flagMessage: (token: string, id: string, flagged: boolean) =>
-    customAxiosRequest('patch', `${base}/mail/messages/${id}`, { flagged }, '', token),
-
-  // Folders (labels)
+  // Folders
   getFolders: (token: string, mailbox: string) =>
-    customAxiosGet(`${base}/mail/folders`, { mailbox }, token),
+    customAxiosGet(`${base}/inbox/folders`, { email: mailbox }, token),
 
   // AI Compose
-  aiCompose: (token: string, data: { prompt: string; tone?: string; length?: string; subject_hint?: string; reply_context?: string }) =>
-    customAxiosPost(`${base}/ai/compose`, data, '', token),
-
-  // Import / Export
-  importEml: (token: string, mailbox: string, file: File) =>
-    customAxiosPost(`${base}/mail/import`, { mailbox, file }, 'upload', token),
+  aiCompose: (token: string | null | undefined, data: { prompt: string; tone?: string; length?: string; subject_hint?: string; reply_context?: string }) =>
+    customAxiosPost(`${base}/ai/compose`, data, '', token ?? undefined),
 };

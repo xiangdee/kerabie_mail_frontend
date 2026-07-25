@@ -1,12 +1,14 @@
 'use client';
 import { useState } from 'react';
-import { Plus, Trash2, Globe, CheckCircle2, XCircle, Clock, RefreshCw, ChevronDown, ChevronUp, Copy, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Globe, CheckCircle2, XCircle, Clock, RefreshCw, ChevronDown, ChevronUp, Copy, CopyCheck, Loader2, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import type { Domain, DnsRecord } from '@/lib/types/api.types';
 
@@ -16,9 +18,11 @@ interface DomainsViewProps {
   isAdding: boolean;
   isVerifying: boolean;
   isDeleting: boolean;
+  isSendingInstructions: boolean;
   onAdd: (domain: string) => Promise<void>;
   onVerify: (id: number) => Promise<void>;
   onDelete: (id: number) => void;
+  onSendInstructions: (domain: string, developerEmail: string) => Promise<void>;
 }
 
 const StatusBadge = ({ status }: { status: Domain['status'] }) => {
@@ -51,17 +55,36 @@ const DnsRow = ({ record }: { record: DnsRecord }) => {
 };
 
 export function DomainsView({
-  domains, isLoading, isAdding, isVerifying, isDeleting,
-  onAdd, onVerify, onDelete,
+  domains, isLoading, isAdding, isVerifying, isDeleting, isSendingInstructions,
+  onAdd, onVerify, onDelete, onSendInstructions,
 }: DomainsViewProps) {
   const [newDomain, setNewDomain] = useState('');
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [copiedAllId, setCopiedAllId] = useState<number | null>(null);
+  const [sendDialogDomain, setSendDialogDomain] = useState<Domain | null>(null);
+  const [developerEmail, setDeveloperEmail] = useState('');
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDomain.trim()) return;
     await onAdd(newDomain.trim().toLowerCase());
     setNewDomain('');
+  };
+
+  const copyAllRecords = (d: Domain) => {
+    if (!d.dns_records?.length) return;
+    const text = d.dns_records.map(r => `${r.type}\t${r.name}\t${r.value}`).join('\n');
+    navigator.clipboard.writeText(text);
+    setCopiedAllId(d.id);
+    setTimeout(() => setCopiedAllId(null), 2000);
+  };
+
+  const handleSendInstructions = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sendDialogDomain || !developerEmail.trim()) return;
+    await onSendInstructions(sendDialogDomain.domain, developerEmail.trim());
+    setSendDialogDomain(null);
+    setDeveloperEmail('');
   };
 
   return (
@@ -159,6 +182,29 @@ export function DomainsView({
                         <span>TYPE</span><span>NAME</span><span>VALUE</span><span />
                       </div>
                       {d.dns_records.map((r, i) => <DnsRow key={i} record={r} />)}
+
+                      <div className="flex gap-2 mt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => copyAllRecords(d)}
+                        >
+                          {copiedAllId === d.id
+                            ? <CopyCheck className="h-3 w-3" />
+                            : <Copy className="h-3 w-3" />}
+                          {copiedAllId === d.id ? 'Copied' : 'Copy all'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => setSendDialogDomain(d)}
+                        >
+                          <Mail className="h-3 w-3" />
+                          Send to developer
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </CollapsibleContent>
@@ -167,6 +213,39 @@ export function DomainsView({
           ))}
         </div>
       )}
+
+      <Dialog open={!!sendDialogDomain} onOpenChange={(open) => !open && setSendDialogDomain(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send DNS instructions</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSendInstructions} className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label>Developer or IT contact email</Label>
+              <Input
+                value={developerEmail}
+                onChange={(e) => setDeveloperEmail(e.target.value)}
+                placeholder="developer@example.com"
+                type="email"
+                required
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground">
+                We&apos;ll email the DNS records for {sendDialogDomain?.domain} to this address.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button type="button" variant="outline" onClick={() => setSendDialogDomain(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSendingInstructions}>
+                {isSendingInstructions && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Send
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

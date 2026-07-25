@@ -49,10 +49,9 @@ export default function SecurityPage() {
       setDeleteError('Please enter your password.');
       return;
     }
-    if (!token) return;
     setDeleting(true);
     setDeleteError(null);
-    const res = await authService.deleteAccount(token, password);
+    const res = await authService.deleteAccount(null, password);
     setDeleting(false);
     if (res.status === true) {
       await logout();

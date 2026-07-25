@@ -16,16 +16,22 @@ import { ArrowLeft, Clock } from 'lucide-react';
 // All blog posts — ISR at 12h for posts with live pricing, 1h for others
 export const revalidate = 3600;
 
+export const dynamicParams = true;
+
 export async function generateStaticParams() {
-  const posts = await getArticles({ article_type: 'blog', limit: 100 });
-  return posts.map(p => ({ slug: p.slug }));
+  try {
+    const posts = await getArticles({ article_type: 'blog', limit: 100 });
+    return posts.map(p => ({ slug: p.slug }));
+  } catch {
+    return [];
+  }
 }
 
 export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> }
 ): Promise<Metadata> {
   const { slug } = await params;
-  const post = await getArticle(slug);
+  const post = await getArticle(slug).catch(() => null);
   if (!post) return { title: 'Not found' };
   return {
     title: post.seo_title ?? post.title,
@@ -84,7 +90,7 @@ export default async function BlogPostPage(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const post = await getArticle(slug);
+  const post = await getArticle(slug).catch(() => null);
   if (!post || post.article_type !== 'blog') notFound();
 
   const needsLivePricing = post.content.includes(LIVE_PRICING_PLACEHOLDER);
@@ -92,9 +98,9 @@ export default async function BlogPostPage(
   // For live-pricing articles, fetch with 12h revalidation
   let content = post.content;
   if (needsLivePricing) {
-    const pricingData = await getPricingData();
-    const table = buildPricingTable(pricingData);
-    const lastUpdated = pricingData.last_updated
+    const pricingData = await getPricingData().catch(() => null);
+    const table = pricingData ? buildPricingTable(pricingData) : '';
+    const lastUpdated = pricingData?.last_updated
       ? new Date(pricingData.last_updated).toLocaleString('en-US', {
           dateStyle: 'medium', timeStyle: 'short',
         })

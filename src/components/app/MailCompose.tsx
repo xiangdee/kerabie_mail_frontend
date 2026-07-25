@@ -33,7 +33,7 @@ export function MailCompose({ mailbox, replyTo, onClose }: MailComposeProps) {
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSend = async () => {
-    if (!token || !toInput.trim() || !subject.trim()) {
+    if (!toInput.trim() || !subject.trim()) {
       toast.error('Please fill in recipient and subject');
       return;
     }
@@ -57,7 +57,7 @@ export function MailCompose({ mailbox, replyTo, onClose }: MailComposeProps) {
   };
 
   const handleAiCompose = async () => {
-    if (!token || !aiPrompt.trim()) return;
+    if (!aiPrompt.trim()) return;
     setComposing(true);
     const res = await mailService.aiCompose(token, {
       prompt: aiPrompt,

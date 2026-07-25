@@ -11,16 +11,22 @@ import { ArrowLeft, ChevronRight, Clock } from 'lucide-react';
 
 export const revalidate = 3600;
 
+export const dynamicParams = true;
+
 export async function generateStaticParams() {
-  const articles = await getArticles({ article_type: 'help', limit: 200 });
-  return articles.map(a => ({ slug: a.slug }));
+  try {
+    const articles = await getArticles({ article_type: 'help', limit: 200 });
+    return articles.map(a => ({ slug: a.slug }));
+  } catch {
+    return [];
+  }
 }
 
 export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> }
 ): Promise<Metadata> {
   const { slug } = await params;
-  const article = await getArticle(slug);
+  const article = await getArticle(slug).catch(() => null);
   if (!article) return { title: 'Not found' };
   return {
     title: article.seo_title ?? article.title,
@@ -34,9 +40,9 @@ export default async function HelpArticlePage(
   const { slug } = await params;
 
   const [article, categories, allHelp] = await Promise.all([
-    getArticle(slug),
-    getCategories(),
-    getArticles({ article_type: 'help', limit: 200 }),
+    getArticle(slug).catch(() => null),
+    getCategories().catch(() => []),
+    getArticles({ article_type: 'help', limit: 200 }).catch(() => []),
   ]);
 
   if (!article || article.article_type !== 'help') notFound();

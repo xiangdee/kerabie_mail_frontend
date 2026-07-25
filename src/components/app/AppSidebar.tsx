@@ -73,7 +73,7 @@ function NavGroup({
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { user, token, logout } = useAuth();
+  const { user, logout } = useAuth();
   const { success } = useAppToast();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -87,13 +87,13 @@ export function AppSidebar() {
   };
 
   const handleOpenWebmail = async () => {
-    if (!token) {
+    if (!user) {
       window.open(WEBMAIL_URL, '_blank', 'noopener,noreferrer');
       return;
     }
     setOpeningWebmail(true);
     try {
-      const res = await authService.getWebmailToken(token);
+      const res = await authService.getWebmailToken();
       if (res.status === true && res.response?.token) {
         const url = `${WEBMAIL_URL}?sso=${encodeURIComponent(res.response.token)}`;
         window.open(url, '_blank', 'noopener,noreferrer');

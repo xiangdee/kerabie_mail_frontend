@@ -1,13 +1,17 @@
 'use client';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { authService } from '@/lib/services/auth.service';
+import { refreshAccessToken } from '@/lib/utils/tokenRefresh';
 import type { User } from '@/lib/types/api.types';
 
-const ACCESS_TOKEN_KEY = 'kerabie_access_token';
-const REFRESH_TOKEN_KEY = 'kerabie_refresh_token';
+const SESSION_REFRESH_INTERVAL_MS = 15 * 60 * 1000; // half the 30min access-token TTL
 
 interface AuthContextValue {
   user: User | null;
+  // Always null now — auth is httpOnly-cookie based (unreadable by JS).
+  // Kept in the shape so the many existing `const { token } = useAuth()`
+  // call sites (which just forward it into API calls that no longer need
+  // it, since withCredentials + the cookie cover auth) don't need changing.
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -21,49 +25,23 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const persistTokens = (access: string, refresh: string) => {
-    localStorage.setItem(ACCESS_TOKEN_KEY, access);
-    localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
-    setToken(access);
-  };
-
-  const clearTokens = () => {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    setToken(null);
-    setUser(null);
-  };
-
+  // Auth is httpOnly-cookie based — no token to read client-side. Just ask
+  // the API who's logged in; a non-2xx response means there's no valid
+  // session (or one a cookie-refresh can revive).
   const refreshUser = useCallback(async () => {
-    const stored = localStorage.getItem(ACCESS_TOKEN_KEY);
-    if (!stored) return;
-    const res = await authService.me(stored);
+    const res = await authService.me();
     if (res.status === true) {
       setUser(res.response as User);
-      setToken(stored);
+      return;
+    }
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      const meRes = await authService.me();
+      setUser(meRes.status === true ? (meRes.response as User) : null);
     } else {
-      const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-      if (refreshToken) {
-        const refreshRes = await authService.refreshToken(refreshToken);
-        if (refreshRes.status === true) {
-          const newAccess = (refreshRes.response as { access_token: string }).access_token;
-          localStorage.setItem(ACCESS_TOKEN_KEY, newAccess);
-          setToken(newAccess);
-          const meRes = await authService.me(newAccess);
-          if (meRes.status === true) {
-            setUser(meRes.response as User);
-          } else {
-            clearTokens();
-          }
-        } else {
-          clearTokens();
-        }
-      } else {
-        clearTokens();
-      }
+      setUser(null);
     }
   }, []);
 
@@ -74,15 +52,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })();
   }, [refreshUser]);
 
+  // Proactively refresh the access_token cookie while the tab is open, so a
+  // dead refresh token is caught here rather than surfacing mid-action.
+  useEffect(() => {
+    if (!user) return;
+    const id = setInterval(async () => {
+      const refreshed = await refreshAccessToken();
+      if (!refreshed) setUser(null);
+    }, SESSION_REFRESH_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [user]);
+
   const login = async (email: string, password: string) => {
     const res = await authService.login({ email, password });
     if (res.status === true) {
-      const { access_token, refresh_token, user: u } = res.response as {
-        access_token: string;
-        refresh_token: string;
-        user: User;
-      };
-      persistTokens(access_token, refresh_token);
+      const { user: u } = res.response as { user: User };
       setUser(u);
       return { ok: true };
     }
@@ -92,12 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (username: string, password: string, full_name?: string) => {
     const res = await authService.register({ username, password, full_name });
     if (res.status === true) {
-      const { access_token, refresh_token, user: u } = res.response as {
-        access_token: string;
-        refresh_token: string;
-        user: User;
-      };
-      persistTokens(access_token, refresh_token);
+      const { user: u } = res.response as { user: User };
       setUser(u);
       return { ok: true };
     }
@@ -105,13 +84,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    if (token) await authService.logout(token);
-    clearTokens();
+    await authService.logout();
+    setUser(null);
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, token, isLoading, isAuthenticated: !!user, login, register, logout, refreshUser }}
+      value={{ user, token: null, isLoading, isAuthenticated: !!user, login, register, logout, refreshUser }}
     >
       {children}
     </AuthContext.Provider>

@@ -171,10 +171,13 @@ export interface Subscription {
   status: 'active' | 'past_due' | 'canceled' | 'trial';
   billing_cycle: string;
   currency: string;
-  amount: number;
+  amount: number;          // kept for display compat (maps to total_price from backend)
+  total_price?: number;
   current_period_start: string;
   current_period_end: string;
   cancel_at_period_end: boolean;
+  auto_renew?: boolean;
+  latest_transaction_id?: number;
 }
 
 // ── Contact ───────────────────────────────────────────────────────────────────
@@ -290,6 +293,35 @@ export interface ComposeResponse {
   output_tokens: number;
   total_tokens: number;
   cached: boolean;
+}
+
+// ── Shared Inbox ─────────────────────────────────────────────────────────────
+export interface UserEmailAccount {
+  id: number;
+  email_address: string;
+  connection_type: 'imap' | 'dns';
+  is_managed: boolean;
+}
+
+export interface SharedInboxMember {
+  id: number;
+  user_email_id: number;
+  member_user_id: number | null;
+  invite_email: string;
+  role: 'editor' | 'viewer';
+  status: 'pending' | 'active';
+  invited_at: string;
+  accepted_at: string | null;
+}
+
+export interface SharedInboxEntry {
+  member_id: number;
+  user_email_id: number;
+  email_address: string;
+  display_name: string | null;
+  role: 'editor' | 'viewer';
+  status: string;
+  owner_email: string;
 }
 
 // ── Generic ───────────────────────────────────────────────────────────────────

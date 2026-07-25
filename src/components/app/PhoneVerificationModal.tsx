@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,8 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Phone, ShieldCheck } from 'lucide-react';
 import { useSendOtp, useVerifyOtp } from '@/lib/hooks/usePhoneVerification';
 import { useAppToast } from '@/components/ui/app-toast';
+import { CountrySelect } from '@/components/ui/country-select';
+import { useDetectCountry, type Country } from '@/lib/hooks/useCountries';
 
 interface Props {
   open: boolean;
@@ -22,16 +24,23 @@ interface Props {
 
 export default function PhoneVerificationModal({ open, token, onVerified }: Props) {
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
-  const [phone, setPhone] = useState('');
+  const [country, setCountry] = useState<Country | null>(null);
+  const [localNumber, setLocalNumber] = useState('');
+  const phone = `${country?.phonecode ?? ''}${localNumber.replace(/^0+/, '')}`;
   const [code, setCode] = useState('');
   const { success, error: toastError } = useAppToast();
+
+  const { data: detected } = useDetectCountry();
+  useEffect(() => {
+    if (detected && !country) setCountry(detected);
+  }, [detected, country]);
 
   const sendOtp = useSendOtp(token);
   const verifyOtp = useVerifyOtp(token);
 
   const handleSend = async () => {
-    if (!phone.trim()) return;
-    const res = await sendOtp.mutateAsync(phone.trim());
+    if (!country || !localNumber.trim()) return;
+    const res = await sendOtp.mutateAsync(phone);
     if (res.status === true) {
       success('OTP sent to your phone');
       setStep('otp');
@@ -42,7 +51,7 @@ export default function PhoneVerificationModal({ open, token, onVerified }: Prop
 
   const handleVerify = async () => {
     if (!code.trim()) return;
-    const res = await verifyOtp.mutateAsync({ phone: phone.trim(), code: code.trim() });
+    const res = await verifyOtp.mutateAsync({ phone, code: code.trim() });
     if (res.status === true) {
       success('Phone verified! You can now use your trial account.');
       onVerified();
@@ -75,19 +84,22 @@ export default function PhoneVerificationModal({ open, token, onVerified }: Prop
             <>
               <div className="space-y-1.5">
                 <Label htmlFor="phone">Phone number</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+1 555 000 0000"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                />
+                <div className="flex gap-2">
+                  <CountrySelect value={country} onChange={setCountry} />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="555 000 0000"
+                    value={localNumber}
+                    onChange={(e) => setLocalNumber(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                  />
+                </div>
               </div>
               <Button
                 className="w-full"
                 onClick={handleSend}
-                disabled={sendOtp.isPending || !phone.trim()}
+                disabled={sendOtp.isPending || !country || !localNumber.trim()}
               >
                 {sendOtp.isPending
                   ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />

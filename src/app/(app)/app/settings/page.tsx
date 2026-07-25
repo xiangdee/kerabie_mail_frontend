@@ -6,18 +6,17 @@ import { authService } from '@/lib/services/auth.service';
 import { ProfileView } from '@/components/app/settings/ProfileView';
 
 export default function SettingsPage() {
-  const { user, refreshUser, token } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { success, error: toastError } = useAppToast();
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
 
   const handleSaveProfile = async (data: { full_name: string }) => {
-    if (!token) return;
     setSaving(true);
     // PATCH /auth/me
     const { customAxiosRequest } = await import('@/lib/utils/CustomAxiosRequest');
     const { apiLink } = await import('@/lib/constants/links');
-    const res = await customAxiosRequest('patch', `${apiLink}/auth/me`, data, '', token);
+    const res = await customAxiosRequest('patch', `${apiLink}/auth/me`, data);
     setSaving(false);
     if (res.status === true) {
       await refreshUser();
@@ -28,9 +27,8 @@ export default function SettingsPage() {
   };
 
   const handleChangePassword = async (data: { current_password: string; new_password: string }) => {
-    if (!token) return;
     setChangingPassword(true);
-    const res = await authService.changePassword(token, data);
+    const res = await authService.changePassword(null, data);
     setChangingPassword(false);
     if (res.status === true) {
       success('Password changed successfully');

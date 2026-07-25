@@ -1,8 +1,8 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import { useMailboxes } from '@/lib/hooks/useMailboxes';
 import { useAuth } from '@/lib/context/auth.context';
-import { useMailboxList } from '@/lib/hooks/useMessages';
 import { useAppToast } from '@/components/ui/app-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,7 +59,7 @@ export default function ApiConsolePage() {
 
 function SendTestTab() {
   const { token } = useAuth();
-  const { data: mailboxes = [] } = useMailboxList();
+  const { data: mailboxes = [] } = useMailboxes(token);
   const { success, error: toastError } = useAppToast();
 
   const [from, setFrom] = useState('');
@@ -78,9 +78,9 @@ function SendTestTab() {
     try {
       const res = await fetch(`${apiLink}/mail/send`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           from_email: from,
@@ -165,7 +165,7 @@ function SendTestTab() {
           <CardContent>
             <pre className="text-xs font-mono bg-muted rounded-lg p-4 overflow-x-auto whitespace-pre-wrap">
 {`POST ${apiLink}/mail/send
-Authorization: Bearer ${token ? token.slice(0, 20) + '…' : 'YOUR_TOKEN'}
+Cookie: access_token=<your session cookie>
 Content-Type: application/json
 
 ${JSON.stringify(
@@ -202,7 +202,6 @@ ${JSON.stringify(
 // ─── Raw request builder ──────────────────────────────────────────────────────
 
 function RawRequestTab() {
-  const { token } = useAuth();
   const [method, setMethod] = useState('GET');
   const [endpoint, setEndpoint] = useState('/inbox?email=you@domain.com&folder=INBOX');
   const [body, setBody] = useState('');
@@ -218,9 +217,9 @@ function RawRequestTab() {
     try {
       const res = await fetch(`${apiLink}${endpoint}`, {
         method,
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         ...(hasBody && body ? { body } : {}),
       });

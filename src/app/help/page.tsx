@@ -23,8 +23,8 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 export default async function HelpPage() {
   const [articles, categories] = await Promise.all([
-    getArticles({ article_type: 'help', limit: 100 }),
-    getCategories(),
+    getArticles({ article_type: 'help', limit: 100 }).catch(() => []),
+    getCategories().catch(() => []),
   ]);
 
   // Only show help-relevant categories

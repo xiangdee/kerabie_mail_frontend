@@ -15,9 +15,9 @@ export const revalidate = 3600;
 
 export default async function BlogPage() {
   const [all, featured, categories] = await Promise.all([
-    getArticles({ article_type: 'blog', limit: 100 }),
-    getArticles({ article_type: 'blog', featured: true, limit: 3 }),
-    getCategories(),
+    getArticles({ article_type: 'blog', limit: 100 }).catch(() => []),
+    getArticles({ article_type: 'blog', featured: true, limit: 3 }).catch(() => []),
+    getCategories().catch(() => []),
   ]);
 
   const catMap = Object.fromEntries(categories.map(c => [c.id, c]));

@@ -8,6 +8,19 @@ export const metadata: Metadata = {
   description: 'Real-time event notifications via webhooks. Email, mailbox, and domain events with HMAC signature verification.',
 };
 
+const HOSTING_PARTNER_EVENTS: [string, string][] = [
+  ['partner_mailbox.created', 'A hosting partner provisions a client mailbox'],
+  ['partner_mailbox.deleted', 'A hosting partner deletes a client mailbox'],
+  ['partner_mailbox.renewed', "A mailbox's prepaid term is renewed"],
+  ['partner_mailbox.expiring_soon', "A paid mailbox's term ends in ~7 days"],
+  ['partner_domain.added', 'A hosting partner claims a client domain'],
+  ['partner_domain.verified', 'A client domain passes DNS verification'],
+  ['partner_domain.verification_failed', 'A client domain fails DNS verification'],
+  ['partner_pool.purchased', 'A mailbox-slot pool purchase completes'],
+  ['partner_addon.purchased', 'A domain-slot or storage add-on purchase completes'],
+  ['partner_trial.expiring_soon', "A hosting partner's trial ends in ~7 days"],
+];
+
 export default function WebhooksDocsPage() {
   return (
     <div className="min-h-screen bg-background">
@@ -37,6 +50,12 @@ export default function WebhooksDocsPage() {
             <p className="text-muted-foreground text-lg">
               Webhooks deliver real-time HTTP POST notifications to your server when events happen in Kerabie Mail.
               Available on the <strong>Premium plan</strong>. Configure endpoints in <strong>Settings → Webhooks</strong>.
+            </p>
+            <p className="text-sm text-muted-foreground mt-3">
+              Hosting partner? The <code className="bg-muted px-1 rounded text-xs">partner_*</code> events below use this exact
+              same signing and retry mechanism — see the{' '}
+              <Link href="/api-docs/partner#webhooks" className="text-primary hover:underline">Hosting Partner API docs</Link>{' '}
+              for the full event list and create endpoints from <strong>Partner Dashboard → Developer</strong>.
             </p>
           </div>
 
@@ -81,6 +100,12 @@ export default function WebhooksDocsPage() {
                     ['domain.verified','A custom domain passes DNS verification'],
                     ['domain.verification_failed','DNS verification fails after 3 attempts'],
                   ].map(([e, d]) => (
+                    <tr key={e}>
+                      <td className="p-3 font-mono text-xs text-foreground">{e}</td>
+                      <td className="p-3">{d}</td>
+                    </tr>
+                  ))}
+                  {HOSTING_PARTNER_EVENTS.map(([e, d]) => (
                     <tr key={e}>
                       <td className="p-3 font-mono text-xs text-foreground">{e}</td>
                       <td className="p-3">{d}</td>

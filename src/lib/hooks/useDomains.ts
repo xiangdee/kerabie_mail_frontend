@@ -43,3 +43,20 @@ export function useVerifyDomain(token: string | null) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['domains'] }),
   });
 }
+
+export function useSendDnsInstructions(token: string | null) {
+  return useMutation({
+    mutationFn: (opts: { domain: string; developer_email: string; developer_name?: string; message?: string }) =>
+      customAxiosPost(
+        `${base}/mail/send-dns-instructions`,
+        {
+          email_address: `admin@${opts.domain}`,
+          developer_email: opts.developer_email,
+          developer_name: opts.developer_name,
+          message: opts.message,
+        },
+        '',
+        token ?? ''
+      ),
+  });
+}

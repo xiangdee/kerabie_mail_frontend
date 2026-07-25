@@ -5,42 +5,52 @@ import type { LoginRequest, RegisterRequest } from '@/lib/types/api.types';
 const base = apiLink;
 
 export const authService = {
+  // auth_channel: 'web' makes the backend set httpOnly cookies instead of
+  // returning tokens in the JSON body — see auth.context.tsx for why.
   login: (data: LoginRequest) =>
-    customAxiosPost(`${base}/auth/login`, data),
+    customAxiosPost(`${base}/auth/login`, { ...data, auth_channel: 'web' }),
 
   register: (data: RegisterRequest) =>
-    customAxiosPost(`${base}/auth/register`, data),
+    customAxiosPost(`${base}/auth/register`, { ...data, auth_channel: 'web' }),
 
   checkUsername: (username: string) =>
     customAxiosGet(`${base}/auth/username-check`, { username }),
 
-  getWebmailToken: (token: string) =>
-    customAxiosPost(`${base}/auth/webmail-token`, {}, '', token),
+  getWebmailToken: () =>
+    customAxiosPost(`${base}/auth/webmail-token`, {}),
 
-  refreshToken: (refresh_token: string) =>
-    customAxiosPost(`${base}/auth/refresh`, { refresh_token }),
+  refreshToken: () =>
+    customAxiosPost(`${base}/auth/refresh`, {}),
 
-  logout: (token: string) =>
-    customAxiosPost(`${base}/auth/logout`, {}, '', token),
+  // token params below are vestigial — auth is httpOnly-cookie based now
+  // (withCredentials is set globally in CustomAxiosRequest), kept optional
+  // so existing call sites passing the (now-always-null) context token
+  // don't need to change.
+  logout: (token?: string | null) =>
+    customAxiosPost(`${base}/auth/logout`, {}, '', token ?? undefined),
 
   forgotPassword: (email: string) =>
     customAxiosPost(`${base}/auth/forgot-password`, { email }),
 
+  // NOTE: this `token` is an email/password-reset token from the reset link,
+  // not an auth session token — unrelated to the cookie migration.
   resetPassword: (token: string, new_password: string) =>
     customAxiosPost(`${base}/auth/reset-password`, { token, new_password }),
 
-  me: (token: string) =>
-    customAxiosGet(`${base}/auth/me`, undefined, token),
+  me: (token?: string | null) =>
+    customAxiosGet(`${base}/auth/me`, undefined, token ?? undefined),
 
+  // NOTE: this `token` is an email-verification token, not an auth session
+  // token — unrelated to the cookie migration.
   verifyEmail: (token: string) =>
     customAxiosPost(`${base}/auth/verify-email`, { token }),
 
-  resendVerification: (token: string) =>
-    customAxiosPost(`${base}/auth/resend-verification`, {}, '', token),
+  resendVerification: (token?: string | null) =>
+    customAxiosPost(`${base}/auth/resend-verification`, {}, '', token ?? undefined),
 
-  changePassword: (token: string, data: { current_password: string; new_password: string }) =>
-    customAxiosPost(`${base}/auth/change-password`, data, '', token),
+  changePassword: (token: string | null | undefined, data: { current_password: string; new_password: string }) =>
+    customAxiosPost(`${base}/auth/change-password`, data, '', token ?? undefined),
 
-  deleteAccount: (token: string, password: string) =>
-    customAxiosDelete(`${base}/auth/account`, { password }, token),
+  deleteAccount: (token: string | null | undefined, password: string) =>
+    customAxiosDelete(`${base}/auth/account`, { password }, token ?? undefined),
 };

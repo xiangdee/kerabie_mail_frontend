@@ -62,7 +62,7 @@ const PricingSection = () => {
       features: [
         '1 mailbox account',
         '500MB storage',
-        '100 emails/day',
+        '50 emails/day',
         'End-to-end encryption',
         'Basic support'
       ],
@@ -87,13 +87,13 @@ const PricingSection = () => {
       features: [
         '3 mailbox accounts',
         '10GB storage per mailbox',
-        '1,000 emails/day',
-        '100 AI requests/month',
+        '500 emails/day',
+        '50 AI requests/day',
         'Calendar & Contacts',
         'Read receipts & Unsend',
         'Webhooks',
         '10 forwarding rules',
-        '50 email aliases',
+        '20 email aliases',
         'Audit logs',
         'Priority support'
       ],
@@ -124,6 +124,7 @@ const PricingSection = () => {
         'Webhooks & Zapier',
         'Unlimited forwarding rules',
         'Unlimited email aliases',
+        'Shared team inboxes',
         'Audit logs',
         'API access',
         'Custom domains',

@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '@/lib/context/auth.context';
-import { useDomains, useAddDomain, useDeleteDomain, useVerifyDomain } from '@/lib/hooks/useDomains';
+import { useDomains, useAddDomain, useDeleteDomain, useVerifyDomain, useSendDnsInstructions } from '@/lib/hooks/useDomains';
 import { useAppToast } from '@/components/ui/app-toast';
 import { ConfirmDialog } from '@/components/ui/app-toast';
 import { DomainsView } from '@/components/app/settings/DomainsView';
@@ -15,6 +15,7 @@ export default function DomainsPage() {
   const addMutation = useAddDomain(token);
   const deleteMutation = useDeleteDomain(token);
   const verifyMutation = useVerifyDomain(token);
+  const sendInstructionsMutation = useSendDnsInstructions(token);
 
   const handleAdd = async (domain: string) => {
     const res = await addMutation.mutateAsync(domain);
@@ -31,6 +32,15 @@ export default function DomainsPage() {
       success('Verification started', { description: 'DNS checks may take a few minutes' });
     } else {
       toastError('Verification failed', { description: res.response as string });
+    }
+  };
+
+  const handleSendInstructions = async (domain: string, developerEmail: string) => {
+    const res = await sendInstructionsMutation.mutateAsync({ domain, developer_email: developerEmail });
+    if (res.status === true) {
+      success('Instructions sent', { description: `Sent to ${developerEmail}` });
+    } else {
+      toastError('Failed to send', { description: res.response as string });
     }
   };
 
@@ -53,9 +63,11 @@ export default function DomainsPage() {
         isAdding={addMutation.isPending}
         isVerifying={verifyMutation.isPending}
         isDeleting={deleteMutation.isPending}
+        isSendingInstructions={sendInstructionsMutation.isPending}
         onAdd={handleAdd}
         onVerify={handleVerify}
         onDelete={(id) => setConfirmDeleteId(id)}
+        onSendInstructions={handleSendInstructions}
       />
       <ConfirmDialog
         open={confirmDeleteId != null}
