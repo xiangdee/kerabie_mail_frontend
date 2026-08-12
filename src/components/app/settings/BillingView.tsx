@@ -1,6 +1,6 @@
 'use client';
 import { format, parseISO } from 'date-fns';
-import { CreditCard, Zap, Crown, Building2, AlertTriangle, CheckCircle2, Loader2, ExternalLink, RotateCcw, Clock, CheckCheck, XCircle } from 'lucide-react';
+import { CreditCard, Zap, Crown, Building2, AlertTriangle, CheckCircle2, Loader2, ExternalLink, RotateCcw, Clock, CheckCheck, XCircle, Paperclip, MousePointerClick, BarChart3 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -160,6 +160,33 @@ export function BillingView({
                 <ExternalLink className="h-3 w-3" />
               </a>
             </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Sending features included in this plan */}
+      {subscription && !isLoading && (
+        <Card className="p-5">
+          <p className="text-sm font-medium mb-3">Sending features</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+            <div className="flex items-center gap-2">
+              <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span>
+                {subscription.attachment_size_limit_mb ?? 10}MB attachments
+              </span>
+            </div>
+            <div className={cn('flex items-center gap-2', !subscription.has_click_tracking && 'text-muted-foreground')}>
+              <MousePointerClick className="h-4 w-4 shrink-0" />
+              <span>
+                Click tracking {subscription.has_click_tracking ? '' : '— upgrade to unlock'}
+              </span>
+            </div>
+            <div className={cn('flex items-center gap-2', !subscription.has_heatmaps && 'text-muted-foreground')}>
+              <BarChart3 className="h-4 w-4 shrink-0" />
+              <span>
+                Click heatmaps {subscription.has_heatmaps ? '' : '— upgrade to unlock'}
+              </span>
+            </div>
           </div>
         </Card>
       )}

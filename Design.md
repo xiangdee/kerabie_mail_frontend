@@ -1,0 +1,3 @@
+-When designing dont put everything in one page, seperate create update to pages (use dialogues when necesary)
+- use skelenton loaders
+- never use alert.Alert(), or confirm, make sure to always use custom modals and toast

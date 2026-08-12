@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { authService } from '@/lib/services/auth.service';
+import { mailPasswordService } from '@/lib/services/mail-password.service';
 
 export default function ResetPasswordPage() {
   return (
@@ -21,6 +22,11 @@ function ResetPasswordForm() {
   const params = useSearchParams();
   const router = useRouter();
   const token = params.get('token') ?? '';
+  // Presence of `email` distinguishes a mailbox-level reset link (sent by
+  // mail_reset.py's DNS/alternate-email recovery flow) from an account-level
+  // one (auth.py's forgot-password) — they use different backend endpoints
+  // and different token stores, so this has to route to the right one.
+  const mailboxEmail = params.get('email');
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -48,7 +54,9 @@ function ResetPasswordForm() {
     }
 
     setLoading(true);
-    const res = await authService.resetPassword(token, password);
+    const res = mailboxEmail
+      ? await mailPasswordService.completeReset(token, password)
+      : await authService.resetPassword(token, password);
     setLoading(false);
 
     if (res.status === true) {
@@ -116,7 +124,9 @@ function ResetPasswordForm() {
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">Set new password</h1>
         <p className="text-sm text-muted-foreground">
-          Choose a strong password — at least 8 characters.
+          {mailboxEmail
+            ? <>Choose a new password for <strong>{mailboxEmail}</strong> — at least 8 characters.</>
+            : 'Choose a strong password — at least 8 characters.'}
         </p>
       </div>
 

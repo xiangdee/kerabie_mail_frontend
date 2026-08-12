@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/context/auth.context';
 import { useAppToast, ConfirmDialog } from '@/components/ui/app-toast';
 import { useSessions, useRevokeSession, useRevokeAllSessions } from '@/lib/hooks/useSecurity';
 import SecurityView from '@/components/app/settings/SecurityView';
+import { RecoveryEmailCard } from '@/components/app/settings/RecoveryEmailCard';
 import { authService } from '@/lib/services/auth.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +14,7 @@ import { AlertTriangle } from 'lucide-react';
 
 export default function SecurityPage() {
   const router = useRouter();
-  const { token, logout } = useAuth();
+  const { token, user, logout } = useAuth();
   const { success, error: toastError } = useAppToast();
 
   // ── session management ──────────────────────────────────────────────
@@ -75,6 +76,12 @@ export default function SecurityPage() {
         onRevoke={(id) => setConfirmRevokeId(id)}
         onRevokeAll={() => setConfirmRevokeAll(true)}
       />
+
+      {user?.email && (
+        <div className="mt-6">
+          <RecoveryEmailCard mailboxEmail={user.email} />
+        </div>
+      )}
 
       {/* ── Danger zone ─────────────────────────────────────────────── */}
       <div className="mt-10 rounded-xl border border-destructive/30 bg-destructive/5 p-6">

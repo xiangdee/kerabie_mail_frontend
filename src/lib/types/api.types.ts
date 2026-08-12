@@ -178,6 +178,9 @@ export interface Subscription {
   cancel_at_period_end: boolean;
   auto_renew?: boolean;
   latest_transaction_id?: number;
+  attachment_size_limit_mb?: number;
+  has_click_tracking?: boolean;
+  has_heatmaps?: boolean;
 }
 
 // ── Contact ───────────────────────────────────────────────────────────────────
@@ -203,6 +206,13 @@ export interface CalendarEvent {
   all_day: boolean;
   color?: string;
   attendees?: string[];
+}
+
+// ── Unsubscribes (per-mailbox, from List-Unsubscribe opt-outs) ────────────────
+export interface SenderUnsubscribe {
+  id: number;
+  recipient_email: string;
+  unsubscribed_at: string;
 }
 
 // ── Forwarding ────────────────────────────────────────────────────────────────

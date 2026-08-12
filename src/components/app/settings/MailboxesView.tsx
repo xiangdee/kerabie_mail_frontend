@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Plus, Trash2, HardDrive, Mail, Eye, EyeOff, Loader2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, Trash2, HardDrive, Mail, Eye, EyeOff, Loader2, ToggleLeft, ToggleRight, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { IMAP_HOST, SMTP_HOST } from '@/lib/constants/links';
 import type { Mailbox } from '@/lib/types/api.types';
 
 interface CreateForm {
@@ -207,6 +208,33 @@ export function MailboxesView({
           })}
         </div>
       )}
+
+      {/* IMAP/SMTP reference */}
+      <div className="bg-muted/50 border rounded-2xl p-5 text-sm">
+        <p className="font-medium mb-3">IMAP / SMTP settings for third-party email clients</p>
+        <div className="grid sm:grid-cols-2 gap-4 text-muted-foreground text-xs">
+          <div className="flex items-start gap-2.5">
+            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500 shrink-0">
+              <ArrowDownToLine className="h-3.5 w-3.5" />
+            </div>
+            <div className="space-y-1 font-mono">
+              <p className="font-semibold text-foreground not-italic font-sans">Incoming (IMAP)</p>
+              <p>Server: {IMAP_HOST}</p>
+              <p>Port: 993 (SSL/TLS)</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2.5">
+            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 shrink-0">
+              <ArrowUpFromLine className="h-3.5 w-3.5" />
+            </div>
+            <div className="space-y-1 font-mono">
+              <p className="font-semibold text-foreground not-italic font-sans">Outgoing (SMTP)</p>
+              <p>Server: {SMTP_HOST}</p>
+              <p>Port: 587 (STARTTLS)</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

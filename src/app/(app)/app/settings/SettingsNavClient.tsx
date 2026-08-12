@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   User, Globe, ArrowRight, Key, Webhook,
-  CreditCard, Shield, Bell, Server, AtSign, Share2, Terminal, Users,
+  CreditCard, Shield, Bell, Server, AtSign, Share2, Terminal, Users, UserX,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +25,7 @@ const GROUPS = [
       { label: 'Forwarding', href: '/app/settings/forwarding', icon: ArrowRight },
       { label: 'Aliases', href: '/app/settings/aliases', icon: AtSign },
       { label: 'Shared Inboxes', href: '/app/settings/shared-inbox', icon: Users },
+      { label: 'Unsubscribes', href: '/app/settings/unsubscribes', icon: UserX },
     ],
   },
   {

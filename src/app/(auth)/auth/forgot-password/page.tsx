@@ -48,6 +48,12 @@ export default function ForgotPasswordPage() {
         <Link href="/auth/login" className="flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-3 w-3" /> Back to sign in
         </Link>
+        <p className="text-xs text-muted-foreground">
+          Can&apos;t receive mail at this address at all?{' '}
+          <Link href={`/auth/mailbox-recovery?email=${encodeURIComponent(email)}`} className="text-primary hover:underline font-medium">
+            Recover via domain DNS instead
+          </Link>
+        </p>
       </div>
     );
   }
@@ -83,6 +89,12 @@ export default function ForgotPasswordPage() {
       <Link href="/auth/login" className="flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-3 w-3" /> Back to sign in
       </Link>
+      <p className="text-center text-xs text-muted-foreground">
+        Locked out of a custom-domain mailbox and can&apos;t receive mail there?{' '}
+        <Link href="/auth/mailbox-recovery" className="text-primary hover:underline font-medium">
+          Recover via domain DNS
+        </Link>
+      </p>
     </div>
   );
 }
