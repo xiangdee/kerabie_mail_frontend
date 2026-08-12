@@ -43,46 +43,53 @@ export async function generateMetadata(
 const LIVE_PRICING_PLACEHOLDER = '{{PRICING_TABLE}}';
 const LIVE_DATE_PLACEHOLDER = '{{LAST_UPDATED}}';
 
+// NOTE: every line below starts at column 0 with no leading whitespace —
+// deliberately, not for style. This string gets spliced into markdown and
+// run through marked(). CommonMark recognizes a block starting with a
+// top-level tag like <div> as a raw HTML block that passes through
+// unprocessed, but ONLY up to the next blank line — and a line containing
+// only spaces counts as blank. Indenting these lines (as this used to)
+// produced a whitespace-only line right after <tbody>, which silently
+// ended the HTML block partway through; the remaining indented lines then
+// got reparsed as an indented markdown code block and rendered as escaped
+// text instead of a table.
 function buildPricingTable(data: PricingData): string {
   const { kerabie, competitors, last_updated } = data;
 
-  const kerabieRows = kerabie.map(p => `
-    <tr>
-      <td><strong>Kerabie Mail — ${p.name}</strong></td>
-      <td>${p.price_usd === 0 ? 'Free' : `$${p.price_usd}/mo`}</td>
-      <td>${p.storage_gb < 1 ? `${p.storage_gb * 1024} MB` : `${p.storage_gb} GB`}</td>
-      <td>${p.mailboxes}</td>
-      <td>${p.custom_domain ? '✅' : '—'}</td>
-    </tr>`).join('');
+  const kerabieRows = kerabie.map(p => `<tr>
+<td><strong>Kerabie Mail — ${p.name}</strong></td>
+<td>${p.price_usd === 0 ? 'Free' : `$${p.price_usd}/mo`}</td>
+<td>${p.storage_gb < 1 ? `${p.storage_gb * 1024} MB` : `${p.storage_gb} GB`}</td>
+<td>${p.mailboxes}</td>
+<td>${p.custom_domain ? '✅' : '—'}</td>
+</tr>`).join('\n');
 
   const competitorRows = Object.values(competitors).flatMap(provider =>
-    provider.plans.slice(0, 1).map(plan => `
-    <tr>
-      <td>${provider.name}</td>
-      <td>${plan.price_text}</td>
-      <td>—</td>
-      <td>—</td>
-      <td>✅</td>
-    </tr>`)
-  ).join('');
+    provider.plans.slice(0, 1).map(plan => `<tr>
+<td>${provider.name}</td>
+<td>${plan.price_text}</td>
+<td>—</td>
+<td>—</td>
+<td>✅</td>
+</tr>`)
+  ).join('\n');
 
-  return `
-<div class="overflow-x-auto my-6">
-  <table>
-    <thead>
-      <tr>
-        <th>Provider</th>
-        <th>Starting price</th>
-        <th>Storage</th>
-        <th>Mailboxes</th>
-        <th>Custom domain</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${kerabieRows}
-      ${competitorRows}
-    </tbody>
-  </table>
+  return `<div class="overflow-x-auto my-6">
+<table>
+<thead>
+<tr>
+<th>Provider</th>
+<th>Starting price</th>
+<th>Storage</th>
+<th>Mailboxes</th>
+<th>Custom domain</th>
+</tr>
+</thead>
+<tbody>
+${kerabieRows}
+${competitorRows}
+</tbody>
+</table>
 </div>`;
 }
 
