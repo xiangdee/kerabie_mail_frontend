@@ -27,7 +27,7 @@ export const Footer = () => {
                 </NavLink>
               </li>
               <li>
-                <a href="#pricing" className="opacity-90 hover:opacity-100">
+                <a href="/#pricing" className="opacity-90 hover:opacity-100">
                   Pricing
                 </a>
               </li>

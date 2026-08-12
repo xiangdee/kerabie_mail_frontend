@@ -169,7 +169,7 @@ const PricingSection = () => {
 };
 
   return (
-    <section className="relative py-24 overflow-hidden">
+    <section id="pricing" className="relative py-24 overflow-hidden scroll-mt-20">
       {/* Background Decorative Elements */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10">
         <div className="absolute top-24 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px]" />
