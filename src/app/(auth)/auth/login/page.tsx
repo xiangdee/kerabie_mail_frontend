@@ -1,7 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAppToast } from '@/components/ui/app-toast';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,10 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/context/auth.context';
 
-export default function LoginPage() {
+function LoginForm() {
   const { login } = useAuth();
   const { success, error: toastError } = useAppToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,7 +26,11 @@ export default function LoginPage() {
     setLoading(false);
     if (result.ok) {
       success('Welcome back!');
-      router.push('/app/settings');
+      // Honor a same-origin ?redirect= (e.g. from the OAuth consent flow
+      // bouncing an unauthenticated user here) — only ever a relative path,
+      // never an absolute/external URL, so this can't become an open redirect.
+      const redirect = searchParams.get('redirect');
+      router.push(redirect && redirect.startsWith('/') ? redirect : '/app/settings');
     } else {
       toastError(result.error || 'Invalid credentials');
     }
@@ -93,5 +98,13 @@ export default function LoginPage() {
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }
