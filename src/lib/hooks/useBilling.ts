@@ -47,11 +47,10 @@ export function useSubscription(token: string | null) {
   return useQuery({
     queryKey: ['subscription', token],
     queryFn: async () => {
-      if (!token) return null;
-      const res = await customAxiosGet(`${base}/subscriptions/me`, undefined, token);
+      const res = await customAxiosGet(`${base}/subscriptions/me`, undefined, token ?? undefined);
       return res.status === true ? (res.response as Subscription) : null;
     },
-    enabled: !!token,
+    enabled: true,
   });
 }
 
@@ -108,11 +107,10 @@ export function useMyRefunds(token: string | null) {
   return useQuery({
     queryKey: ['my-refunds', token],
     queryFn: async () => {
-      if (!token) return [];
-      const res = await customAxiosGet(`${base}/refunds/my`, undefined, token);
+      const res = await customAxiosGet(`${base}/refunds/my`, undefined, token ?? undefined);
       return res.status === true ? (res.response as RefundRequest[]) : [];
     },
-    enabled: !!token,
+    enabled: true,
   });
 }
 

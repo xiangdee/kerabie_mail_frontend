@@ -9,11 +9,10 @@ export function useUserEmails(token: string | null) {
   return useQuery({
     queryKey: ['user-emails', token],
     queryFn: async () => {
-      if (!token) return [] as UserEmailAccount[];
-      const res = await customAxiosGet(`${base}/mail/user-emails`, undefined, token);
+      const res = await customAxiosGet(`${base}/mail/user-emails`, undefined, token ?? undefined);
       return res.status === true ? (res.response as UserEmailAccount[]) : ([] as UserEmailAccount[]);
     },
-    enabled: !!token,
+    enabled: true,
   });
 }
 
@@ -21,11 +20,11 @@ export function useSharedMembers(emailId: number | null, token: string | null) {
   return useQuery({
     queryKey: ['shared-members', emailId, token],
     queryFn: async () => {
-      if (!token || !emailId) return [] as SharedInboxMember[];
-      const res = await customAxiosGet(`${base}/shared-inboxes/${emailId}/members`, undefined, token);
+      if (!emailId) return [] as SharedInboxMember[];
+      const res = await customAxiosGet(`${base}/shared-inboxes/${emailId}/members`, undefined, token ?? undefined);
       return res.status === true ? (res.response as SharedInboxMember[]) : ([] as SharedInboxMember[]);
     },
-    enabled: !!token && !!emailId,
+    enabled: !!emailId,
   });
 }
 
@@ -60,11 +59,10 @@ export function useMySharedInboxes(token: string | null) {
   return useQuery({
     queryKey: ['my-shared-inboxes', token],
     queryFn: async () => {
-      if (!token) return [] as SharedInboxEntry[];
-      const res = await customAxiosGet(`${base}/shared-inboxes/my`, undefined, token);
+      const res = await customAxiosGet(`${base}/shared-inboxes/my`, undefined, token ?? undefined);
       return res.status === true ? (res.response as SharedInboxEntry[]) : ([] as SharedInboxEntry[]);
     },
-    enabled: !!token,
+    enabled: true,
   });
 }
 

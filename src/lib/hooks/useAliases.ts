@@ -9,11 +9,10 @@ export function useAliases(token: string | null) {
   return useQuery({
     queryKey: ['aliases', token],
     queryFn: async () => {
-      if (!token) return [] as EmailAlias[];
-      const res = await customAxiosGet(`${base}/mail/aliases`, undefined, token);
+      const res = await customAxiosGet(`${base}/mail/aliases`, undefined, token ?? undefined);
       return res.status === true ? (res.response as EmailAlias[]) : ([] as EmailAlias[]);
     },
-    enabled: !!token,
+    enabled: true,
   });
 }
 

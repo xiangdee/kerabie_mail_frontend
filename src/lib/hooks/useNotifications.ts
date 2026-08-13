@@ -26,11 +26,10 @@ export function useNotificationPrefs(token: string | null) {
   return useQuery({
     queryKey: ['notification-prefs', token],
     queryFn: async () => {
-      if (!token) return DEFAULT_PREFS;
-      const res = await customAxiosGet(`${base}/notifications/preferences`, undefined, token);
+      const res = await customAxiosGet(`${base}/notifications/preferences`, undefined, token ?? undefined);
       return res.status === true ? (res.response as NotificationPrefs) : DEFAULT_PREFS;
     },
-    enabled: !!token,
+    enabled: true,
     staleTime: 5 * 60_000,
   });
 }

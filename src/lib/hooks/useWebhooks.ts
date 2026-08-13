@@ -9,11 +9,10 @@ export function useWebhooks(token: string | null) {
   return useQuery({
     queryKey: ['webhooks', token],
     queryFn: async () => {
-      if (!token) return [] as WebhookEndpoint[];
-      const res = await customAxiosGet(`${base}/webhooks`, undefined, token);
+      const res = await customAxiosGet(`${base}/webhooks`, undefined, token ?? undefined);
       return res.status === true ? (res.response as WebhookEndpoint[]) : ([] as WebhookEndpoint[]);
     },
-    enabled: !!token,
+    enabled: true,
   });
 }
 

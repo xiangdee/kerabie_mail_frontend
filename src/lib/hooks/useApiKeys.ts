@@ -9,11 +9,10 @@ export function useApiKeys(token: string | null) {
   return useQuery({
     queryKey: ['api-keys', token],
     queryFn: async () => {
-      if (!token) return [] as ApiKey[];
-      const res = await customAxiosGet(`${base}/api-keys`, undefined, token);
+      const res = await customAxiosGet(`${base}/api-keys`, undefined, token ?? undefined);
       return res.status === true ? (res.response as ApiKey[]) : ([] as ApiKey[]);
     },
-    enabled: !!token,
+    enabled: true,
   });
 }
 

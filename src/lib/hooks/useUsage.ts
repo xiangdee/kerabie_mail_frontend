@@ -9,11 +9,10 @@ export function useUsage(token: string | null) {
   return useQuery({
     queryKey: ['usage', token],
     queryFn: async () => {
-      if (!token) return null;
-      const res = await customAxiosGet(`${base}/subscriptions/usage`, undefined, token);
+      const res = await customAxiosGet(`${base}/subscriptions/usage`, undefined, token ?? undefined);
       return res.status === true ? (res.response as UsageSummary) : null;
     },
-    enabled: !!token,
+    enabled: true,
     staleTime: 60_000,
   });
 }

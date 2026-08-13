@@ -16,11 +16,10 @@ export function useMailboxes(token: string | null) {
   return useQuery({
     queryKey: ['mailboxes', token],
     queryFn: async () => {
-      if (!token) return [] as UserEmailAccount[];
-      const res = await customAxiosGet(`${base}/mail/user-emails`, undefined, token);
+      const res = await customAxiosGet(`${base}/mail/user-emails`, undefined, token ?? undefined);
       return res.status === true ? (res.response as UserEmailAccount[]) : ([] as UserEmailAccount[]);
     },
-    enabled: !!token,
+    enabled: true,
   });
 }
 

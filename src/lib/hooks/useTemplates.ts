@@ -22,11 +22,10 @@ export function useTemplates(token: string | null) {
   return useQuery({
     queryKey: ['templates', token],
     queryFn: async () => {
-      if (!token) return [] as EmailTemplate[];
-      const res = await customAxiosGet(`${base}/mail/templates`, { page_size: 100 }, token);
+      const res = await customAxiosGet(`${base}/mail/templates`, { page_size: 100 }, token ?? undefined);
       return res.status === true ? ((res.response as TemplatePage).items ?? []) : ([] as EmailTemplate[]);
     },
-    enabled: !!token,
+    enabled: true,
   });
 }
 

@@ -9,11 +9,10 @@ export function usePartner(token: string | null) {
   return useQuery({
     queryKey: ['partner', token],
     queryFn: async () => {
-      if (!token) return null;
-      const res = await customAxiosGet(`${base}/partner/me`, undefined, token);
+      const res = await customAxiosGet(`${base}/partner/me`, undefined, token ?? undefined);
       return res.status === true ? (res.response as Partner) : null;
     },
-    enabled: !!token,
+    enabled: true,
   });
 }
 
@@ -21,11 +20,10 @@ export function useHostingMailboxes(token: string | null) {
   return useQuery({
     queryKey: ['hosting-mailboxes', token],
     queryFn: async () => {
-      if (!token) return [] as HostingMailbox[];
-      const res = await customAxiosGet(`${base}/partner/hosting/mailboxes`, undefined, token);
+      const res = await customAxiosGet(`${base}/partner/hosting/mailboxes`, undefined, token ?? undefined);
       return res.status === true ? (res.response as HostingMailbox[]) : ([] as HostingMailbox[]);
     },
-    enabled: !!token,
+    enabled: true,
   });
 }
 

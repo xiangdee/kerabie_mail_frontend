@@ -16,13 +16,13 @@ export function useUnsubscribes(mailbox: string, token: string | null) {
   return useQuery({
     queryKey: ['unsubscribes', mailbox, token],
     queryFn: async () => {
-      if (!token || !mailbox) return { total: 0, page: 1, per_page: 50, unsubscribes: [] } as UnsubscribesResponse;
-      const res = await customAxiosGet(`${base}/mail/unsubscribes`, { email: mailbox }, token);
+      if (!mailbox) return { total: 0, page: 1, per_page: 50, unsubscribes: [] } as UnsubscribesResponse;
+      const res = await customAxiosGet(`${base}/mail/unsubscribes`, { email: mailbox }, token ?? undefined);
       return res.status === true
         ? (res.response as UnsubscribesResponse)
         : ({ total: 0, page: 1, per_page: 50, unsubscribes: [] } as UnsubscribesResponse);
     },
-    enabled: !!token && !!mailbox,
+    enabled: !!mailbox,
   });
 }
 

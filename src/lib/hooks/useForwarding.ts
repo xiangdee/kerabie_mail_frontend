@@ -9,11 +9,11 @@ export function useForwarding(mailbox: string, token: string | null) {
   return useQuery({
     queryKey: ['forwarding', mailbox, token],
     queryFn: async () => {
-      if (!token || !mailbox) return [] as ForwardingRule[];
-      const res = await customAxiosGet(`${base}/forwarding`, { mailbox }, token);
+      if (!mailbox) return [] as ForwardingRule[];
+      const res = await customAxiosGet(`${base}/forwarding`, { mailbox }, token ?? undefined);
       return res.status === true ? (res.response as ForwardingRule[]) : ([] as ForwardingRule[]);
     },
-    enabled: !!token && !!mailbox,
+    enabled: !!mailbox,
   });
 }
 

@@ -17,11 +17,10 @@ export function useSessions(token: string | null) {
   return useQuery({
     queryKey: ['sessions', token],
     queryFn: async () => {
-      if (!token) return [] as Session[];
-      const res = await customAxiosGet(`${base}/auth/sessions`, undefined, token);
+      const res = await customAxiosGet(`${base}/auth/sessions`, undefined, token ?? undefined);
       return res.status === true ? (res.response as Session[]) : ([] as Session[]);
     },
-    enabled: !!token,
+    enabled: true,
   });
 }
 

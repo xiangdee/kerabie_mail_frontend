@@ -9,11 +9,10 @@ export function usePhoneStatus(token: string | null) {
   return useQuery({
     queryKey: ['phone-status', token],
     queryFn: async () => {
-      if (!token) return null;
-      const res = await customAxiosGet(`${base}/phone/status`, undefined, token);
+      const res = await customAxiosGet(`${base}/phone/status`, undefined, token ?? undefined);
       return res.status === true ? (res.response as PhoneStatus) : null;
     },
-    enabled: !!token,
+    enabled: true,
   });
 }
 

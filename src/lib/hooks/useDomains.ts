@@ -9,11 +9,10 @@ export function useDomains(token: string | null) {
   return useQuery({
     queryKey: ['domains', token],
     queryFn: async () => {
-      if (!token) return [] as Domain[];
-      const res = await customAxiosGet(`${base}/domains`, undefined, token);
+      const res = await customAxiosGet(`${base}/domains`, undefined, token ?? undefined);
       return res.status === true ? (res.response as Domain[]) : ([] as Domain[]);
     },
-    enabled: !!token,
+    enabled: true,
   });
 }
 
