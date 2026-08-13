@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '@/lib/context/auth.context';
-import { useMailboxes, useCreateMailbox, useSetMailboxNoReply } from '@/lib/hooks/useMailboxes';
+import { useMailboxes, useCreateMailbox, useSetMailboxNoReply, useUpdateMailbox } from '@/lib/hooks/useMailboxes';
 import { useAppToast } from '@/components/ui/app-toast';
 import { MailboxesView } from '@/components/app/settings/MailboxesView';
 
@@ -9,10 +9,12 @@ export default function MailboxesPage() {
   const { token } = useAuth();
   const { success, error: toastError } = useAppToast();
   const [togglingEmail, setTogglingEmail] = useState<string | null>(null);
+  const [savingSenderNameId, setSavingSenderNameId] = useState<number | null>(null);
 
   const { data: mailboxes = [], isLoading } = useMailboxes(token);
   const createMutation = useCreateMailbox(token);
   const noReplyMutation = useSetMailboxNoReply(token);
+  const updateMutation = useUpdateMailbox(token);
 
   const handleCreate = async (data: { email: string; display_name: string; password: string }) => {
     const res = await createMutation.mutateAsync(data);
@@ -34,6 +36,17 @@ export default function MailboxesPage() {
     }
   };
 
+  const handleUpdateSenderName = async (id: number, displayName: string) => {
+    setSavingSenderNameId(id);
+    const res = await updateMutation.mutateAsync({ id, data: { display_name: displayName } });
+    setSavingSenderNameId(null);
+    if (res.status === true) {
+      success('Sender name updated');
+    } else {
+      toastError('Failed to update sender name', { description: res.response as string });
+    }
+  };
+
   return (
     <MailboxesView
       mailboxes={mailboxes}
@@ -42,6 +55,8 @@ export default function MailboxesPage() {
       onCreate={handleCreate}
       onToggleNoReply={handleToggleNoReply}
       togglingNoReplyEmail={togglingEmail}
+      onUpdateSenderName={handleUpdateSenderName}
+      savingSenderNameId={savingSenderNameId}
     />
   );
 }
