@@ -28,7 +28,7 @@ const coreFeatures = [
     icon: ShieldCheck,
     image:blackblazebucket +'/assets/images/icons/enterprise-security-icon-2.png',
     title: "Enterprise Security",
-    description: "End-to-end encryption and advanced phishing protection to keep your business data safe.",
+    description: "Encryption at rest and advanced phishing protection to keep your business data safe.",
   },
 ];
 
