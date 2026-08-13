@@ -13,7 +13,7 @@ export default function UnsubscribesPage() {
   const [activeMailbox, setActiveMailbox] = useState('');
 
   const { data: mailboxes = [] } = useMailboxes(token);
-  const mailbox = activeMailbox || mailboxes[0]?.email || '';
+  const mailbox = activeMailbox || mailboxes[0]?.email_address || '';
 
   const { data, isLoading } = useUnsubscribes(mailbox, token);
   const deleteUnsubscribe = useDeleteUnsubscribe(token);

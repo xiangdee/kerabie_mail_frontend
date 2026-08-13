@@ -13,7 +13,7 @@ export default function ForwardingPage() {
   const [activeMailbox, setActiveMailbox] = useState('');
 
   const { data: mailboxes = [] } = useMailboxes(token);
-  const mailbox = activeMailbox || mailboxes[0]?.email || '';
+  const mailbox = activeMailbox || mailboxes[0]?.email_address || '';
 
   const { data: rules = [], isLoading } = useForwarding(mailbox, token);
   const createRule = useCreateForwarding(token);

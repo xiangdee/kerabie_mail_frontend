@@ -9,11 +9,11 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, ArrowRight, Loader2 } from 'lucide-react';
-import type { ForwardingRule, Mailbox } from '@/lib/types/api.types';
+import type { ForwardingRule, UserEmailAccount } from '@/lib/types/api.types';
 
 interface Props {
   rules: ForwardingRule[];
-  mailboxes: Mailbox[];
+  mailboxes: UserEmailAccount[];
   isLoading: boolean;
   isCreating: boolean;
   isDeleting: boolean;
@@ -63,8 +63,8 @@ export default function ForwardingView({
                 </SelectTrigger>
                 <SelectContent>
                   {mailboxes.map((mb) => (
-                    <SelectItem key={mb.email} value={mb.email}>
-                      {mb.email}
+                    <SelectItem key={mb.email_address} value={mb.email_address}>
+                      {mb.email_address}
                     </SelectItem>
                   ))}
                 </SelectContent>

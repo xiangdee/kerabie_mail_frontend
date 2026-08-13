@@ -5,12 +5,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserX, Trash2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
-import type { SenderUnsubscribe, Mailbox } from '@/lib/types/api.types';
+import type { SenderUnsubscribe, UserEmailAccount } from '@/lib/types/api.types';
 
 interface Props {
   unsubscribes: SenderUnsubscribe[];
   total: number;
-  mailboxes: Mailbox[];
+  mailboxes: UserEmailAccount[];
   activeMailbox: string;
   onMailboxChange: (email: string) => void;
   isLoading: boolean;
@@ -44,8 +44,8 @@ export default function UnsubscribesView({
           </SelectTrigger>
           <SelectContent>
             {mailboxes.map((mb) => (
-              <SelectItem key={mb.email} value={mb.email}>
-                {mb.email}
+              <SelectItem key={mb.email_address} value={mb.email_address}>
+                {mb.email_address}
               </SelectItem>
             ))}
           </SelectContent>
