@@ -37,7 +37,8 @@ export default function ApiDocsPage() {
             <h1 className="text-4xl font-bold mb-3">API Reference</h1>
             <p className="text-muted-foreground text-lg">
               The Kerabie Mail REST API lets you send emails, manage mailboxes, contacts, calendar
-              events, and more. API access requires a <strong>Premium plan</strong>.
+              events, and more. Available on every plan tier, including <strong>Free</strong> —
+              generate a key under Settings → API Keys.
             </p>
             <div className="flex flex-wrap gap-3 mt-4">
               <Link href="/api-docs/webhooks" className="text-sm text-primary hover:underline">Webhooks docs →</Link>
@@ -48,6 +49,7 @@ export default function ApiDocsPage() {
           <AuthSection />
           <ErrorsSection />
           <SendSection />
+          <TemplatesSection />
           <InboxSection />
           <ContactsSection />
           <CalendarSection />
@@ -65,6 +67,7 @@ const NAV = [
   { label: 'Authentication', id: 'auth' },
   { label: 'Errors', id: 'errors' },
   { label: 'Send email', id: 'send' },
+  { label: 'Templates', id: 'templates' },
   { label: 'Inbox', id: 'inbox' },
   { label: 'Contacts', id: 'contacts' },
   { label: 'Calendar', id: 'calendar' },
@@ -138,19 +141,20 @@ function ParamTable({ rows }: { rows: [string, string, string, string][] }) {
 function AuthSection() {
   return (
     <Section id="auth" title="Authentication">
-      <p className="text-muted-foreground">All API requests must include your API key in the <code className="bg-muted px-1 rounded text-sm">Authorization</code> header. Generate keys in <strong>Settings → API Keys</strong>.</p>
-      <CodeBlock lang="http">{`Authorization: Bearer YOUR_API_KEY\nContent-Type: application/json`}</CodeBlock>
-      <div className="grid sm:grid-cols-2 gap-4">
-        {[
-          { plan: 'Pro', rpm: '60 req/min', daily: '10,000 req/day' },
-          { plan: 'Premium', rpm: '300 req/min', daily: 'Unlimited' },
-        ].map(r => (
-          <div key={r.plan} className="border rounded-xl p-4 text-sm">
-            <p className="font-semibold mb-2">{r.plan} plan</p>
-            <p className="text-muted-foreground">{r.rpm} · {r.daily}</p>
-          </div>
-        ))}
-      </div>
+      <p className="text-muted-foreground">
+        API requests are authenticated with an API key in the <code className="bg-muted px-1 rounded text-sm">X-API-Key</code> header
+        — not <code className="bg-muted px-1 rounded text-sm">Authorization: Bearer</code> (that&apos;s used for browser/mobile session
+        tokens instead, obtained via <code className="bg-muted px-1 rounded text-sm">/auth/login</code>, not for API keys).
+        Generate keys with the <code className="bg-muted px-1 rounded text-sm">send</code> scope in <strong>Settings → API Keys</strong>
+        — available on every plan tier, including Free.
+      </p>
+      <CodeBlock lang="http">{`X-API-Key: YOUR_API_KEY\nContent-Type: application/json`}</CodeBlock>
+      <p className="text-muted-foreground text-sm">
+        Sending isn&apos;t rate-limited by requests-per-minute — each mailbox has its own daily send quota (with an hourly
+        sub-limit to catch bursts) that scales with the mailbox owner&apos;s plan, visible via <code className="bg-muted px-1 rounded text-sm">GET /subscriptions/me</code>.
+        Exceeding it returns <code className="bg-muted px-1 rounded text-sm">429</code>. Mailboxes connected over plain IMAP relay
+        through your own external provider and aren&apos;t subject to this quota at all.
+      </p>
     </Section>
   );
 }
@@ -179,38 +183,86 @@ function ErrorsSection() {
 function SendSection() {
   return (
     <Section id="send" title="Send email">
-      <Endpoint method="POST" path="/mail/send" desc="Send an email from a mailbox you own. Attachments are base64-encoded.">
+      <Endpoint method="POST" path="/mail/send" desc="Send an email from a mailbox you own — inline content, or a saved template. Attachments are base64-encoded.">
         <ParamTable rows={[
           ['from_email','string','yes','Sender address (must be a mailbox you own)'],
           ['to','string[]','yes','Recipient email addresses (max 50)'],
           ['cc','string[]','no','CC recipients'],
           ['bcc','string[]','no','BCC recipients'],
-          ['subject','string','yes','Email subject line'],
-          ['body_html','string','no','HTML body'],
+          ['subject','string','required unless template_id is set','Email subject line — defaults to the template’s own subject when template_id is given'],
+          ['body_html','string','no','HTML body. At least one of body_html/body_text/template_id must resolve to content'],
           ['body_text','string','no','Plain-text body (fallback)'],
+          ['template_id','integer','no','Send using a saved template (see Templates below) instead of inline subject/body_html'],
+          ['variables','object','no','{{placeholder}} substitutions applied to the template’s subject and body — ignored without template_id'],
           ['reply_to','string','no','Reply-To address'],
-          ['track_opens','boolean','no','Embed tracking pixel (Premium only)'],
-          ['scheduled_at','string','no','ISO 8601 datetime — deliver at this time'],
-          ['attachments','object[]','no','Array of {filename, content (base64), content_type}'],
+          ['track_opens','boolean','no','Embed a read-receipt tracking pixel — requires a plan with read-receipt support, silently ignored otherwise'],
+          ['scheduled_at','string','no','ISO 8601 datetime (future, UTC) — queues instead of sending immediately'],
+          ['unsend_window','integer','no','Seconds to hold before dispatch (max 30), for an "undo send" window'],
+          ['attachments','object[]','no','Array of {filename, content_base64, content_type}. Total size capped by the sender’s plan'],
         ]} />
         <div className="border-t px-4 pt-3 pb-1">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Request</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Request — inline content</p>
+          <CodeBlock lang="bash">{`curl -X POST https://api.kerabie.email/mail/send \\
+  -H "X-API-Key: $API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+        "from_email": "hello@yourdomain.com",
+        "to": ["user@example.com"],
+        "subject": "Hello from the API",
+        "body_html": "<p>This was sent via the Kerabie Mail API.</p>"
+      }'`}</CodeBlock>
+        </div>
+        <div className="border-t px-4 pt-3 pb-1">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Request — using a saved template</p>
           <CodeBlock lang="json">{`{
   "from_email": "hello@yourdomain.com",
   "to": ["user@example.com"],
-  "subject": "Hello from the API",
-  "body_html": "<p>This was sent via the Kerabie Mail API.</p>",
-  "track_opens": false
+  "template_id": 1,
+  "variables": { "first_name": "Ada", "order_id": "12345" }
 }`}</CodeBlock>
         </div>
         <div className="border-t px-4 pt-3 pb-1">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Response 201</p>
-          <CodeBlock lang="json">{`{ "message_id": "<abc123@kerabie.email>", "status": "sent" }`}</CodeBlock>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Response 200</p>
+          <CodeBlock lang="json">{`{
+  "message_id": "3fa31ded-d28f-4973-af7b-9ed56ef842d1",
+  "status": "sent",
+  "scheduled_at": null,
+  "scheduled_id": null
+}`}</CodeBlock>
+          <p className="text-xs text-muted-foreground mt-2">
+            <code className="bg-muted px-1 rounded">status</code> is <code className="bg-muted px-1 rounded">&quot;scheduled&quot;</code> instead
+            of <code className="bg-muted px-1 rounded">&quot;sent&quot;</code> when <code className="bg-muted px-1 rounded">scheduled_at</code> or <code className="bg-muted px-1 rounded">unsend_window</code> is set —
+            track or cancel it with the endpoints below, using the returned <code className="bg-muted px-1 rounded">scheduled_id</code>.
+          </p>
         </div>
       </Endpoint>
 
       <Endpoint method="GET" path="/mail/scheduled" desc="List all emails scheduled for future delivery." />
       <Endpoint method="DELETE" path="/mail/scheduled/{id}" desc="Cancel a scheduled email before it is sent." />
+    </Section>
+  );
+}
+
+function TemplatesSection() {
+  return (
+    <Section id="templates" title="Templates">
+      <p className="text-muted-foreground">
+        Reusable HTML emails with <code className="bg-muted px-1 rounded text-sm">{'{{placeholder}}'}</code> tags — manage them under
+        <strong> Settings → Templates</strong> (three starter designs included), then send with them via <code className="bg-muted px-1 rounded text-sm">template_id</code> on
+        <code className="bg-muted px-1 rounded text-sm"> POST /mail/send</code> above.
+      </p>
+      <Endpoint method="GET" path="/mail/templates" desc="List your templates (paginated)." />
+      <Endpoint method="POST" path="/mail/templates" desc="Create a template.">
+        <ParamTable rows={[
+          ['name','string','yes','Template name'],
+          ['subject','string','no','Default subject — can contain {{placeholder}} tags'],
+          ['body_html','string','yes','HTML body — can contain {{placeholder}} tags'],
+          ['is_shared','boolean','no','Whether other users on a shared inbox can use this template'],
+        ]} />
+      </Endpoint>
+      <Endpoint method="GET" path="/mail/templates/{id}" desc="Fetch a single template." />
+      <Endpoint method="PATCH" path="/mail/templates/{id}" desc="Update a template's name, subject, body_html, or is_shared." />
+      <Endpoint method="DELETE" path="/mail/templates/{id}" desc="Delete a template." />
     </Section>
   );
 }
