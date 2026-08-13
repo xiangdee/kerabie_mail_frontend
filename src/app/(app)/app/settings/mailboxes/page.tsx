@@ -1,19 +1,18 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '@/lib/context/auth.context';
-import { useMailboxes, useCreateMailbox, useDeleteMailbox } from '@/lib/hooks/useMailboxes';
+import { useMailboxes, useCreateMailbox, useSetMailboxNoReply } from '@/lib/hooks/useMailboxes';
 import { useAppToast } from '@/components/ui/app-toast';
-import { ConfirmDialog } from '@/components/ui/app-toast';
 import { MailboxesView } from '@/components/app/settings/MailboxesView';
 
 export default function MailboxesPage() {
   const { token } = useAuth();
   const { success, error: toastError } = useAppToast();
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [togglingEmail, setTogglingEmail] = useState<string | null>(null);
 
   const { data: mailboxes = [], isLoading } = useMailboxes(token);
   const createMutation = useCreateMailbox(token);
-  const deleteMutation = useDeleteMailbox(token);
+  const noReplyMutation = useSetMailboxNoReply(token);
 
   const handleCreate = async (data: { email: string; display_name: string; password: string }) => {
     const res = await createMutation.mutateAsync(data);
@@ -24,36 +23,25 @@ export default function MailboxesPage() {
     }
   };
 
-  const handleDeleteConfirmed = async () => {
-    if (!confirmDelete) return;
-    const res = await deleteMutation.mutateAsync(confirmDelete);
+  const handleToggleNoReply = async (email: string, isNoReply: boolean) => {
+    setTogglingEmail(email);
+    const res = await noReplyMutation.mutateAsync({ email, isNoReply });
+    setTogglingEmail(null);
     if (res.status === true) {
-      success('Mailbox deleted');
+      success(isNoReply ? 'Mailbox now rejects incoming mail' : 'Mailbox now accepts incoming mail');
     } else {
-      toastError('Failed to delete mailbox');
+      toastError('Failed to update', { description: res.response as string });
     }
-    setConfirmDelete(null);
   };
 
   return (
-    <>
-      <MailboxesView
-        mailboxes={mailboxes}
-        isLoading={isLoading}
-        isCreating={createMutation.isPending}
-        isDeleting={deleteMutation.isPending}
-        onCreate={handleCreate}
-        onDelete={(email) => setConfirmDelete(email)}
-      />
-      <ConfirmDialog
-        open={!!confirmDelete}
-        title="Delete mailbox?"
-        description={`All emails in ${confirmDelete} will be permanently deleted.`}
-        confirmLabel="Delete mailbox"
-        variant="danger"
-        onConfirm={handleDeleteConfirmed}
-        onCancel={() => setConfirmDelete(null)}
-      />
-    </>
+    <MailboxesView
+      mailboxes={mailboxes}
+      isLoading={isLoading}
+      isCreating={createMutation.isPending}
+      onCreate={handleCreate}
+      onToggleNoReply={handleToggleNoReply}
+      togglingNoReplyEmail={togglingEmail}
+    />
   );
 }

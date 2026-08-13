@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import type { Domain, DnsRecord } from '@/lib/types/api.types';
 
@@ -23,6 +24,8 @@ interface DomainsViewProps {
   onVerify: (id: number) => Promise<void>;
   onDelete: (id: number) => void;
   onSendInstructions: (domain: string, developerEmail: string) => Promise<void>;
+  onToggleNoReply: (id: number, noReplyDomain: boolean) => void;
+  togglingNoReplyId?: number | null;
 }
 
 const StatusBadge = ({ status }: { status: Domain['status'] }) => {
@@ -56,7 +59,7 @@ const DnsRow = ({ record }: { record: DnsRecord }) => {
 
 export function DomainsView({
   domains, isLoading, isAdding, isVerifying, isDeleting, isSendingInstructions,
-  onAdd, onVerify, onDelete, onSendInstructions,
+  onAdd, onVerify, onDelete, onSendInstructions, onToggleNoReply, togglingNoReplyId,
 }: DomainsViewProps) {
   const [newDomain, setNewDomain] = useState('');
   const [expanded, setExpanded] = useState<number | null>(null);
@@ -173,6 +176,18 @@ export function DomainsView({
                   </div>
                 </div>
                 <CollapsibleContent>
+                  {d.status === 'verified' && (
+                    <div className="border-t px-4 py-3 flex items-center gap-2">
+                      <Switch
+                        checked={!!d.no_reply_domain}
+                        disabled={togglingNoReplyId === d.id}
+                        onCheckedChange={(checked) => onToggleNoReply(d.id, checked)}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        Reject all incoming mail to this domain (including addresses not created yet)
+                      </span>
+                    </div>
+                  )}
                   {d.dns_records && d.dns_records.length > 0 && (
                     <div className="border-t px-4 py-3">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">

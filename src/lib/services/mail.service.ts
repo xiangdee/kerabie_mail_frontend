@@ -27,6 +27,9 @@ export const mailService = {
   getMailboxes: (token: string) =>
     customAxiosGet(`${base}/mail/user-emails`, undefined, token),
 
+  setMailboxNoReply: (token: string | null | undefined, emailAddress: string, isNoReply: boolean) =>
+    customAxiosRequest('patch', `${base}/mail/mailbox/${encodeURIComponent(emailAddress)}/no-reply`, { is_no_reply: isNoReply }, '', token ?? undefined),
+
   // Messages — identified by mailbox email + folder + IMAP uid, not a
   // global message id (no DB-backed message table; IMAP is the store).
   getMessages: (token: string, params: { mailbox: string; folder?: string; page?: number; per_page?: number }) =>

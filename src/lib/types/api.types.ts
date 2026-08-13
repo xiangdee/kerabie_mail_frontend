@@ -152,6 +152,7 @@ export interface Domain {
   dkim_verified: boolean;
   spf_verified: boolean;
   dmarc_verified: boolean;
+  no_reply_domain?: boolean;
   created_at: string;
   verified_at?: string;
   dns_records?: DnsRecord[];
@@ -284,6 +285,7 @@ export interface HostingMailbox {
   monthly_rate_usd: number;
   monthly_rate_ngn: number;
   mailu_provisioned: boolean;
+  is_no_reply?: boolean;
   created_at: string;
 }
 
@@ -311,6 +313,11 @@ export interface UserEmailAccount {
   email_address: string;
   connection_type: 'imap' | 'dns';
   is_managed: boolean;
+  display_name?: string | null;
+  signature_html?: string | null;
+  alternate_email?: string | null;
+  alternate_email_verified?: boolean;
+  is_no_reply?: boolean;
 }
 
 export interface SharedInboxMember {

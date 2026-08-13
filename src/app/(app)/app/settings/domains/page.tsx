@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '@/lib/context/auth.context';
-import { useDomains, useAddDomain, useDeleteDomain, useVerifyDomain, useSendDnsInstructions } from '@/lib/hooks/useDomains';
+import { useDomains, useAddDomain, useDeleteDomain, useVerifyDomain, useSendDnsInstructions, useSetDomainNoReply } from '@/lib/hooks/useDomains';
 import { useAppToast } from '@/components/ui/app-toast';
 import { ConfirmDialog } from '@/components/ui/app-toast';
 import { DomainsView } from '@/components/app/settings/DomainsView';
@@ -10,12 +10,14 @@ export default function DomainsPage() {
   const { token } = useAuth();
   const { success, error: toastError } = useAppToast();
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [togglingNoReplyId, setTogglingNoReplyId] = useState<number | null>(null);
 
   const { data: domains = [], isLoading } = useDomains(token);
   const addMutation = useAddDomain(token);
   const deleteMutation = useDeleteDomain(token);
   const verifyMutation = useVerifyDomain(token);
   const sendInstructionsMutation = useSendDnsInstructions(token);
+  const noReplyMutation = useSetDomainNoReply(token);
 
   const handleAdd = async (domain: string) => {
     const res = await addMutation.mutateAsync(domain);
@@ -44,6 +46,17 @@ export default function DomainsPage() {
     }
   };
 
+  const handleToggleNoReply = async (id: number, noReplyDomain: boolean) => {
+    setTogglingNoReplyId(id);
+    const res = await noReplyMutation.mutateAsync({ id, no_reply_domain: noReplyDomain });
+    setTogglingNoReplyId(null);
+    if (res.status === true) {
+      success(noReplyDomain ? 'Domain now rejects all incoming mail' : 'Domain now accepts incoming mail');
+    } else {
+      toastError('Failed to update', { description: res.response as string });
+    }
+  };
+
   const handleDeleteConfirmed = async () => {
     if (confirmDeleteId == null) return;
     const res = await deleteMutation.mutateAsync(confirmDeleteId);
@@ -68,6 +81,8 @@ export default function DomainsPage() {
         onVerify={handleVerify}
         onDelete={(id) => setConfirmDeleteId(id)}
         onSendInstructions={handleSendInstructions}
+        onToggleNoReply={handleToggleNoReply}
+        togglingNoReplyId={togglingNoReplyId}
       />
       <ConfirmDialog
         open={confirmDeleteId != null}

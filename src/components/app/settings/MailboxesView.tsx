@@ -1,67 +1,52 @@
 'use client';
 import { useState } from 'react';
-import { Plus, Trash2, HardDrive, Mail, Eye, EyeOff, Loader2, ToggleLeft, ToggleRight, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import { Plus, Trash2, Mail, Eye, EyeOff, Loader2, ArrowDownToLine, ArrowUpFromLine, BellOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { IMAP_HOST, SMTP_HOST } from '@/lib/constants/links';
-import type { Mailbox } from '@/lib/types/api.types';
+import type { UserEmailAccount } from '@/lib/types/api.types';
 
 interface CreateForm {
   email: string;
   display_name: string;
   password: string;
-  quota: string;
 }
 
 interface MailboxesViewProps {
-  mailboxes: Mailbox[];
+  mailboxes: UserEmailAccount[];
   isLoading: boolean;
   isCreating: boolean;
-  isDeleting: boolean;
-  onCreate: (data: { email: string; display_name: string; password: string; quota?: number }) => Promise<void>;
-  onDelete: (email: string) => void;
+  onCreate: (data: { email: string; display_name: string; password: string }) => Promise<void>;
+  onToggleNoReply: (email: string, isNoReply: boolean) => void;
+  togglingNoReplyEmail?: string | null;
 }
 
 export function MailboxesView({
   mailboxes,
   isLoading,
   isCreating,
-  isDeleting,
   onCreate,
-  onDelete,
+  onToggleNoReply,
+  togglingNoReplyEmail,
 }: MailboxesViewProps) {
   const [open, setOpen] = useState(false);
   const [showPw, setShowPw] = useState(false);
-  const [form, setForm] = useState<CreateForm>({ email: '', display_name: '', password: '', quota: '10' });
+  const [form, setForm] = useState<CreateForm>({ email: '', display_name: '', password: '' });
 
   const set = (k: keyof CreateForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [k]: e.target.value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onCreate({
-      email: form.email,
-      display_name: form.display_name,
-      password: form.password,
-      quota: parseInt(form.quota) * 1024 * 1024 * 1024, // GB → bytes
-    });
+    await onCreate(form);
     setOpen(false);
-    setForm({ email: '', display_name: '', password: '', quota: '10' });
-  };
-
-  const storagePct = (mb: Mailbox) =>
-    mb.quota_bytes > 0 ? Math.round((mb.used_bytes / mb.quota_bytes) * 100) : 0;
-
-  const fmtBytes = (b: number) => {
-    if (b >= 1024 ** 3) return `${(b / 1024 ** 3).toFixed(1)} GB`;
-    if (b >= 1024 ** 2) return `${(b / 1024 ** 2).toFixed(0)} MB`;
-    return `${(b / 1024).toFixed(0)} KB`;
+    setForm({ email: '', display_name: '', password: '' });
   };
 
   return (
@@ -111,8 +96,7 @@ export function MailboxesView({
                     value={form.password}
                     onChange={set('password')}
                     type={showPw ? 'text' : 'password'}
-                    placeholder="Strong password"
-                    required
+                    placeholder="Leave blank to auto-generate"
                     className="pr-10"
                   />
                   <button
@@ -123,17 +107,6 @@ export function MailboxesView({
                     {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Storage quota (GB)</Label>
-                <Input
-                  value={form.quota}
-                  onChange={set('quota')}
-                  type="number"
-                  min="1"
-                  max="100"
-                  placeholder="10"
-                />
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>
@@ -153,7 +126,7 @@ export function MailboxesView({
       {isLoading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-xl" />
+            <Skeleton key={i} className="h-20 w-full rounded-xl" />
           ))}
         </div>
       ) : mailboxes.length === 0 ? (
@@ -163,49 +136,48 @@ export function MailboxesView({
         </Card>
       ) : (
         <div className="space-y-3">
-          {mailboxes.map((mb) => {
-            const pct = storagePct(mb);
-            return (
-              <Card key={mb.email} className="p-4 flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Mail className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-sm truncate">{mb.email}</p>
-                    {mb.display_name && (
-                      <span className="text-xs text-muted-foreground">({mb.display_name})</span>
-                    )}
-                    <Badge variant={mb.enabled ? 'default' : 'secondary'} className="ml-auto text-xs">
-                      {mb.enabled ? 'Active' : 'Disabled'}
+          {mailboxes.map((mb) => (
+            <Card key={mb.email_address} className="p-4 flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Mail className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-medium text-sm truncate">{mb.email_address}</p>
+                  {mb.display_name && (
+                    <span className="text-xs text-muted-foreground">({mb.display_name})</span>
+                  )}
+                  <Badge variant={mb.is_managed ? 'secondary' : 'default'} className="text-xs">
+                    {mb.is_managed ? 'Managed' : 'Primary'}
+                  </Badge>
+                  {mb.is_no_reply && (
+                    <Badge variant="outline" className="text-xs gap-1">
+                      <BellOff className="h-3 w-3" /> No-reply
                     </Badge>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <HardDrive className="h-3 w-3" />
-                        {fmtBytes(mb.used_bytes)} / {fmtBytes(mb.quota_bytes)}
-                      </span>
-                      <span>{pct}%</span>
-                    </div>
-                    <Progress
-                      value={pct}
-                      className="h-1.5"
-                    />
-                  </div>
+                  )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive shrink-0"
-                  onClick={() => onDelete(mb.email)}
-                  disabled={isDeleting}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </Card>
-            );
-          })}
+                <div className="flex items-center gap-2 pt-1">
+                  <Switch
+                    checked={!!mb.is_no_reply}
+                    disabled={togglingNoReplyEmail === mb.email_address}
+                    onCheckedChange={(checked) => onToggleNoReply(mb.email_address, checked)}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    Reject incoming mail (no-reply mailbox)
+                  </span>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground/40 shrink-0 cursor-not-allowed"
+                disabled
+                title="Deleting mailboxes isn't available yet"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </Card>
+          ))}
         </div>
       )}
 

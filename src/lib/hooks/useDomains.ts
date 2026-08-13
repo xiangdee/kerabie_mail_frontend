@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { customAxiosGet, customAxiosPost, customAxiosDelete } from '@/lib/utils/CustomAxiosRequest';
+import { customAxiosGet, customAxiosPost, customAxiosDelete, customAxiosRequest } from '@/lib/utils/CustomAxiosRequest';
 import { apiLink } from '@/lib/constants/links';
 import type { Domain } from '@/lib/types/api.types';
 
@@ -40,6 +40,15 @@ export function useVerifyDomain(token: string | null) {
   return useMutation({
     mutationFn: (id: number) =>
       customAxiosPost(`${base}/domains/${id}/verify`, {}, '', token ?? ''),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['domains'] }),
+  });
+}
+
+export function useSetDomainNoReply(token: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (opts: { id: number; no_reply_domain: boolean }) =>
+      customAxiosRequest('patch', `${base}/domains/${opts.id}/no-reply`, { no_reply_domain: opts.no_reply_domain }, '', token ?? ''),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['domains'] }),
   });
 }
