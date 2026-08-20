@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import {
   User, Globe, ArrowRight, Key, Webhook,
   CreditCard, Shield, Bell, Server, AtSign, Share2, Terminal, Users, UserX, FileText,
+  Palette, Megaphone,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -27,6 +28,13 @@ const GROUPS = [
       { label: 'Shared Inboxes', href: '/app/settings/shared-inbox', icon: Users },
       { label: 'Unsubscribes', href: '/app/settings/unsubscribes', icon: UserX },
       { label: 'Templates', href: '/app/settings/templates', icon: FileText },
+      { label: 'Branding', href: '/app/settings/branding', icon: Palette },
+    ],
+  },
+  {
+    label: 'Marketing',
+    links: [
+      { label: 'Campaigns', href: '/app/campaigns', icon: Megaphone },
     ],
   },
   {

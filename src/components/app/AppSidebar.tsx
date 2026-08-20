@@ -5,6 +5,7 @@ import {
   ExternalLink, Settings, ChevronDown,
   Globe, Key, Webhook, Share2, LogOut, Mail, Loader2,
   CreditCard, User, Bell, ArrowRight, Shield, AtSign, Server,
+  Palette, Megaphone,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -35,6 +36,11 @@ const MAIL_LINKS = [
   { label: 'Domains', href: '/app/settings/domains', icon: Globe },
   { label: 'Forwarding', href: '/app/settings/forwarding', icon: ArrowRight },
   { label: 'Aliases', href: '/app/settings/aliases', icon: AtSign },
+  { label: 'Branding', href: '/app/settings/branding', icon: Palette },
+];
+
+const MARKETING_LINKS = [
+  { label: 'Campaigns', href: '/app/campaigns', icon: Megaphone },
 ];
 
 const DEVELOPER_LINKS = [
@@ -140,6 +146,8 @@ export function AppSidebar() {
         <NavGroup label="Account" links={ACCOUNT_LINKS} isActive={isActive} />
         <SidebarSeparator />
         <NavGroup label="Mail" links={MAIL_LINKS} isActive={isActive} />
+        <SidebarSeparator />
+        <NavGroup label="Marketing" links={MARKETING_LINKS} isActive={isActive} />
         <SidebarSeparator />
         <NavGroup label="Developer" links={DEVELOPER_LINKS} isActive={isActive} />
       </SidebarContent>

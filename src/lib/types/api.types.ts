@@ -182,6 +182,87 @@ export interface Subscription {
   attachment_size_limit_mb?: number;
   has_click_tracking?: boolean;
   has_heatmaps?: boolean;
+  has_autoresponder?: boolean;
+  has_custom_branding?: boolean;
+  has_campaigns?: boolean;
+}
+
+// ── Branding ──────────────────────────────────────────────────────────────────
+export interface Branding {
+  enabled: boolean; // whether the plan allows custom branding at all
+  brand_logo_url?: string | null;
+  brand_color?: string | null;
+  brand_name?: string | null;
+}
+
+// ── Campaigns ─────────────────────────────────────────────────────────────────
+export interface ContactGroup {
+  id: number;
+  name: string;
+}
+
+export interface SegmentCondition {
+  field: 'company' | 'name' | 'phone' | 'email' | 'notes';
+  op: 'contains' | 'equals' | 'is_set' | 'is_not_set';
+  value?: string;
+}
+
+export interface Campaign {
+  id: number;
+  name: string;
+  subject: string;
+  body_html: string;
+  from_email: string;
+  group_id: number | null;
+  group_name: string | null;
+  segment_filter: SegmentCondition[] | null;
+  recipient_count: number;
+  step_count: number;
+  status: 'draft' | 'sending' | 'sent';
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+export interface CampaignStep {
+  id: number;
+  step_order: number;
+  delay_hours: number;
+  subject: string;
+  subject_b: string | null;
+  ab_split_percent: number;
+  body_html: string;
+}
+
+export interface CampaignStats {
+  total: number;
+  sent: number;
+  suppressed: number;
+  opened: number;
+  clicked: number;
+  bounced: number;
+}
+
+export interface StepAnalytics {
+  step_id: number;
+  step_order: number;
+  sent: number;
+  opened: number;
+  clicked: number;
+  variant_a_sent: number;
+  variant_a_opened: number;
+  variant_a_clicked: number;
+  variant_b_sent: number;
+  variant_b_opened: number;
+  variant_b_clicked: number;
+}
+
+export interface CampaignAnalytics {
+  enrolled: number;
+  active: number;
+  completed: number;
+  suppressed: number;
+  steps: StepAnalytics[];
 }
 
 // ── Contact ───────────────────────────────────────────────────────────────────

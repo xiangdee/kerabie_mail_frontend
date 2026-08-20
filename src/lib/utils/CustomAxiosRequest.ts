@@ -289,7 +289,14 @@ export const extractErrorMessage = (error: AxiosError, retryCount?: number): Cus
     const responseData: any = error.response.data;
 
     // Handle various error response formats
-    if (Array.isArray(responseData?.message)) {
+    if (typeof responseData?.detail === 'string') {
+      // FastAPI's HTTPException shape ({"detail": "..."}) — the backend's
+      // actual error message. FastAPI validation errors (422) instead send
+      // detail as an array of {loc, msg}; handled just below.
+      errorMessage = responseData.detail;
+    } else if (Array.isArray(responseData?.detail) && responseData.detail.length > 0) {
+      errorMessage = responseData.detail[0]?.msg ?? errorMessage;
+    } else if (Array.isArray(responseData?.message)) {
       errorMessage = responseData.message[0];
     } else if (typeof responseData?.message === 'string') {
       errorMessage = responseData.message;
