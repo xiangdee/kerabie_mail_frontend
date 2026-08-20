@@ -1,3 +1,4 @@
 -When designing dont put everything in one page, seperate create update to pages (use dialogues when necesary)
 - use skelenton loaders
 - never use alert.Alert(), or confirm, make sure to always use custom modals and toast
+- what ever updates you make make sure it affects the app at projects\kerabie_mail\apps\kerabie_mail, the webmail at projects\kerabie_mai\kerabie-mail-webmail

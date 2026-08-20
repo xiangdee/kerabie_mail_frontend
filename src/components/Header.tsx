@@ -1,196 +1,133 @@
 'use client';
 import { NavLink } from "@/components/NavLink";
-import { Button } from "@/components/ui/button";
+import { Corners } from "@/components/ui/corners";
 import { blackblazebucket } from "@/lib/constants/links";
-import { Menu, X } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
-interface HeaderProps {
-  variant?: 'default' | 'overlay';
-}
+const NAV_LINKS = [
+  { href: "/features", label: "Features" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/about", label: "About" },
+  { href: "/downloads", label: "Downloads" },
+  { href: "/blog", label: "Blog" },
+  { href: "/partner", label: "Partner" },
+  { href: "/help", label: "Help" },
+  { href: "/contact", label: "Contact" },
+];
 
-export const Header = ({ variant = 'default' }: HeaderProps) => {
+export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  useEffect(() => {
-    if (variant !== 'overlay') return;
-
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [variant]);
-
-  // Determine if we should use overlay styling (white text on transparent bg)
-  const useOverlayStyle = variant === 'overlay' && !isScrolled;
-  
-  const headerBgClass = useOverlayStyle 
-    ? "bg-transparent" 
-    : "bg-white shadow-sm";
-  
-  const textClass = useOverlayStyle 
-    ? "text-white" 
-    : "text-foreground";
-  
-  const hoverClass = useOverlayStyle 
-    ? "hover:text-white/80" 
-    : "hover:text-primary";
-  
-  const activeClass = useOverlayStyle 
-    ? "text-white" 
-    : "text-primary";
-
-  const buttonClass = useOverlayStyle
-    ? "bg-white text-primary hover:bg-white/90"
-    : "bg-primary hover:bg-primary-hover text-primary-foreground";
-
-  const logo = useOverlayStyle
-    ? blackblazebucket +"/assets/images/logo-white.png"
-    : blackblazebucket +"/assets/images/logo.png";
 
   return (
-    <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${headerBgClass}`}>
-      <nav className="container mx-auto flex h-16 items-center justify-between px-4">
-        <NavLink href="/" className="flex items-center space-x-2">
-          <span className="text-2xl font-bold text-primary">
-            <Image src={logo} alt="Logo" width={50} height={50} />
-          </span>
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-white/90 backdrop-blur-md">
+      <div className="container mx-auto flex h-[70px] items-center gap-7 px-4">
+        <NavLink href="/" className="mr-auto flex items-center">
+          <Image src={blackblazebucket + "/assets/images/logo.png"} alt="Kerabie" width={44} height={27} priority />
         </NavLink>
 
         {/* Desktop Navigation */}
-        <div className="hidden items-center space-x-8 md:flex">
-          <NavLink
-            href="/"
-            className={`text-sm font-medium ${textClass} transition-colors ${hoverClass}`}
-            activeClassName={activeClass}
-          >
-            Home
-          </NavLink>
-          <NavLink
-            href="/features"
-            className={`text-sm font-medium ${textClass} transition-colors ${hoverClass}`}
-            activeClassName={activeClass}
-          >
-            Features
-          </NavLink>
-          <NavLink
-            href="/about"
-            className={`text-sm font-medium ${textClass} transition-colors ${hoverClass}`}
-            activeClassName={activeClass}
-          >
-            About
-          </NavLink>
-          <NavLink
-            href="/downloads"
-            className={`text-sm font-medium ${textClass} transition-colors ${hoverClass}`}
-            activeClassName={activeClass}
-          >
-            Downloads
-          </NavLink>
-          <NavLink
-            href="/blog"
-            className={`text-sm font-medium ${textClass} transition-colors ${hoverClass}`}
-            activeClassName={activeClass}
-          >
-            Blog
-          </NavLink>
-          <NavLink
-            href="/help"
-            className={`text-sm font-medium ${textClass} transition-colors ${hoverClass}`}
-            activeClassName={activeClass}
-          >
-            Help
-          </NavLink>
-          <NavLink
-            href="/contact"
-            className={`text-sm font-medium ${textClass} transition-colors ${hoverClass}`}
-            activeClassName={activeClass}
-          >
-            Contact
-          </NavLink>
-          <Button size="sm" className={buttonClass}>
-            Get Started
-          </Button>
-        </div>
+        <nav className="hidden items-center gap-5 lg:flex">
+          {NAV_LINKS.map((link) => (
+            <NavLink
+              key={link.href}
+              href={link.href}
+              className="text-sm text-foreground transition-colors hover:text-primary"
+              activeClassName="text-primary font-medium"
+            >
+              {link.label}
+            </NavLink>
+          ))}
+        </nav>
 
-        {/* Mobile Menu Button */}
-        <button
-          className={`md:hidden ${textClass}`}
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </nav>
+        <div className="flex items-center gap-2.5">
+          <NavLink
+            href="/auth/login"
+            className="hidden text-sm text-muted-foreground transition-colors hover:text-foreground sm:inline"
+          >
+            Sign in
+          </NavLink>
+          <NavLink
+            href="/auth/register"
+            className="blueprint relative hidden items-center gap-2 border border-primary bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover sm:inline-flex"
+          >
+            <Corners className="text-white/55" />
+            Get free mailbox
+            <ArrowRight size={14} />
+          </NavLink>
+
+          {/* Mobile Menu Button */}
+          <button
+            aria-label="Menu"
+            aria-expanded={mobileMenuOpen}
+            onClick={() => setMobileMenuOpen((v) => !v)}
+            className="flex h-[42px] w-[42px] items-center justify-center border border-border bg-white transition-colors hover:bg-muted lg:hidden"
+          >
+            <span className="grid w-[18px] gap-[5px]">
+              <span
+                className="block h-[1.5px] bg-foreground transition-transform duration-200"
+                style={{ transform: mobileMenuOpen ? "translateY(6.5px) rotate(45deg)" : "none" }}
+              />
+              <span
+                className="block h-[1.5px] bg-foreground transition-opacity duration-200"
+                style={{ opacity: mobileMenuOpen ? 0 : 1 }}
+              />
+              <span
+                className="block h-[1.5px] bg-foreground transition-transform duration-200"
+                style={{ transform: mobileMenuOpen ? "translateY(-6.5px) rotate(-45deg)" : "none" }}
+              />
+            </span>
+          </button>
+        </div>
+      </div>
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="border-b border-border bg-background md:hidden">
-          <div className="container mx-auto space-y-1 px-4 py-4">
-            <NavLink
-              href="/"
-              className="block rounded-md px-3 py-2 text-base font-medium text-foreground hover:bg-muted"
-              activeClassName="bg-muted text-primary"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Home
-            </NavLink>
-            <NavLink
-              href="/features"
-              className="block rounded-md px-3 py-2 text-base font-medium text-foreground hover:bg-muted"
-              activeClassName="bg-muted text-primary"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Features
-            </NavLink>
-            <NavLink
-              href="/about"
-              className="block rounded-md px-3 py-2 text-base font-medium text-foreground hover:bg-muted"
-              activeClassName="bg-muted text-primary"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              About
-            </NavLink>
-            <NavLink
-              href="/downloads"
-              className="block rounded-md px-3 py-2 text-base font-medium text-foreground hover:bg-muted"
-              activeClassName="bg-muted text-primary"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Downloads
-            </NavLink>
-            <NavLink
-              href="/blog"
-              className="block rounded-md px-3 py-2 text-base font-medium text-foreground hover:bg-muted"
-              activeClassName="bg-muted text-primary"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Blog
-            </NavLink>
-            <NavLink
-              href="/help"
-              className="block rounded-md px-3 py-2 text-base font-medium text-foreground hover:bg-muted"
-              activeClassName="bg-muted text-primary"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Help
-            </NavLink>
-            <NavLink
-              href="/contact"
-              className="block rounded-md px-3 py-2 text-base font-medium text-foreground hover:bg-muted"
-              activeClassName="bg-muted text-primary"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Contact
-            </NavLink>
-            <div className="pt-2">
-              <Button className="w-full bg-primary hover:bg-primary-hover">
-                Get Started
-              </Button>
+        <div
+          className="relative overflow-hidden border-t border-white/10 bg-[#1A1F1E] px-4 pb-7 pt-5 lg:hidden"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(232,237,235,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(232,237,235,.05) 1px,transparent 1px)",
+            backgroundSize: "44px 44px",
+          }}
+        >
+          <div className="relative grid gap-0.5">
+            {NAV_LINKS.map((link, i) => (
+              <NavLink
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between gap-3 border-b border-white/10 py-4 text-lg font-semibold text-[#E8EDEB] transition-colors hover:text-[#8FB3A6] last:border-b-0"
+              >
+                {link.label}
+                <span className="font-mono text-[11px] text-[#8A9E98]">{String(i + 1).padStart(2, "0")}</span>
+              </NavLink>
+            ))}
+
+            <div className="mt-4 grid gap-2.5">
+              <NavLink
+                href="/auth/register"
+                onClick={() => setMobileMenuOpen(false)}
+                className="blueprint relative flex items-center justify-center gap-2 border border-primary bg-primary px-4 py-4 text-[15px] font-semibold text-white"
+              >
+                <Corners className="text-white/55" />
+                Get free mailbox
+                <ArrowRight size={15} />
+              </NavLink>
+              <NavLink
+                href="/auth/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-center gap-2 border border-white/30 px-4 py-4 text-[15px] font-semibold text-[#E8EDEB]"
+              >
+                Sign in
+              </NavLink>
             </div>
+
+            <span className="mt-4 flex items-center gap-2 font-mono text-[10.5px] tracking-wider text-[#8A9E98]">
+              <span className="block h-1.5 w-1.5 animate-[k-pulse_2s_infinite] bg-[#4CAF80]" />
+              SUPPORT ONLINE — REPLIES UNDER 2H
+            </span>
           </div>
         </div>
       )}

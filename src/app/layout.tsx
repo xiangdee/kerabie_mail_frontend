@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Signika } from "next/font/google";
+import { Signika, Space_Mono } from "next/font/google";
 import { Providers } from "@/components/providers/Providers";
 import "./globals.css";
 
@@ -7,6 +7,13 @@ const signika = Signika({
   variable: "--font-signika",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+});
+
+const spaceMono = Space_Mono({
+  variable: "--font-space-mono",
+  subsets: ["latin"],
+  weight: ["400", "700"],
   display: "swap",
 });
 
@@ -75,7 +82,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${signika.variable} antialiased`}>
+      <body className={`${signika.variable} ${spaceMono.variable} antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>

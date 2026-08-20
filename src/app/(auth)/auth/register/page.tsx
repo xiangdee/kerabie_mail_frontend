@@ -98,7 +98,8 @@ export default function RegisterPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">Create account</h1>
+        <span className="font-mono text-[11px] uppercase tracking-[.13em] text-primary">Free mailbox</span>
+        <h1 className="text-[28px] font-bold tracking-tight">Create your account</h1>
         <p className="text-sm text-muted-foreground">
           Get a free <span className="font-medium">@{KERABIE_DOMAIN}</span> mailbox. No credit card required.
         </p>
@@ -114,6 +115,7 @@ export default function RegisterPage() {
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             autoComplete="name"
+            className="rounded-none"
           />
         </div>
 
@@ -129,7 +131,7 @@ export default function RegisterPage() {
               required
               autoComplete="username"
               className={cn(
-                'pr-28',
+                'rounded-none pr-28',
                 avail === 'taken' || avail === 'invalid' ? 'border-destructive focus-visible:ring-destructive' : '',
                 avail === 'available' ? 'border-emerald-500 focus-visible:ring-emerald-500' : '',
               )}
@@ -157,7 +159,7 @@ export default function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="new-password"
-              className="pr-10"
+              className="rounded-none pr-10"
             />
             <button
               type="button"
@@ -179,12 +181,13 @@ export default function RegisterPage() {
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
             autoComplete="new-password"
+            className="rounded-none"
           />
         </div>
 
         <Button
           type="submit"
-          className="w-full"
+          className="w-full rounded-none"
           disabled={loading || avail !== 'available'}
         >
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

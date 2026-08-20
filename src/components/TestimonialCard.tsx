@@ -1,6 +1,5 @@
-import React from "react";
 import { Star } from "lucide-react";
-import Image from "next/image";
+import { Corners } from "@/components/ui/corners";
 
 interface TestimonialCardProps {
   quote: string;
@@ -8,68 +7,31 @@ interface TestimonialCardProps {
   role: string;
   company: string;
   rating: number;
-  image?: string;
 }
 
-export const TestimonialCard = ({
-  quote,
-  author,
-  role,
-  company,
-  rating,
-  image,
-}: TestimonialCardProps) => {
+export const TestimonialCard = ({ quote, author, role, company, rating }: TestimonialCardProps) => {
   return (
-    <div className="relative rounded-xl border border-slate-200 dark:border-primary/90 bg-white dark:bg-primary/70 p-6 transition hover:shadow-md">
-      
-      {/* Rating */}
-      <div className="flex gap-1 mb-4">
+    <div className="blueprint relative p-[26px] transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(26,31,30,.08)]">
+      <Corners />
+
+      <div className="flex gap-0.5 text-[#E0A855]">
         {[...Array(5)].map((_, i) => (
-          <Star
-            key={i}
-            className={`h-4 w-4 ${
-              i < rating
-                ? "fill-amber-400 text-amber-400"
-                : "text-slate-300 dark:text-white"
-            }`}
-          />
+          <Star key={i} size={14} className={i < rating ? "fill-current" : "text-border"} />
         ))}
       </div>
 
-      {/* Quote */}
-      <p className="text-white  text-base leading-relaxed mb-6">
-        “{quote}”
-      </p>
+      <p className="mb-5 mt-3.5 text-[14.5px] leading-relaxed">“{quote}”</p>
 
-      {/* Author */}
-      <div className="flex items-center gap-4 border-t border-slate-200 dark:border-primary/90 pt-4">
-        
-        {/* Avatar */}
-        <div className="h-12 w-12 rounded-full bg-slate-100 dark:bg-primary/90 flex items-center justify-center overflow-hidden shrink-0">
-          {image ? (
-            <Image
-              src={image}
-              alt={author}
-              width={48}
-              height={48}
-              className="object-cover"
-            />
-          ) : (
-            <span className="text-gray-50   font-semibold">
-              {author[0]}
-            </span>
-          )}
-        </div>
-
-        {/* Name & role */}
-        <div>
-          <p className="font-semibold text-primary/70 dark:text-white leading-tight">
-            {author}
-          </p>
-          <p className="text-sm text-gray-50 ">
-            {role}, <span className="font-medium">{company}</span>
-          </p>
-        </div>
+      <div className="flex items-center gap-2.5">
+        <span className="grid h-9 w-9 shrink-0 place-items-center border border-border bg-muted text-[13px] font-semibold">
+          {author[0]}
+        </span>
+        <span>
+          <span className="block text-[13.5px] font-semibold">{author}</span>
+          <span className="block text-xs text-muted-foreground">
+            {role}, {company}
+          </span>
+        </span>
       </div>
     </div>
   );

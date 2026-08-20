@@ -1,102 +1,60 @@
 import { NavLink } from "@/components/NavLink";
-import { Mail, Twitter, Linkedin, Github } from "lucide-react";
+import { blackblazebucket } from "@/lib/constants/links";
+import { Mail, Twitter, Linkedin } from "lucide-react";
+import Image from "next/image";
 
 export const Footer = () => {
   return (
-    <footer className="border-t border-border bg-primary text-primary-foreground">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
-          <div>
-            <h3 className="mb-4 text-lg font-semibold">Kerabie Email</h3>
-            <p className="text-sm opacity-90">
-              Reliable business email built for growing teams.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="mb-4 text-sm font-semibold">Product</h4>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <NavLink href="/features" className="opacity-90 hover:opacity-100">
-                  Features
-                </NavLink>
-              </li>
-              <li>
-                <NavLink href="/downloads" className="opacity-90 hover:opacity-100">
-                  Downloads
-                </NavLink>
-              </li>
-              <li>
-                <a href="/#pricing" className="opacity-90 hover:opacity-100">
-                  Pricing
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="mb-4 text-sm font-semibold">Company</h4>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <NavLink href="/about" className="opacity-90 hover:opacity-100">
-                  About
-                </NavLink>
-              </li>
-              <li>
-                <NavLink href="/contact" className="opacity-90 hover:opacity-100">
-                  Contact
-                </NavLink>
-              </li>
-              
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="mb-4 text-sm font-semibold">Privacy &amp; Legal</h4>
-            <ul className="space-y-2 text-sm">
-             
-              <li>
-                <NavLink href="/privacy" className="opacity-90 hover:opacity-100">
-                  Privacy
-                </NavLink>
-              </li>
-
-              <li>
-                <NavLink href="/refund-policy" className="opacity-90 hover:opacity-100">
-                  Refund Policy
-                </NavLink>
-              </li>
-
-              <li>
-                <NavLink href="/terms" className="opacity-90 hover:opacity-100">
-                  Terms
-                </NavLink>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="mb-4 text-sm font-semibold">Connect</h4>
-            <div className="flex space-x-4">
-              <a href="#" className="opacity-90 hover:opacity-100">
-                <Mail size={20} />
-              </a>
-              <a href="#" className="opacity-90 hover:opacity-100">
-                <Twitter size={20} />
-              </a>
-              <a href="#" className="opacity-90 hover:opacity-100">
-                <Linkedin size={20} />
-              </a>
-              <a href="#" className="opacity-90 hover:opacity-100">
-                <Github size={20} />
-              </a>
-            </div>
-          </div>
+    <footer className="mt-[88px] bg-primary text-primary-foreground">
+      <div className="container mx-auto grid grid-cols-1 gap-8 px-4 pb-7 pt-[52px] sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
+        <div>
+          <Image
+            src={blackblazebucket + "/assets/images/logo-white.png"}
+            alt="Kerabie"
+            width={40}
+            height={25}
+            className="mb-3"
+          />
+          <p className="mb-4 max-w-[34ch] text-sm text-white/70">
+            Professional email built for growing teams.
+          </p>
+          <NavLink
+            href="/auth/register"
+            className="inline-flex items-center gap-2 border border-white/35 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+          >
+            Get free mailbox
+          </NavLink>
         </div>
 
-        <div className="mt-8 border-t border-primary-hover pt-8 text-center text-sm opacity-90">
-          <p>&copy; 2025 Kerabie. All rights reserved.</p>
+        <div className="grid content-start gap-2.5">
+          <span className="font-mono text-[10.5px] tracking-wider text-white/70">PRODUCT</span>
+          <NavLink href="/features" className="text-sm text-white/85 transition-colors hover:text-white">Features</NavLink>
+          <NavLink href="/downloads" className="text-sm text-white/85 transition-colors hover:text-white">Downloads</NavLink>
+          <NavLink href="/pricing" className="text-sm text-white/85 transition-colors hover:text-white">Pricing</NavLink>
         </div>
+
+        <div className="grid content-start gap-2.5">
+          <span className="font-mono text-[10.5px] tracking-wider text-white/70">COMPANY</span>
+          <NavLink href="/about" className="text-sm text-white/85 transition-colors hover:text-white">About</NavLink>
+          <NavLink href="/contact" className="text-sm text-white/85 transition-colors hover:text-white">Contact</NavLink>
+          <NavLink href="/partner" className="text-sm text-white/85 transition-colors hover:text-white">Partner</NavLink>
+        </div>
+
+        <div className="grid content-start gap-2.5">
+          <span className="font-mono text-[10.5px] tracking-wider text-white/70">PRIVACY &amp; LEGAL</span>
+          <NavLink href="/privacy" className="text-sm text-white/85 transition-colors hover:text-white">Privacy</NavLink>
+          <NavLink href="/refund-policy" className="text-sm text-white/85 transition-colors hover:text-white">Refund Policy</NavLink>
+          <NavLink href="/terms" className="text-sm text-white/85 transition-colors hover:text-white">Terms</NavLink>
+        </div>
+      </div>
+
+      <div className="container mx-auto flex flex-wrap items-center justify-between gap-4 border-t border-white/15 px-4 py-4">
+        <span className="text-[12.5px] text-white/70">© 2025 Kerabie. All rights reserved.</span>
+        <span className="flex gap-3.5">
+          <a href="#" aria-label="Twitter" className="text-white/70 transition-colors hover:text-white"><Twitter size={16} /></a>
+          <a href="#" aria-label="LinkedIn" className="text-white/70 transition-colors hover:text-white"><Linkedin size={16} /></a>
+          <NavLink href="/contact" aria-label="Email" className="text-white/70 transition-colors hover:text-white"><Mail size={16} /></NavLink>
+        </span>
       </div>
     </footer>
   );

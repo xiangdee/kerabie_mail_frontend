@@ -1,180 +1,145 @@
-'use client';
-import React, { useState } from 'react';
-import { Mail, Server, Shield, Globe, Lock,  ArrowRight, Key, Cloud } from 'lucide-react';
-import Image from 'next/image';
+import { Corners } from "@/components/ui/corners";
+import { NavLink } from "@/components/NavLink";
+import { ArrowRight, Globe, Shield, Server } from "lucide-react";
 
 export default function EmailConnectionBento() {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [activeCard, setActiveCard] = useState<string | null>(null);
-
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header Section */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">
-            Connect Your Email Account
-          </h1>
-          <p className="text-lg text-gray-600">
-            Choose the best way to connect your email and start sending emails
+    <section className="pt-[82px]">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-6">
+        <div>
+          <h2 className="mb-1.5 text-3xl tracking-tight sm:text-[34px]">Connect your email account</h2>
+          <p className="text-[15px] text-muted-foreground">
+            Choose the best way to connect your email and start sending in minutes.
           </p>
         </div>
+        <span className="font-mono text-[11px] tracking-[.12em] text-muted-foreground">03 METHODS</span>
+      </div>
 
-        {/* Bento Grid Layout */}
-        <div className="grid grid-cols-12 gap-6">
-          {/* Connect Domain - Large Card */}
-          <div 
-            className="
-            col-span-12 lg:col-span-7 bg-red-600 rounded-3xl p-8 text-white relative overflow-hidden group
-            
-            cursor-pointer transition-transform hover:scale-[1.02]"
-            onMouseEnter={() => setActiveCard('domain')}
-            onMouseLeave={() => setActiveCard(null)}
-          >
-            <div className="relative z-10">
-              <div className="flex items-start justify-between md:mb-6 mb-2">
-                <div>
-                  <div className="inline-block bg-white/20 backdrop-blur-sm rounded-full p-3 mb-4">
-                    <Globe className="w-8 h-8" />
-                  </div>
-                  <div className="absolute top-4 right-4 bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full">
-              RECOMMENDED
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-12">
+        {/* Connect domain */}
+        <div className="blueprint relative col-span-1 overflow-hidden bg-[#2E4A3F] p-7 text-[#E8EDEB] transition-transform duration-200 hover:-translate-y-0.5 lg:col-span-5">
+          <Corners className="text-white/50" />
+          <span className="absolute right-5 top-5 border border-white/40 px-2 py-1 font-mono text-[10px] tracking-wider">
+            RECOMMENDED
+          </span>
+          <Globe size={22} className="text-[#8FB3A6]" strokeWidth={1.5} />
+          <h3 className="mb-2 mt-4 text-xl text-white sm:text-[22px]">Connect domain</h3>
+          <p className="mb-5 max-w-[36ch] text-[13.5px] leading-relaxed text-[#B7CEC5]">
+            Set up professional email addresses with your own domain. Perfect for businesses
+            that want brand consistency.
+          </p>
+          <div className="mb-5 grid grid-cols-2 gap-2.5">
+            <div className="border border-white/20 px-3 py-2.5">
+              <span className="block text-[13px] font-semibold">Custom</span>
+              <span className="font-mono text-[11.5px] text-[#8FB3A6]">you@domain.com</span>
             </div>
-                  <h2 className="text-3xl font-bold mb-1 md:mb-3">Connect Domain</h2>
-                  <p className="text-emerald-50 md:text-lg mb-1 md:mb-6 max-w-md">
-                    Set up professional email addresses with your own domain. Perfect for businesses that want brand consistency.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4 mb-6">
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl md:p-4 p-2">
-                  <div className="text-2xl font-bold mb-1">Custom</div>
-                  <div className="text-emerald-100 text-sm">your@domain.com</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-xl md:p-4 p-2">
-                  <div className="text-2xl font-bold mb-1">DNS</div>
-                  <div className="text-emerald-100 text-sm">Simple configuration</div>
-                </div>
-              </div>
-
-              <button className="bg-white text-emerald-600 px-6 py-3 rounded-xl font-semibold hover:bg-emerald-50 transition-colors inline-flex items-center gap-2">
-                Get Started
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Decorative illustration area */}
-            <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-10">
-              <div className="w-48 h-48 bg-white rounded-3xl transform rotate-12">
-                <Image src="/connect-domain.png" alt="Bento Illustration" width={100} height={100} />
-              </div>
+            <div className="border border-white/20 px-3 py-2.5">
+              <span className="block text-[13px] font-semibold">DNS</span>
+              <span className="font-mono text-[11.5px] text-[#8FB3A6]">Guided records</span>
             </div>
           </div>
-
-          {/* Connect OAuth - Medium Card */}
-          <div 
-            className="col-span-12 lg:col-span-5 bg-linear-to-br from-green-700 to-primary rounded-3xl p-8 text-white relative overflow-hidden group cursor-pointer transition-transform hover:scale-[1.02]"
-            onMouseEnter={() => setActiveCard('oauth')}
-            onMouseLeave={() => setActiveCard(null)}
+          <NavLink
+            href="/auth/register"
+            className="inline-flex items-center gap-2 bg-[#E8EDEB] px-[18px] py-2.5 text-sm font-semibold text-[#1A1F1E] transition-colors hover:bg-white"
           >
-            
+            Get started
+            <ArrowRight size={14} />
+          </NavLink>
+        </div>
 
-            <div className="inline-block bg-white/20 backdrop-blur-sm rounded-full p-3 mb-4">
-              <Shield className="w-8 h-8" />
-            </div>
-
-            <h2 className="text-2xl font-bold mb-3">Connect OAuth</h2>
-            <p className="text-blue-50 mb-6">
-              Most secure method with one-click authentication. No password sharing required.
-            </p>
-
-            <div className="space-y-3 mb-6">
-              <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg p-3">
-                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-                  <Mail className="w-5 h-5 text-primary" />
-                </div>
-                <span className="font-medium">Gmail</span>
-              </div>
-              <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg p-3">
-                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-                  <Cloud className="w-5 h-5 text-primary" />
-                </div>
-                <span className="font-medium">Outlook</span>
-              </div>
-            </div>
-
-            <button className="w-full bg-white text-primary px-6 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-colors inline-flex items-center justify-center gap-2">
-              Connect Now
-              <ArrowRight className="w-4 h-4" />
-            </button>
+        {/* Connect OAuth */}
+        <div className="blueprint relative col-span-1 p-7 transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(26,31,30,.08)] lg:col-span-4">
+          <Corners />
+          <Shield size={22} className="text-primary" strokeWidth={1.5} />
+          <h3 className="mb-2 mt-4 text-xl sm:text-[22px]">Connect OAuth</h3>
+          <p className="mb-[18px] text-[13.5px] leading-relaxed text-muted-foreground">
+            Most secure method, with one-click authorisation. No password sharing required.
+          </p>
+          <div className="mb-[18px] grid gap-2">
+            <span className="flex items-center gap-2.5 border border-border px-3 py-2.5 text-[13px]">
+              <span className="block h-1.5 w-1.5 bg-primary" />
+              Gmail &amp; Google Workspace
+            </span>
+            <span className="flex items-center gap-2.5 border border-border px-3 py-2.5 text-[13px]">
+              <span className="block h-1.5 w-1.5 bg-primary" />
+              Outlook &amp; Microsoft 365
+            </span>
           </div>
-
-          {/* Connect IMAP - Wide Card */}
-          <div 
-            className="col-span-12 lg:col-span-5 bg-white border-2 border-gray-200 rounded-3xl p-8 relative overflow-hidden
-             group cursor-pointer transition-all hover:border-purple-300 hover:shadow-lg items-center"
-            onMouseEnter={() => setActiveCard('imap')}
-            onMouseLeave={() => setActiveCard(null)}
+          <NavLink
+            href="/auth/register"
+            className="inline-flex items-center gap-2 border border-primary px-[18px] py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-white"
           >
-            <div className="inline-block bg-purple-100 rounded-full p-3 mb-4">
-              <Server className="w-8 h-8 text-primary" />
-            </div>
+            Connect now
+          </NavLink>
+        </div>
 
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Connect IMAP/SMTP</h2>
-            <p className="text-gray-600 mb-6">
-              Connect any email provider using IMAP and SMTP protocols. Works with all email services.
-            </p>
-
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="border border-gray-200 rounded-xl p-3">
-                <Key className="w-5 h-5 text-primary mb-2" />
-                <div className="text-sm font-semibold text-gray-900">Manual Setup</div>
-              </div>
-              <div className="border border-gray-200 rounded-xl p-3">
-                <Lock className="w-5 h-5 text-primary mb-2" />
-                <div className="text-sm font-semibold text-gray-900">Secure Access</div>
-              </div>
-            </div>
-
-            <button className="w-full bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-purple-700 transition-colors inline-flex items-center justify-center gap-2">
-              Configure IMAP
-              <ArrowRight className="w-4 h-4" />
-            </button>
+        {/* Stat tiles */}
+        <div className="col-span-1 grid content-start gap-3.5 lg:col-span-3">
+          <div className="blueprint relative bg-muted px-[18px] py-4">
+            <Corners />
+            <span className="block text-2xl font-bold tracking-tight">99.9%</span>
+            <span className="block text-xs text-muted-foreground">Uptime guarantee</span>
           </div>
+          <div className="blueprint relative bg-muted px-[18px] py-4">
+            <Corners />
+            <span className="block text-2xl font-bold tracking-tight">24/7</span>
+            <span className="block text-xs text-muted-foreground">Support available</span>
+          </div>
+          <div className="blueprint relative bg-primary-muted px-[18px] py-4">
+            <Corners />
+            <span className="block text-2xl font-bold tracking-tight text-primary-hover">Instant</span>
+            <span className="block text-xs text-primary">Synchronisation</span>
+          </div>
+        </div>
 
-          {/* Info Cards */}
-          <div className="col-span-12 lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
-            <div className="bg-yellow-400 rounded-2xl p-6">
-              <div className="text-3xl font-bold text-gray-900 mb-2">99.9%</div>
-              <div className="text-gray-800 font-medium">Uptime Guarantee</div>
+        {/* Connect IMAP / SMTP */}
+        <div className="blueprint relative col-span-1 p-7 transition-transform duration-200 hover:-translate-y-0.5 lg:col-span-7">
+          <Corners />
+          <div className="flex flex-wrap items-start gap-6">
+            <div className="min-w-[240px] flex-1">
+              <Server size={22} className="text-primary" strokeWidth={1.5} />
+              <h3 className="mb-2 mt-3.5 text-xl sm:text-[22px]">Connect IMAP / SMTP</h3>
+              <p className="mb-4 text-[13.5px] leading-relaxed text-muted-foreground">
+                Connect any email provider using IMAP and SMTP protocols. Works with all email services.
+              </p>
+              <NavLink
+                href="/auth/register"
+                className="inline-flex items-center gap-2 border border-border px-[18px] py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+              >
+                Configure IMAP
+              </NavLink>
             </div>
-
-            <div className="bg-pink-400 rounded-2xl p-6">
-              <div className="text-3xl font-bold text-white mb-2">24/7</div>
-              <div className="text-pink-50 font-medium">Support Available</div>
-            </div>
-
-            <div className="bg-indigo-400 rounded-2xl p-6">
-              <div className="text-3xl font-bold text-white mb-2">Instant</div>
-              <div className="text-indigo-50 font-medium">Synchronization</div>
+            <div className="grid min-w-[200px] gap-2.5">
+              <span className="border border-border px-3 py-2.5 font-mono text-[13px]">MANUAL SETUP</span>
+              <span className="border border-border px-3 py-2.5 font-mono text-[13px]">SECURE ACCESS</span>
+              <span className="border border-border px-3 py-2.5 font-mono text-[13px]">TLS 1.3</span>
             </div>
           </div>
         </div>
 
-        {/* Bottom Help Section */}
-        <div className="mt-12 bg-linear-to-r from-gray-100 to-gray-200 rounded-2xl p-8">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Need help choosing?</h3>
-              <p className="text-gray-600">Our team can help you select the best connection method for your needs</p>
-            </div>
-            <button className="bg-gray-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-800 transition-colors">
-              Contact Support
-            </button>
+        {/* Need help choosing */}
+        <div className="blueprint relative col-span-1 flex flex-col justify-center bg-[#1A1F1E] p-7 text-[#E8EDEB] lg:col-span-5">
+          <Corners className="text-white/50" />
+          <h3 className="mb-2 text-xl text-white sm:text-[22px]">Need help choosing?</h3>
+          <p className="mb-[18px] text-[13.5px] leading-relaxed text-[#8A9E98]">
+            Our team can help you select the best connection method for your needs.
+          </p>
+          <div className="flex flex-wrap gap-2.5">
+            <NavLink
+              href="/contact"
+              className="inline-flex items-center gap-2 bg-primary px-[18px] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#5A8A78]"
+            >
+              Contact support
+            </NavLink>
+            <NavLink
+              href="/auth/register"
+              className="inline-flex items-center gap-2 border border-white/30 px-[18px] py-2.5 text-sm font-semibold text-[#E8EDEB] transition-colors hover:bg-white/10"
+            >
+              Get free mailbox
+            </NavLink>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

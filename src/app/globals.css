@@ -43,7 +43,7 @@ All colors MUST be HSL.
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
    --font-sans: var(--font-signika-sans);
-  --font-mono: var(--font-signika-mono);
+  --font-mono: var(--font-space-mono);
 }
 
 /* .dark {
@@ -99,3 +99,59 @@ html {
 button {
   cursor: pointer;
 }
+
+/* "Blueprint" frame — four corner registration marks positioned off a
+   `.blueprint` element. Ported from the Kerabie Home/Nav design canvas.
+   The element must ALSO carry Tailwind's `relative` or `absolute` utility
+   itself (every current usage does) — `.blueprint` deliberately doesn't
+   set `position` here, because as plain unlayered CSS it would always
+   beat Tailwind's `@layer utilities` classes in the cascade regardless of
+   which one is more specific or comes later in the class list, silently
+   forcing every `blueprint absolute ...` element back to `position:
+   relative`. Only `border-width` is set here, deliberately not
+   `border-color` — this file's own `* { border-color: var(--color-border) }`
+   reset above already supplies the default color to every element
+   (including this one), so any element that also needs a different color
+   (a `border-white/25`, `border-primary`, etc. utility) can just add it
+   without fighting this rule the way `position` did. */
+.blueprint {
+  border-width: 1px;
+}
+.blueprint > .corner {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  color: color-mix(in srgb, currentColor 55%, transparent);
+}
+.blueprint > .corner::before,
+.blueprint > .corner::after {
+  content: "";
+  position: absolute;
+  background: currentColor;
+}
+.blueprint > .corner::before { left: 5px; top: 0; width: 1px; height: 100%; }
+.blueprint > .corner::after { top: 5px; left: 0; width: 100%; height: 1px; }
+.blueprint > .corner.tl { top: -6px; left: -6px; }
+.blueprint > .corner.tr { top: -6px; right: -6px; }
+.blueprint > .corner.bl { bottom: -6px; left: -6px; }
+.blueprint > .corner.br { bottom: -6px; right: -6px; }
+
+/* Tints a photo with the brand accent color. */
+.duotone {
+  position: relative;
+  overflow: hidden;
+}
+.duotone::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--color-primary);
+  mix-blend-mode: color;
+}
+
+@keyframes k-sweep { 0% { transform: translateX(-120%); } 100% { transform: translateX(320%); } }
+@keyframes k-pulse { 0%, 100% { opacity: .35; transform: scale(1); } 50% { opacity: 1; transform: scale(1.25); } }
+@keyframes k-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+@keyframes k-bar { 0% { transform: scaleX(.15); } 100% { transform: scaleX(1); } }
+@keyframes k-scan { 0% { transform: translateY(0); } 100% { transform: translateY(232px); } }

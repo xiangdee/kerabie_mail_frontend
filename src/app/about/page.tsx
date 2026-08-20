@@ -1,220 +1,229 @@
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Button } from "@/components/ui/button";
-import {
-  Heart, Users, Target, 
-  Lightbulb, TrendingUp, Shield, ArrowRight
-} from "lucide-react";
+import { Corners } from "@/components/ui/corners";
+import { NavLink } from "@/components/NavLink";
+import { blackblazebucket } from "@/lib/constants/links";
 import Image from "next/image";
 import AboutBanner from "@/components/aboutPage/AboutBanner";
 
-const values = [
-  {
-    icon: Lightbulb,
-    title: "Innovation First",
-    description: "We constantly push boundaries to reimagine what email can be."
-  },
-  {
-    icon: Heart,
-    title: "Human-Centered",
-    description: "Technology should serve people, not the other way around."
-  },
-  {
-    icon: Shield,
-    title: "Security & Privacy",
-    description: "Your trust is our foundation. We protect your data fiercely."
-  },
-  {
-    icon: TrendingUp,
-    title: "Continuous Growth",
-    description: "We're always learning, iterating, and improving for you."
-  }
+const stats = [
+  { value: "15+", label: "years building mail infrastructure", tint: false },
+  { value: "10k+", label: "businesses sending every day", tint: true },
+  { value: "99.9%", label: "uptime, measured monthly", tint: false },
 ];
 
-const stats = [
-  { number: "500K+", label: "Active Users" },
-  { number: "12", label: "Global Regions" },
-  { number: "99.9%", label: "Uptime SLA" },
-  { number: "50M+", label: "Emails Delivered Daily" }
+const beliefs = [
+  {
+    index: "01",
+    title: "Delivery is the product",
+    description: "A feature nobody sees matters more than one they do. Authentication, reputation and routing are handled before you ever press send.",
+    tint: false,
+  },
+  {
+    index: "02",
+    title: "Your mailbox, your data",
+    description: "No scanning, no ad profiling, no training on your mail. Choose a storage region and we keep it there.",
+    tint: true,
+  },
+  {
+    index: "03",
+    title: "Support by people who build it",
+    description: "Every ticket reaches someone who can read the logs and fix the cause, in every timezone we sell into.",
+    tint: false,
+  },
+];
+
+const timeline = [
+  { year: "2011", title: "First managed mail platform", detail: "Built for regional hosting resellers." },
+  { year: "2018", title: "Own sending infrastructure", detail: "Dedicated pools, full SPF/DKIM/DMARC automation." },
+  { year: "2022", title: "Kerabie opens to businesses", detail: "Self-serve domains, apps on every platform." },
+  { year: "2025", title: "AI Compose and partner program", detail: "10,000 businesses, two storage regions.", tint: true },
 ];
 
 const team = [
-  {
-    name: "Sarah Chen",
-    role: "CEO & Co-founder",
-    image: "/team-1.jpg",
-    bio: "Former Gmail engineer with a passion for reimagining communication."
-  },
-  {
-    name: "Marcus Johnson",
-    role: "CTO & Co-founder",
-    image: "/team-2.jpg",
-    bio: "Infrastructure expert who scaled systems at multiple Fortune 500s."
-  },
-  {
-    name: "Priya Sharma",
-    role: "Head of Product",
-    image: "/team-3.jpg",
-    bio: "Design-thinking advocate focused on delightful user experiences."
-  },
-  {
-    name: "David Kim",
-    role: "Head of Security",
-    image: "/team-4.jpg",
-    bio: "Cybersecurity veteran committed to enterprise-grade protection."
-  }
+  { name: "Sarah Chen", role: "CEO & Co-founder", bio: "Former Gmail engineer with a passion for reimagining communication." },
+  { name: "Marcus Johnson", role: "CTO & Co-founder", bio: "Infrastructure expert who scaled systems at multiple Fortune 500s." },
+  { name: "Priya Sharma", role: "Head of Product", bio: "Design-thinking advocate focused on delightful user experiences." },
+  { name: "David Kim", role: "Head of Security", bio: "Cybersecurity veteran committed to enterprise-grade protection." },
 ];
 
 const AboutUs = () => {
   return (
-    <div className="min-h-screen bg-background selection:bg-primary/10">
+    <div className="min-h-screen max-w-full overflow-x-hidden bg-background">
       <Header />
-      
-      {/* Hero Section */}
-      <AboutBanner/>
 
-      {/* Story Section */}
-      <section className="py-20 border-t">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <h2 className="text-3xl md:text-4xl font-bold">Our Story</h2>
-              <div className="space-y-4 text-muted-foreground">
-                <p>
-                  In 2025, our founder Emmanuel was managing growing teams at tech companies and hit the same wall: 
-                  their email tools were holding them back. Missed messages, delayed deliveries, 
-                  clunky interfaces, and zero visibility into what was actually working.
-                </p>
-                <p>
-                  They realized that email—the backbone of business communication—hadn&apos;t evolved in decades. So they set out 
-                  to build something better. Something fast, intelligent, and beautiful.
-                </p>
-                <p>
-                  Today, Kerabie powers communication for over 500,000 professionals worldwide, from solo entrepreneurs to 
-                  enterprise teams. We&apos;re just getting started.
-                </p>
-              </div>
-            </div>
-            <div className="relative">
-              <div className="absolute -inset-4 bg-linear-to-r from-primary/20 to-blue-500/20 blur-3xl opacity-30"></div>
-              <div className="relative bg-card rounded-2xl p-8 border">
-                <Image 
-                  src="/team-photo.jpg" 
-                  alt="Kerabie Team" 
-                  width={600} 
-                  height={400}
-                  className="rounded-lg w-full h-auto"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <main className="mx-auto max-w-[1240px] px-4">
+        <AboutBanner />
 
-      {/* Mission Section */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center space-y-6">
-            <div className="inline-flex items-center justify-center p-4 bg-primary/10 rounded-2xl mb-4">
-              <Target className="h-12 w-12 text-primary" />
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold">Our Mission</h2>
-            <p className="text-xl text-muted-foreground">
-              To make email a tool that empowers rather than overwhelms. We believe communication should be fast, secure, and intuitive—giving you more time to focus on what matters.
-            </p>
+        {/* Photo + stats */}
+        <section className="grid grid-cols-1 gap-3.5 pt-11 lg:grid-cols-12">
+          <div className="blueprint duotone relative col-span-1 h-[380px] lg:col-span-7">
+            <Corners />
+            <Image
+              src={blackblazebucket + "/assets/images/misc/about-team.jpg"}
+              alt="Three colleagues reviewing work on a laptop"
+              fill
+              className="object-cover"
+            />
           </div>
-        </div>
-      </section>
-
-      {/* Values Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Our Values</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              These principles guide every decision we make, from product features to how we treat our community.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {values.map((value, index) => (
-              <div key={index} className="text-center space-y-4">
-                <div className="inline-flex items-center justify-center p-4 bg-primary/10 rounded-2xl">
-                  <value.icon className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold">{value.title}</h3>
-                <p className="text-muted-foreground">{value.description}</p>
+          <div className="col-span-1 grid content-start gap-3.5 lg:col-span-5">
+            {stats.map((stat) => (
+              <div key={stat.label} className={`blueprint relative p-6 ${stat.tint ? "bg-muted" : ""}`}>
+                <Corners />
+                <span className="block text-[34px] font-bold leading-none tracking-tight">{stat.value}</span>
+                <span className="block text-[13px] text-muted-foreground">{stat.label}</span>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Stats Section */}
-      <section className="py-20 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-4xl md:text-5xl font-bold mb-2">{stat.number}</div>
-                <div className="text-primary-foreground/80">{stat.label}</div>
+        {/* What we believe */}
+        <section className="pt-16">
+          <div className="mb-4 flex items-center gap-3.5">
+            <span className="font-mono text-[11px] tracking-[.12em] text-muted-foreground">WHAT WE BELIEVE</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+            {beliefs.map((belief) => (
+              <div
+                key={belief.index}
+                className={`blueprint relative p-[26px] transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(26,31,30,.08)] ${belief.tint ? "bg-muted" : ""}`}
+              >
+                <Corners />
+                <span className="font-mono text-[11px] text-primary">{belief.index}</span>
+                <h3 className="mb-2 mt-3 text-[21px]">{belief.title}</h3>
+                <p className="text-[13.5px] leading-relaxed text-muted-foreground">{belief.description}</p>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Team Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Meet the Team</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              We&apos;re a diverse group of engineers, designers, and problem-solvers united by a shared vision for better communication.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {team.map((member, index) => (
-              <div key={index} className="text-center space-y-4">
-                <div className="relative mx-auto w-48 h-48 rounded-full overflow-hidden bg-muted">
-                  <div className="w-full h-full flex items-center justify-center text-6xl font-bold text-muted-foreground">
-                    {member.name.charAt(0)}
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold">{member.name}</h3>
-                  <p className="text-primary font-medium mb-2">{member.role}</p>
-                  <p className="text-sm text-muted-foreground">{member.bio}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Join Us Section */}
-      <section className="py-20 border-t">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-linear-to-br from-primary/10 to-blue-500/10 rounded-3xl p-8 md:p-12 text-center space-y-6">
-              <div className="inline-flex items-center justify-center p-4 bg-primary/10 rounded-2xl mb-4">
-                <Users className="h-12 w-12 text-primary" />
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold">Join Our Journey</h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                We&apos;re always looking for talented, passionate people to help us build the future of email. Check out our open positions or just say hello.
+        {/* How we got here */}
+        <section className="pt-16">
+          <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-12">
+            <div className="blueprint relative overflow-hidden bg-[#2E4A3F] p-8 text-[#E8EDEB] lg:col-span-5">
+              <Corners className="text-white/50" />
+              <div
+                className="pointer-events-none absolute inset-y-0 w-[36%] animate-[k-sweep_9s_ease-in-out_infinite]"
+                style={{ background: "linear-gradient(90deg,transparent,rgba(90,138,120,.26),transparent)" }}
+              />
+              <span className="relative font-mono text-[11px] tracking-[.12em] text-[#8FB3A6]">HOW WE GOT HERE</span>
+              <h2 className="relative mb-3 mt-3.5 text-[30px] leading-[1.15] tracking-tight text-white">
+                From a hosting side-project to 10,000 businesses.
+              </h2>
+              <p className="relative text-sm leading-relaxed text-[#B7CEC5]">
+                We started by running mail for other people&apos;s customers. The tooling we wished
+                existed became Kerabie — the same infrastructure, opened up to any business that
+                wants email on its own domain.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-                <Button size="lg" className="px-8">
-                  View Careers <ArrowRight className="ml-2" size={20} />
-                </Button>
-                <Button size="lg" variant="outline">
-                  Contact Us
-                </Button>
+            </div>
+            <div className="col-span-1 grid content-start lg:col-span-7">
+              {timeline.map((item) => (
+                <div
+                  key={item.year}
+                  className={`blueprint relative grid grid-cols-[auto_1fr] items-baseline gap-5 px-6 py-5 -mt-px first:mt-0 ${item.tint ? "bg-muted" : ""}`}
+                >
+                  <Corners />
+                  <span className="font-mono text-xs text-primary">{item.year}</span>
+                  <span>
+                    <span className="block text-[15px] font-semibold">{item.title}</span>
+                    <span className="block text-[13px] text-muted-foreground">{item.detail}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Meet the team */}
+        <section className="pt-16">
+          <div className="mb-4 flex items-center gap-3.5">
+            <span className="font-mono text-[11px] tracking-[.12em] text-muted-foreground">MEET THE TEAM</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          <p className="mb-6 max-w-[58ch] text-[15px] text-muted-foreground">
+            We&apos;re a diverse group of engineers, designers and problem-solvers united by a
+            shared vision for better communication.
+          </p>
+          <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
+            {team.map((member, i) => (
+              <div
+                key={member.name}
+                className={`blueprint relative p-6 transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(26,31,30,.08)] ${i % 2 === 1 ? "bg-muted" : ""}`}
+              >
+                <Corners />
+                <span className="grid h-11 w-11 place-items-center border border-border bg-primary-muted font-mono text-lg font-bold text-primary">
+                  {member.name.charAt(0)}
+                </span>
+                <h3 className="mb-0.5 mt-3.5 text-base font-semibold">{member.name}</h3>
+                <p className="mb-2 text-[12.5px] font-medium text-primary">{member.role}</p>
+                <p className="text-[13px] leading-relaxed text-muted-foreground">{member.bio}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Join our journey */}
+        <section className="pt-16">
+          <div className="blueprint relative overflow-hidden bg-[#1A1F1E] px-6 py-12 text-center text-[#E8EDEB] sm:px-10">
+            <Corners className="text-white/50" />
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{
+                backgroundImage:
+                  "linear-gradient(rgba(232,237,235,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(232,237,235,.05) 1px,transparent 1px)",
+                backgroundSize: "48px 48px",
+              }}
+            />
+            <div className="relative">
+              <h2 className="mb-2.5 text-[34px] tracking-tight text-white">Join Our Journey</h2>
+              <p className="mx-auto mb-[22px] max-w-[50ch] text-[15px] text-[#8A9E98]">
+                We&apos;re always looking for talented, passionate people to help us build the
+                future of email. Check out our open positions or just say hello.
+              </p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <NavLink
+                  href="/contact"
+                  className="inline-flex items-center gap-2 bg-primary px-[22px] py-3.5 text-[15px] font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-[#5A8A78]"
+                >
+                  View careers
+                </NavLink>
+                <NavLink
+                  href="/contact"
+                  className="inline-flex items-center gap-2 border border-white/30 px-[22px] py-3.5 text-[15px] font-semibold text-[#E8EDEB] transition-colors hover:bg-white/10"
+                >
+                  Contact us
+                </NavLink>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* Final CTA */}
+        <section className="pb-[72px] pt-16">
+          <div className="blueprint relative overflow-hidden bg-muted px-6 py-12 text-center sm:px-10">
+            <Corners />
+            <h2 className="mb-2.5 text-[34px] tracking-tight">See it on your own domain.</h2>
+            <p className="mx-auto mb-[22px] max-w-[50ch] text-[15px] text-muted-foreground">
+              One free mailbox, no card, no migration fee.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3">
+              <NavLink
+                href="/auth/register"
+                className="inline-flex items-center gap-2 border border-primary bg-primary px-[22px] py-3.5 text-[15px] font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-primary-hover"
+              >
+                Get free mailbox
+              </NavLink>
+              <NavLink
+                href="/contact"
+                className="inline-flex items-center gap-2 border border-border bg-white px-[22px] py-3.5 text-[15px] font-semibold text-foreground transition-colors hover:bg-primary-muted"
+              >
+                Talk to us
+              </NavLink>
+            </div>
+          </div>
+        </section>
+      </main>
 
       <Footer />
     </div>

@@ -39,7 +39,8 @@ function LoginForm() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">Sign in</h1>
+        <span className="font-mono text-[11px] uppercase tracking-[.13em] text-primary">Welcome back</span>
+        <h1 className="text-[28px] font-bold tracking-tight">Sign in</h1>
         <p className="text-sm text-muted-foreground">Enter your email and password to access your inbox.</p>
       </div>
 
@@ -54,6 +55,7 @@ function LoginForm() {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
+            className="rounded-none"
           />
         </div>
 
@@ -73,7 +75,7 @@ function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
-              className="pr-10"
+              className="rounded-none pr-10"
             />
             <button
               type="button"
@@ -85,7 +87,7 @@ function LoginForm() {
           </div>
         </div>
 
-        <Button type="submit" className="w-full" disabled={loading}>
+        <Button type="submit" className="w-full rounded-none" disabled={loading}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Sign in
         </Button>

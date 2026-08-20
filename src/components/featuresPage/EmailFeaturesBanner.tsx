@@ -1,98 +1,49 @@
-import { Mail, Sparkles } from 'lucide-react';
 import Image from 'next/image';
-import Link from 'next/link';
+import { NavLink } from '@/components/NavLink';
+import { Corners } from '@/components/ui/corners';
+import { Mail } from 'lucide-react';
 
 export default function EmailFeaturesBanner() {
-  
-
   return (
-    <div className="min-h-screen md:min-h-0 bg-white py-10">
-      {/* Hero Section - Inspired by first image */}
-      <div className="max-w-5xl mx-auto text-center mb-2 relative">
-        {/* Decorative stars */}
-        <Sparkles className="absolute top-0 md:right-1/4 right-12 w-8 h-8 text-gray-800" />
-        <Sparkles className="absolute top-10 md:left-1/4 left-12 w-6 h-6 text-gray-800" />
-        
-        <div className="max-w-6xl mx-auto mb-5 px-5 md:px-10">
-        <div className="flex items-center justify-center  mb-8">
-          <div className=" w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center">
-            <Image src="/k-leaf-icon.png" width={20} height={20} alt="k-leaf-icon.png"/>
-          </div>
-          <span className="text-primary font-semibold text-sm tracking-wider uppercase bg-primary/10 px-4 py-2 rounded-full">
-            Our Features
-          </span>
+    <div className="pt-14 text-center">
+      <span className="inline-flex items-center gap-2.5">
+        <span className="grid h-[38px] w-[38px] place-items-center border border-border bg-muted">
+          <Image src="/k-leaf-icon.png" width={18} height={18} alt="Kerabie" />
+        </span>
+        <span className="border border-border bg-muted px-5 py-2.5 text-xs font-semibold tracking-[.1em] text-primary-hover">
+          OUR FEATURES
+        </span>
+      </span>
+
+      <h1 className="mx-auto mt-5 mb-3.5 max-w-[24ch] text-4xl leading-[1.1] tracking-tight sm:text-[54px]">
+        Maximize engagement with a smart email <span className="text-primary">service</span>
+      </h1>
+      <p className="mx-auto max-w-[62ch] text-[15.5px] leading-relaxed text-muted-foreground">
+        Kerabie Mail empowers businesses with advanced email tools to drive engagement and
+        conversions. Automate, personalise and solve every business emailing need.
+      </p>
+
+      <div className="mx-auto mt-[22px] flex max-w-[520px] flex-col gap-2.5 sm:flex-row">
+        <div className="relative flex-1">
+          <input
+            type="email"
+            placeholder="Enter your email"
+            className="h-12 w-full border border-border bg-white px-4 pr-10 text-sm outline-none focus:border-primary"
+          />
+          <Mail size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
         </div>
-        
-        <h2 className="text-4xl md:text-6xl font-bold text-center mb-4">
-          <span className="text-gray-900">Maximize engagement with a smart</span>
-          <br />
-          <span className="text-gray-900">email </span>
-          <span className="text-primary">service</span>
-        </h2>
-        <p className='text-gray-500'>
-          Kerabie Mail empowers businesses with advanced email  tools to 
-          drive engagement and conversions. Automate, personalize, and solve every businwss emailing needs
-        </p>
+        <NavLink
+          href="/auth/register"
+          className="blueprint relative flex h-12 items-center justify-center gap-2 whitespace-nowrap border border-primary bg-primary px-[22px] text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-primary-hover"
+        >
+          <Corners className="text-white/50" />
+          Get Kerabie
+        </NavLink>
       </div>
-      </div>
-
-
-
-
-    <div className="w-full ">
-      <div className="w-full md:px-4 px-5">
-        <div className="
-          flex flex-col gap-4
-          w-full
-          md:w-auto
-          md:flex-row md:justify-center md:items-center
-        ">
-
-          {/* input */}
-          <div className="relative w-full md:w-[340px]">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="
-                h-12 w-full rounded-xl
-                border-2 border-primary
-                px-4 pr-10
-                outline-none
-                focus:ring-2 focus:ring-primary/50
-              "
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/70">
-              <Mail size={18} />
-            </span>
-          </div>
-
-          {/* button */}
-          <button
-            className="
-              h-12 w-full
-              md:w-auto md:px-10
-              bg-primary hover:bg-primary-hover
-              text-white font-semibold
-              rounded-xl
-              transition-all duration-300
-              shadow-md hover:shadow-lg
-              hover:-translate-y-0.5
-              focus:ring-2 focus:ring-primary/50
-            "
-          >
-            Get Kerabie
-          </button>
-
-        </div>
-        <div className="text-center mt-2">
-          <p className='text-gray-500'>By submitting this form, you agree to Our 
-            <Link href="/privacy" className="text-primary underline hover:text-primary/90">Terms of Service</Link></p>
-        </div>
-      </div>
-    </div>
-
-
-
+      <p className="mt-3 text-xs text-muted-foreground">
+        By submitting this form, you agree to our{' '}
+        <NavLink href="/terms" className="underline hover:text-foreground">Terms of Service</NavLink>.
+      </p>
     </div>
   );
 }

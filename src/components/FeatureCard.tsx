@@ -1,54 +1,45 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import Image from "next/image";
+import { Corners } from "@/components/ui/corners";
 import { cn } from "@/lib/utils";
+import type { ComponentType } from "react";
+
+type LucideLikeIcon = ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
 
 interface FeatureCardProps {
-  icon: any; 
+  icon: LucideLikeIcon | string;
   title: string;
   description: string;
   className?: string;
-  isImage?: boolean; 
+  isImage?: boolean;
+  tint?: boolean;
 }
 
-export const FeatureCard = ({ 
-  icon: Icon, 
-  title, 
-  description, 
+export const FeatureCard = ({
+  icon,
+  title,
+  description,
   className,
-  isImage = false
+  isImage = false,
+  tint = false,
 }: FeatureCardProps) => {
+  const Icon = icon as LucideLikeIcon;
+
   return (
-    <div className={cn(
-      "group p-8 transition-all duration-300 border-b ",
-      className
-    )}>
-      {/* Icon with border */}
-      <div className="mb-6 flex justify-center">
-        <div className="inline-flex h-16 w-16 items-center justify-center  transition-all duration-300 group-hover:border-[#345147] group-hover:scale-110">
-          {isImage ? (
-            <Image 
-              src={Icon} 
-              alt={title} 
-              width={80} 
-              height={80} 
-              className="object-contain"
-            />
-          ) : (
-            <Icon size={36} className="text-[#345147]" />
-          )}
-        </div>
-      </div>
-
-      {/* Content */}
-      <h3 className="mb-3 text-2xl font-bold text-foreground ">
-        {title}
-      </h3>
-      <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-        {description}
-      </p>
-
-      {/* Underline on hover */}
-      <div className="mt-4 h-0.5 w-0 bg-[#345147] transition-all duration-300 group-hover:w-12"></div>
+    <div
+      className={cn(
+        "blueprint relative p-[26px] transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(26,31,30,.08)]",
+        tint && "bg-muted",
+        className,
+      )}
+    >
+      <Corners />
+      {isImage ? (
+        <Image src={icon as string} alt={title} width={20} height={20} className="object-contain" />
+      ) : (
+        <Icon size={20} className="text-primary" strokeWidth={1.5} />
+      )}
+      <h3 className="mb-1.5 mt-3.5 text-[19px]">{title}</h3>
+      <p className="text-[13.5px] leading-relaxed text-muted-foreground">{description}</p>
     </div>
   );
 };

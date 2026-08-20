@@ -1,67 +1,51 @@
-import React from 'react';
-import { Mail } from 'lucide-react';
-import Image from 'next/image';
+import { Corners } from "@/components/ui/corners";
+import { NavLink } from "@/components/NavLink";
+import { blackblazebucket } from "@/lib/constants/links";
+import Image from "next/image";
 
 export default function EmailPlatformHero() {
   return (
-    <section className="bg-linear-to-br from-slate-50 to-slate-100 py-16 px-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          
-          {/* Left Content */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-2 text-primary font-semibold">
-              <Mail className="w-5 h-5" />
-              <span className="uppercase tracking-wide text-sm">About Kerabie</span>
-            </div>
-            
-            <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
-              Built for businesses that need email to just work.
-            </h1>
-            
-            <p className="text-lg text-gray-600 leading-relaxed">
-              Kerabie delivers a stable, secure, and fully optimized email experience that
-              supports your customers as they grow. From high deliverability to intuitive
-              features, we help businesses communicate with clarity and confidence.
-            </p>
-            
-            <button className="bg-secondary hover:bg-primary text-white font-semibold px-8 py-4 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-              Get Started
-            </button>
-          </div>
-          
-          {/* Right Image Section */}
-          <div className="relative">
-            {/* Main Image Container */}
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl">
-              <Image
-                width={800}
-                height={600} 
-                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop" 
-                alt="Team collaboration workspace"
-                className="w-full h-auto"
-              />
-              
-              {/* Gradient Overlay */}
-              <div className="absolute inset-0 bg-linear-to-br from-secondary/20 to-blue-500/20 mix-blend-overlay"></div>
-              
-              {/* Decorative Icon */}
-              <div className="absolute top-6 right-6 bg-secondary p-4 rounded-2xl shadow-lg animate-pulse">
-                <Mail className="w-8 h-8 text-white" />
-              </div>
-            </div>
-            
-            {/* Stats Card */}
-            <div className="absolute -bottom-8 -left-8 bg-white rounded-2xl shadow-2xl p-8 border border-gray-100">
-              <div className="text-5xl font-bold text-gray-900 mb-2">15+</div>
-              <div className="text-gray-600 font-medium">Years of Experience</div>
-            </div>
-            
-            {/* Decorative Elements */}
-            <div className="absolute -top-6 -left-6 w-32 h-32 bg-green-400/30 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute -bottom-6 -right-6 w-40 h-40 bg-blue-400/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          </div>
-          
+    <section id="about" className="grid grid-cols-1 gap-3.5 pt-[78px] lg:grid-cols-12">
+      <div className="col-span-1 flex flex-col justify-center py-2 lg:col-span-6 lg:pr-10">
+        <span className="font-mono text-[11px] uppercase tracking-[.14em] text-primary">About Kerabie</span>
+        <h2 className="mt-3.5 mb-4 text-3xl leading-[1.1] tracking-tight sm:text-4xl">
+          Built for businesses that need email to just work.
+        </h2>
+        <p className="mb-3 text-[15.5px] leading-relaxed text-[#3A4240]">
+          Kerabie delivers a stable, secure, and fully optimised email experience that respects
+          your mailbox as it scales. From high deliverability to intuitive features, we help
+          businesses communicate with clarity and confidence.
+        </p>
+        <div className="mt-3.5 flex flex-wrap gap-3">
+          <NavLink
+            href="/auth/register"
+            className="inline-flex items-center gap-2 border border-primary bg-primary px-5 py-3.5 text-[14.5px] font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 hover:bg-primary-hover"
+          >
+            Get free mailbox
+          </NavLink>
+          <a
+            href="#features"
+            className="inline-flex items-center gap-2 border border-border px-5 py-3.5 text-[14.5px] font-semibold text-foreground transition-colors hover:bg-muted"
+          >
+            See features
+          </a>
+        </div>
+      </div>
+
+      <div className="relative col-span-1 lg:col-span-6">
+        <div className="blueprint duotone relative h-[340px]">
+          <Corners />
+          <Image
+            src={blackblazebucket + "/assets/images/misc/about-team.jpg"}
+            alt="Kerabie team working in an open-plan office"
+            fill
+            className="object-cover"
+          />
+        </div>
+        <div className="blueprint absolute -bottom-[18px] -left-[18px] animate-[k-float_7s_ease-in-out_infinite] bg-white px-[18px] py-3.5 shadow-[0_14px_34px_rgba(26,31,30,.14)]">
+          <Corners />
+          <span className="block text-[28px] font-bold leading-none tracking-tight">15+</span>
+          <span className="block text-xs text-muted-foreground">years of experience</span>
         </div>
       </div>
     </section>
