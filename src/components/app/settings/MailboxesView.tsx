@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Plus, Trash2, Mail, Eye, EyeOff, Loader2, ArrowDownToLine, ArrowUpFromLine, BellOff, Pencil, Check, X } from 'lucide-react';
+import { Plus, Trash2, Mail, Eye, EyeOff, Loader2, ArrowDownToLine, ArrowUpFromLine, BellOff, Pencil, Check, X, AlertTriangle, RotateCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,6 +27,8 @@ interface MailboxesViewProps {
   togglingNoReplyEmail?: string | null;
   onUpdateSenderName: (id: number, displayName: string) => void;
   savingSenderNameId?: number | null;
+  onReactivate: (email: string, password?: string) => Promise<void>;
+  reactivatingEmail?: string | null;
 }
 
 export function MailboxesView({
@@ -38,12 +40,15 @@ export function MailboxesView({
   togglingNoReplyEmail,
   onUpdateSenderName,
   savingSenderNameId,
+  onReactivate,
+  reactivatingEmail,
 }: MailboxesViewProps) {
   const [open, setOpen] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [form, setForm] = useState<CreateForm>({ email: '', display_name: '', password: '' });
   const [editingSenderNameId, setEditingSenderNameId] = useState<number | null>(null);
   const [senderNameDraft, setSenderNameDraft] = useState('');
+  const [reactivatePasswordDraft, setReactivatePasswordDraft] = useState<Record<string, string>>({});
 
   const set = (k: keyof CreateForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [k]: e.target.value }));
@@ -206,6 +211,47 @@ export function MailboxesView({
                     Reject incoming mail (no-reply mailbox)
                   </span>
                 </div>
+
+                {mb.is_active === false && (
+                  <div className="mt-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-medium text-foreground">Mailbox suspended</p>
+                        <p className="text-xs text-muted-foreground">{mb.suspended_reason}</p>
+                      </div>
+                    </div>
+                    {mb.can_self_reactivate ? (
+                      <div className="flex items-center gap-2 pl-6">
+                        {mb.connection_type === 'imap' && (
+                          <Input
+                            value={reactivatePasswordDraft[mb.email_address] ?? ''}
+                            onChange={(e) =>
+                              setReactivatePasswordDraft((prev) => ({ ...prev, [mb.email_address]: e.target.value }))
+                            }
+                            type="password"
+                            placeholder="New password (if it changed)"
+                            className="h-7 text-xs max-w-[220px]"
+                          />
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs gap-1"
+                          disabled={reactivatingEmail === mb.email_address}
+                          onClick={() => onReactivate(mb.email_address, reactivatePasswordDraft[mb.email_address] || undefined)}
+                        >
+                          {reactivatingEmail === mb.email_address
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <RotateCw className="h-3.5 w-3.5" />}
+                          Try again
+                        </Button>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground pl-6">Contact support to have this cleared.</p>
+                    )}
+                  </div>
+                )}
               </div>
               <Button
                 variant="ghost"

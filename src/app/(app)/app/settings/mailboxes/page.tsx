@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '@/lib/context/auth.context';
-import { useMailboxes, useCreateMailbox, useSetMailboxNoReply, useUpdateMailbox } from '@/lib/hooks/useMailboxes';
+import { useMailboxes, useCreateMailbox, useSetMailboxNoReply, useUpdateMailbox, useReactivateMailbox } from '@/lib/hooks/useMailboxes';
 import { useAppToast } from '@/components/ui/app-toast';
 import { MailboxesView } from '@/components/app/settings/MailboxesView';
 
@@ -10,11 +10,13 @@ export default function MailboxesPage() {
   const { success, error: toastError } = useAppToast();
   const [togglingEmail, setTogglingEmail] = useState<string | null>(null);
   const [savingSenderNameId, setSavingSenderNameId] = useState<number | null>(null);
+  const [reactivatingEmail, setReactivatingEmail] = useState<string | null>(null);
 
   const { data: mailboxes = [], isLoading } = useMailboxes(token);
   const createMutation = useCreateMailbox(token);
   const noReplyMutation = useSetMailboxNoReply(token);
   const updateMutation = useUpdateMailbox(token);
+  const reactivateMutation = useReactivateMailbox(token);
 
   const handleCreate = async (data: { email: string; display_name: string; password: string }) => {
     const res = await createMutation.mutateAsync(data);
@@ -47,6 +49,17 @@ export default function MailboxesPage() {
     }
   };
 
+  const handleReactivate = async (email: string, password?: string) => {
+    setReactivatingEmail(email);
+    const res = await reactivateMutation.mutateAsync({ email, password });
+    setReactivatingEmail(null);
+    if (res.status === true) {
+      success('Mailbox reactivated');
+    } else {
+      toastError('Still can\'t reconnect', { description: res.response as string });
+    }
+  };
+
   return (
     <MailboxesView
       mailboxes={mailboxes}
@@ -57,6 +70,8 @@ export default function MailboxesPage() {
       togglingNoReplyEmail={togglingEmail}
       onUpdateSenderName={handleUpdateSenderName}
       savingSenderNameId={savingSenderNameId}
+      onReactivate={handleReactivate}
+      reactivatingEmail={reactivatingEmail}
     />
   );
 }

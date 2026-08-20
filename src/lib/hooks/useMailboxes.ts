@@ -67,3 +67,18 @@ export function useSetMailboxNoReply(token: string | null) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['mailboxes'] }),
   });
 }
+
+// Self-service recovery for quota_exceeded/auth_failed suspensions only
+// (app.tasks.mail._suspend_for_permanent_error) — bounce_rate suspensions
+// (app.utils.sender_reputation) return 403 here by design and need admin
+// review instead. Re-tests the connection server-side before clearing the
+// suspension, so a real error comes back if the underlying issue isn't
+// actually fixed yet.
+export function useReactivateMailbox(token: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ email, password }: { email: string; password?: string }) =>
+      customAxiosPost(`${base}/mail/mailbox/${encodeURIComponent(email)}/reactivate`, { password }, '', token ?? ''),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mailboxes'] }),
+  });
+}

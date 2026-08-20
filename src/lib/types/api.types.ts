@@ -399,6 +399,10 @@ export interface UserEmailAccount {
   alternate_email?: string | null;
   alternate_email_verified?: boolean;
   is_no_reply?: boolean;
+  is_active?: boolean;
+  suspended_reason?: string | null;
+  suspended_at?: string | null;
+  can_self_reactivate?: boolean;
 }
 
 export interface SharedInboxMember {
