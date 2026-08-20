@@ -203,6 +203,11 @@ export default function RegisterPage() {
       </p>
 
       <p className="text-center text-sm text-muted-foreground">
+        Want to use your own domain instead?{' '}
+        <Link href="/auth/register-domain" className="text-primary font-medium hover:underline">Register with a domain</Link>
+      </p>
+
+      <p className="text-center text-sm text-muted-foreground">
         Already have an account?{' '}
         <Link href="/auth/login" className="text-primary font-medium hover:underline">Sign in</Link>
       </p>
