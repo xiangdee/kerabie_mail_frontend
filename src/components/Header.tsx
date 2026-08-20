@@ -50,11 +50,11 @@ export const Header = () => {
           </NavLink>
           <NavLink
             href="/auth/register"
-            className="blueprint relative hidden items-center gap-2 border border-primary bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover sm:inline-flex"
+            className="blueprint relative inline-flex items-center gap-2 border border-primary bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover sm:px-4"
           >
             <Corners className="text-white/55" />
             Get free mailbox
-            <ArrowRight size={14} />
+            <ArrowRight size={14} className="hidden sm:inline" />
           </NavLink>
 
           {/* Mobile Menu Button */}
