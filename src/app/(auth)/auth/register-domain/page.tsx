@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAppToast } from '@/components/ui/app-toast';
 import { useAuth } from '@/lib/context/auth.context';
+import { useUpdateMailbox } from '@/lib/hooks/useMailboxes';
 import { mailConnectService, type DnsRecord, type DnsSetupInfo, type MailConnectionResponse } from '@/lib/services/mail-connect.service';
 
 function RecordRow({ record }: { record: DnsRecord }) {
@@ -63,15 +64,21 @@ function DnsInstructions({ config }: { config: DnsSetupInfo }) {
 }
 
 export default function RegisterDomainPage() {
-  const { refreshUser } = useAuth();
+  const { refreshUser, token } = useAuth();
   const { success, error: toastError } = useAppToast();
   const router = useRouter();
+  const updateMailbox = useUpdateMailbox(token);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [dnsConfig, setDnsConfig] = useState<DnsSetupInfo | null>(null);
+  const [connectedMailboxId, setConnectedMailboxId] = useState<number | null>(null);
+  const [senderName, setSenderName] = useState('');
+  const [savingName, setSavingName] = useState(false);
+
+  const goToApp = () => router.push('/app/settings');
 
   const attemptConnect = async () => {
     setLoading(true);
@@ -86,9 +93,11 @@ export default function RegisterDomainPage() {
     const data = res.response as MailConnectionResponse;
 
     if (data.connection?.is_connected) {
-      success('Connected!', { description: `${data.connection.email_address} is ready.` });
       await refreshUser();
-      router.push('/app/settings');
+      // "What's your name?" is a skippable prompt shown once, right after a
+      // fresh connect — mirrors the mobile app's add-account success screen,
+      // which this flow otherwise has no equivalent of.
+      setConnectedMailboxId(data.connection.id);
       return;
     }
 
@@ -101,6 +110,16 @@ export default function RegisterDomainPage() {
     toastError(data.message || 'Could not connect that domain.');
   };
 
+  const handleSaveName = async () => {
+    const trimmed = senderName.trim();
+    if (!trimmed || connectedMailboxId === null) { goToApp(); return; }
+    setSavingName(true);
+    const res = await updateMailbox.mutateAsync({ id: connectedMailboxId, data: { display_name: trimmed } });
+    setSavingName(false);
+    if (res.status === true) success('Connected!', { description: `Signed in as ${trimmed}.` });
+    goToApp();
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.includes('@') || !password) {
@@ -109,6 +128,39 @@ export default function RegisterDomainPage() {
     }
     attemptConnect();
   };
+
+  if (connectedMailboxId !== null) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-1">
+          <span className="font-mono text-[11px] uppercase tracking-[.13em] text-primary">Connected</span>
+          <h1 className="text-[28px] font-bold tracking-tight">What&apos;s your name?</h1>
+          <p className="text-sm text-muted-foreground">This appears as the sender name on emails you send.</p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="sender-name">Full name</Label>
+          <Input
+            id="sender-name"
+            type="text"
+            placeholder="e.g. Jane Smith"
+            value={senderName}
+            onChange={(e) => setSenderName(e.target.value)}
+            autoComplete="name"
+            autoFocus
+            className="rounded-none"
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); }}
+          />
+        </div>
+        <Button type="button" className="w-full rounded-none" disabled={savingName} onClick={handleSaveName}>
+          {savingName && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save &amp; continue
+        </Button>
+        <button type="button" onClick={goToApp} className="w-full text-center text-sm text-muted-foreground hover:text-foreground">
+          Skip for now
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
