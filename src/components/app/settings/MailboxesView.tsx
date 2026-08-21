@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
-import { Plus, Trash2, Mail, Eye, EyeOff, Loader2, ArrowDownToLine, ArrowUpFromLine, BellOff, Pencil, Check, X, AlertTriangle, RotateCw } from 'lucide-react';
+import { Plus, Trash2, Mail, Eye, EyeOff, Loader2, ArrowDownToLine, ArrowUpFromLine, BellOff, Pencil, Check, X, AlertTriangle, RotateCw, CloudUpload } from 'lucide-react';
+import { ConvertMailboxDialog } from './ConvertMailboxDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,6 +50,7 @@ export function MailboxesView({
   const [editingSenderNameId, setEditingSenderNameId] = useState<number | null>(null);
   const [senderNameDraft, setSenderNameDraft] = useState('');
   const [reactivatePasswordDraft, setReactivatePasswordDraft] = useState<Record<string, string>>({});
+  const [convertEmail, setConvertEmail] = useState<string | null>(null);
 
   const set = (k: keyof CreateForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [k]: e.target.value }));
@@ -212,6 +214,20 @@ export function MailboxesView({
                   </span>
                 </div>
 
+                {mb.connection_type === 'imap' && (
+                  <button
+                    type="button"
+                    onClick={() => setConvertEmail(mb.email_address)}
+                    className="w-full flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-2.5 text-left hover:bg-primary/10 transition-colors"
+                  >
+                    <CloudUpload className="h-4 w-4 text-primary shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium">This mailbox is connected via IMAP</p>
+                      <p className="text-[11px] text-muted-foreground">Connect to Kerabie to enjoy our premium features</p>
+                    </div>
+                  </button>
+                )}
+
                 {mb.is_active === false && (
                   <div className="mt-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
                     <div className="flex items-start gap-2">
@@ -293,6 +309,14 @@ export function MailboxesView({
           </div>
         </div>
       </div>
+
+      {convertEmail && (
+        <ConvertMailboxDialog
+          open={!!convertEmail}
+          onOpenChange={(next) => { if (!next) setConvertEmail(null); }}
+          emailAddress={convertEmail}
+        />
+      )}
     </div>
   );
 }
