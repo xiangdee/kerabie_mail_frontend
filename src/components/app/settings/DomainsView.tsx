@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Plus, Trash2, Globe, CheckCircle2, XCircle, Clock, RefreshCw, ChevronDown, ChevronUp, Copy, CopyCheck, Loader2, Mail } from 'lucide-react';
+import { Plus, Trash2, Globe, CheckCircle2, XCircle, Clock, AlertTriangle, RefreshCw, ChevronDown, ChevronUp, Copy, CopyCheck, Loader2, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -33,6 +33,7 @@ const StatusBadge = ({ status }: { status: Domain['status'] }) => {
     pending: { label: 'Pending', icon: Clock, class: 'bg-amber-100 text-amber-700 border-amber-200' },
     verified: { label: 'Verified', icon: CheckCircle2, class: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
     failed: { label: 'Failed', icon: XCircle, class: 'bg-red-100 text-red-700 border-red-200' },
+    expired: { label: 'Expired', icon: AlertTriangle, class: 'bg-red-100 text-red-700 border-red-200' },
   }[status];
   const Icon = cfg.icon;
   return (

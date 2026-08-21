@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/context/auth.context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePhoneStatus } from '@/lib/hooks/usePhoneVerification';
 import PhoneVerificationModal from '@/components/app/PhoneVerificationModal';
+import { ConnectionRibbon } from '@/components/app/ConnectionRibbon';
 
 function PhoneVerificationGate({ children }: { children: React.ReactNode }) {
   const { user, token } = useAuth();
@@ -72,6 +73,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <AppSidebar />
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
+        <ConnectionRibbon />
         <div className="flex items-center h-12 border-b px-4 shrink-0">
           <SidebarTrigger className="-ml-1" />
         </div>

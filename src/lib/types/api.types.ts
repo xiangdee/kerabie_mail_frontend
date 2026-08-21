@@ -148,7 +148,7 @@ export interface SendEmailRequest {
 export interface Domain {
   id: number;
   domain: string;
-  status: 'pending' | 'verified' | 'failed';
+  status: 'pending' | 'verified' | 'failed' | 'expired';
   dkim_verified: boolean;
   spf_verified: boolean;
   dmarc_verified: boolean;
