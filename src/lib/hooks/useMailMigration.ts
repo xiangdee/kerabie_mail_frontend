@@ -58,6 +58,17 @@ export function useMigrationStatus(token: string | null, email: string | null, e
   });
 }
 
+export function useRetryMigration(token: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (email: string) => {
+      const res = await customAxiosPost(`${base}/mail/mailbox/${encodeURIComponent(email)}/migration-status/retry`, {}, '', token ?? '');
+      return res as { status: boolean; response: MigrationStatus | string };
+    },
+    onSuccess: (_, email) => qc.invalidateQueries({ queryKey: ['migration-status', email, token] }),
+  });
+}
+
 export function useConvertToImap(token: string | null) {
   const qc = useQueryClient();
   return useMutation({

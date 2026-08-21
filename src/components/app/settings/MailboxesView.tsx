@@ -2,6 +2,52 @@
 import { useState } from 'react';
 import { Plus, Trash2, Mail, Eye, EyeOff, Loader2, ArrowDownToLine, ArrowUpFromLine, BellOff, Pencil, Check, X, AlertTriangle, RotateCw, CloudUpload } from 'lucide-react';
 import { ConvertMailboxDialog } from './ConvertMailboxDialog';
+import { useAuth } from '@/lib/context/auth.context';
+import { useMigrationStatus, useRetryMigration } from '@/lib/hooks/useMailMigration';
+
+/**
+ * Background mail import from a converted IMAP mailbox — see
+ * useMailImportStatus.ts on mobile for the same rationale: by the time
+ * this is running the mailbox has already cut over to connection_type
+ * "dns", so it needs a home outside ConvertMailboxDialog (which the user
+ * may have already closed).
+ */
+function MailImportStatus({ emailAddress }: { emailAddress: string }) {
+  const { token } = useAuth();
+  const { data: migration } = useMigrationStatus(token, emailAddress, true);
+  const retryMutation = useRetryMigration(token);
+
+  if (!migration || migration.status === 'completed') return null;
+
+  if (migration.status === 'failed') {
+    return (
+      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 flex items-start gap-2">
+        <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium">Mail import needs attention</p>
+          <p className="text-xs text-muted-foreground">{migration.error || 'Something went wrong.'}</p>
+        </div>
+        <Button
+          size="sm" variant="outline" className="h-7 text-xs gap-1 shrink-0"
+          disabled={retryMutation.isPending}
+          onClick={() => retryMutation.mutate(emailAddress)}
+        >
+          {retryMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCw className="h-3.5 w-3.5" />}
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 flex items-center gap-2">
+      <CloudUpload className="h-4 w-4 text-primary shrink-0" />
+      <p className="text-xs">
+        Importing your mail — {migration.current_folder ?? '…'} ({migration.messages_done}/{migration.messages_total || '?'} messages)
+      </p>
+    </div>
+  );
+}
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -213,6 +259,8 @@ export function MailboxesView({
                     Reject incoming mail (no-reply mailbox)
                   </span>
                 </div>
+
+                {mb.connection_type === 'dns' && <MailImportStatus emailAddress={mb.email_address} />}
 
                 {mb.connection_type === 'imap' && (
                   <button
