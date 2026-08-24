@@ -8,7 +8,7 @@ import { useAcceptInvite } from '@/lib/hooks/useSharedInbox';
 
 export default function AcceptInvitePage() {
   const { token: inviteToken } = useParams<{ token: string }>();
-  const { token: authToken, isLoading: authLoading } = useAuth();
+  const { token: authToken, isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const acceptMutation = useAcceptInvite(authToken);
 
@@ -18,7 +18,7 @@ export default function AcceptInvitePage() {
   useEffect(() => {
     if (authLoading || !inviteToken || state !== 'idle') return;
 
-    if (!authToken) {
+    if (!isAuthenticated) {
       router.replace(`/auth/login?redirect=/app/shared-inboxes/accept/${inviteToken}`);
       return;
     }
@@ -38,7 +38,7 @@ export default function AcceptInvitePage() {
         setState('error');
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, authToken, inviteToken]);
+  }, [authLoading, isAuthenticated, inviteToken]);
 
   if (state === 'loading' || state === 'idle') {
     return (
