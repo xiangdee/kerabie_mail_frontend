@@ -30,7 +30,7 @@ export function ProfileView({
   const [pwError, setPwError] = useState('');
 
   useEffect(() => {
-    if (user) setFullName(user.full_name);
+    if (user) setFullName(user.full_name ?? '');
   }, [user]);
 
   const initials = fullName
