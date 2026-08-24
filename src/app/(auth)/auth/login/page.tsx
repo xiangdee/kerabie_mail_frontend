@@ -95,7 +95,10 @@ function LoginForm() {
 
       <p className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{' '}
-        <Link href="/auth/register" className="text-primary font-medium hover:underline">
+        <Link
+          href={searchParams.get('redirect') ? `/auth/register?redirect=${encodeURIComponent(searchParams.get('redirect')!)}` : '/auth/register'}
+          className="text-primary font-medium hover:underline"
+        >
           Create one
         </Link>
       </p>

@@ -1,7 +1,7 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAppToast } from '@/components/ui/app-toast';
 import { CheckCircle2, Copy, Check, Eye, EyeOff, Loader2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -72,6 +72,14 @@ function DnsInstructions({ config }: { config: DnsSetupInfo }) {
 }
 
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterPageInner />
+    </Suspense>
+  );
+}
+
+function RegisterPageInner() {
   const [mode, setMode] = useState<Mode>('kerabie');
   return (
     <div className="space-y-6">
@@ -102,6 +110,8 @@ function KerabieForm() {
   const { register } = useAuth();
   const { success, error: toastError, warning } = useAppToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect');
 
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
@@ -155,7 +165,7 @@ function KerabieForm() {
     setLoading(false);
     if (result.ok) {
       success('Account created!', { description: `Your mailbox ${username}@${KERABIE_DOMAIN} is ready.` });
-      router.push('/app/settings');
+      router.push(redirect && redirect.startsWith('/') ? redirect : '/app/settings');
     } else {
       toastError(typeof result.error === 'string' ? result.error : 'Registration failed');
     }
@@ -286,7 +296,7 @@ function KerabieForm() {
 
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{' '}
-        <Link href="/auth/login" className="text-primary font-medium hover:underline">Sign in</Link>
+        <Link href={redirect ? `/auth/login?redirect=${encodeURIComponent(redirect)}` : '/auth/login'} className="text-primary font-medium hover:underline">Sign in</Link>
       </p>
     </div>
   );
@@ -298,6 +308,8 @@ function DomainForm() {
   const { refreshUser, token } = useAuth();
   const { success, error: toastError } = useAppToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect');
   const updateMailbox = useUpdateMailbox(token);
 
   const [email, setEmail] = useState('');
@@ -309,7 +321,7 @@ function DomainForm() {
   const [senderName, setSenderName] = useState('');
   const [savingName, setSavingName] = useState(false);
 
-  const goToApp = () => router.push('/app/settings');
+  const goToApp = () => router.push(redirect && redirect.startsWith('/') ? redirect : '/app/settings');
 
   const attemptConnect = async () => {
     setLoading(true);
@@ -469,7 +481,7 @@ function DomainForm() {
 
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{' '}
-        <Link href="/auth/login" className="text-primary font-medium hover:underline">Sign in</Link>
+        <Link href={redirect ? `/auth/login?redirect=${encodeURIComponent(redirect)}` : '/auth/login'} className="text-primary font-medium hover:underline">Sign in</Link>
       </p>
     </div>
   );
