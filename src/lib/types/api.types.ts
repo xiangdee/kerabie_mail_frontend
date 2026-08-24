@@ -402,6 +402,7 @@ export interface UserEmailAccount {
   is_active?: boolean;
   suspended_reason?: string | null;
   suspended_at?: string | null;
+  suspension_reason_code?: string | null;
   can_self_reactivate?: boolean;
 }
 

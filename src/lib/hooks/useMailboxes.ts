@@ -82,3 +82,22 @@ export function useReactivateMailbox(token: string | null) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['mailboxes'] }),
   });
 }
+
+// For "unreachable" suspensions specifically — the whole server moved or
+// died, so no password on the old host (useReactivateMailbox above) will
+// ever reconnect it. Repoints an IMAP-connected mailbox at a different
+// host/port/password entirely; the backend tests both before saving
+// anything. Distinct from useConvertToImap (useMailMigration.ts), which
+// only applies to currently Kerabie-hosted (connection_type='dns')
+// mailboxes migrating away and deletes the Kerabie-side copy.
+export function useUpdateMailboxConnection(token: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ email, data }: {
+      email: string;
+      data: { imap_host: string; imap_port: number; smtp_host: string; smtp_port: number; email_password: string };
+    }) =>
+      customAxiosPost(`${base}/mail/mailbox/${encodeURIComponent(email)}/update-connection`, data, '', token ?? ''),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mailboxes'] }),
+  });
+}

@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Plus, Trash2, Mail, Eye, EyeOff, Loader2, ArrowDownToLine, ArrowUpFromLine, BellOff, Pencil, Check, X, AlertTriangle, RotateCw, CloudUpload } from 'lucide-react';
 import { ConvertMailboxDialog } from './ConvertMailboxDialog';
+import { UpdateConnectionDialog } from './UpdateConnectionDialog';
 import { useAuth } from '@/lib/context/auth.context';
 import { useMigrationStatus, useRetryMigration } from '@/lib/hooks/useMailMigration';
 
@@ -97,6 +98,7 @@ export function MailboxesView({
   const [senderNameDraft, setSenderNameDraft] = useState('');
   const [reactivatePasswordDraft, setReactivatePasswordDraft] = useState<Record<string, string>>({});
   const [convertEmail, setConvertEmail] = useState<string | null>(null);
+  const [updateConnectionEmail, setUpdateConnectionEmail] = useState<string | null>(null);
 
   const set = (k: keyof CreateForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [k]: e.target.value }));
@@ -285,7 +287,22 @@ export function MailboxesView({
                         <p className="text-xs text-muted-foreground">{mb.suspended_reason}</p>
                       </div>
                     </div>
-                    {mb.can_self_reactivate ? (
+                    {mb.connection_type === 'imap' && mb.suspension_reason_code === 'unreachable' ? (
+                      <div className="pl-6">
+                        <p className="text-xs text-muted-foreground mb-1.5">
+                          The server itself is unreachable — a password won&apos;t fix this. Point it at a new host, or move it to Kerabie hosting below.
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => setUpdateConnectionEmail(mb.email_address)}
+                        >
+                          <RotateCw className="h-3.5 w-3.5" />
+                          Update connection details
+                        </Button>
+                      </div>
+                    ) : mb.can_self_reactivate ? (
                       <div className="flex items-center gap-2 pl-6">
                         {mb.connection_type === 'imap' && (
                           <Input
