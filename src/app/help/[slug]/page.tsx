@@ -104,6 +104,7 @@ export default async function HelpArticlePage(
                 prose-strong:text-foreground
                 prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:before:content-none prose-code:after:content-none
                 prose-pre:bg-muted prose-pre:border prose-pre:rounded-xl
+                [&_pre_code]:bg-transparent [&_pre_code]:text-foreground [&_pre_code]:p-0
                 prose-table:w-full prose-th:bg-muted/50 prose-th:text-left prose-th:p-3 prose-td:p-3 prose-td:border-b
                 prose-blockquote:border-l-primary prose-blockquote:bg-muted/30 prose-blockquote:rounded-r-lg prose-blockquote:py-1
                 prose-li:text-foreground/80"
