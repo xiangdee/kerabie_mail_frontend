@@ -16,12 +16,31 @@ export function useDomains(token: string | null) {
   });
 }
 
+export interface DomainUsage {
+  used: number;
+  limit: number;
+}
+
+export function useDomainUsage(token: string | null) {
+  return useQuery({
+    queryKey: ['domain-usage', token],
+    queryFn: async () => {
+      const res = await customAxiosGet(`${base}/domains/usage`, undefined, token ?? undefined);
+      return res.status === true ? (res.response as DomainUsage) : null;
+    },
+    enabled: true,
+  });
+}
+
 export function useAddDomain(token: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (domain: string) =>
       customAxiosPost(`${base}/domains`, { domain }, '', token ?? ''),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['domains'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['domains'] });
+      qc.invalidateQueries({ queryKey: ['domain-usage'] });
+    },
   });
 }
 
@@ -30,15 +49,22 @@ export function useDeleteDomain(token: string | null) {
   return useMutation({
     mutationFn: (id: number) =>
       customAxiosDelete(`${base}/domains/${id}`, undefined, token ?? ''),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['domains'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['domains'] });
+      qc.invalidateQueries({ queryKey: ['domain-usage'] });
+    },
   });
 }
 
 export function useVerifyDomain(token: string | null) {
   const qc = useQueryClient();
   return useMutation({
+    // Backend route is GET /domains/{id}/verify (app/routes/domains.py's
+    // check_domain_verification -- it does the recheck-and-persist as a
+    // side effect of a GET, not a separate POST). This was POSTing, which
+    // 405'd against every real verify attempt.
     mutationFn: (id: number) =>
-      customAxiosPost(`${base}/domains/${id}/verify`, {}, '', token ?? ''),
+      customAxiosGet(`${base}/domains/${id}/verify`, undefined, token ?? undefined),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['domains'] }),
   });
 }
