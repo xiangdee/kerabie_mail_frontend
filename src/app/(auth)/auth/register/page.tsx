@@ -432,6 +432,17 @@ function DomainForm() {
           <p className="text-xs text-center text-muted-foreground">
             DNS changes can take a few minutes to propagate. This link expires in 72 hours.
           </p>
+          {/* The account/session already exists at this point (backend sets
+              auth cookies before DNS is ever verified) -- there's no reason
+              to trap someone here until DNS propagates. Domain verification
+              can be finished later from Settings. */}
+          <button
+            type="button"
+            onClick={async () => { await refreshUser(); goToApp(); }}
+            className="w-full text-center text-sm text-muted-foreground hover:text-foreground"
+          >
+            Skip for now — I&apos;ll verify later
+          </button>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
