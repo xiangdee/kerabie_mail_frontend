@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '@/lib/context/auth.context';
-import { useDomains, useAddDomain, useDeleteDomain, useVerifyDomain, useSendDnsInstructions, useSetDomainNoReply } from '@/lib/hooks/useDomains';
+import { useDomains, useAddDomain, useDeleteDomain, useVerifyDomain, useSendDnsInstructions, useSetDomainNoReply, useDomainUsage } from '@/lib/hooks/useDomains';
 import { useAppToast } from '@/components/ui/app-toast';
 import { ConfirmDialog } from '@/components/ui/app-toast';
 import { DomainsView } from '@/components/app/settings/DomainsView';
@@ -13,6 +13,7 @@ export default function DomainsPage() {
   const [togglingNoReplyId, setTogglingNoReplyId] = useState<number | null>(null);
 
   const { data: domains = [], isLoading } = useDomains(token);
+  const { data: usage } = useDomainUsage(token);
   const addMutation = useAddDomain(token);
   const deleteMutation = useDeleteDomain(token);
   const verifyMutation = useVerifyDomain(token);
@@ -30,8 +31,19 @@ export default function DomainsPage() {
 
   const handleVerify = async (id: number) => {
     const res = await verifyMutation.mutateAsync(id);
+    // The check is synchronous (app/routes/domains.py's check_domain_verification
+    // runs the DNS lookups and returns the real pass/fail in this same response)
+    // -- there's no background job to wait on, so a 200 here means "here's the
+    // result," not "check started." Read the actual outcome instead of treating
+    // any successful HTTP call as a pending verification.
     if (res.status === true) {
-      success('Verification started', { description: 'DNS checks may take a few minutes' });
+      const domain = (res.response as { domain?: { is_verified?: boolean }; message?: string })?.domain;
+      const message = (res.response as { message?: string })?.message;
+      if (domain?.is_verified) {
+        success('Domain verified!', { description: message ?? 'DNS records are correctly configured.' });
+      } else {
+        toastError('Not verified yet', { description: message ?? 'DNS records don\'t match yet — double-check them and try again.' });
+      }
     } else {
       toastError('Verification failed', { description: res.response as string });
     }
@@ -63,7 +75,7 @@ export default function DomainsPage() {
     if (res.status === true) {
       success('Domain removed');
     } else {
-      toastError('Failed to remove domain');
+      toastError('Failed to remove domain', { description: res.response as string });
     }
     setConfirmDeleteId(null);
   };
@@ -72,6 +84,7 @@ export default function DomainsPage() {
     <>
       <DomainsView
         domains={domains}
+        usage={usage ?? null}
         isLoading={isLoading}
         isAdding={addMutation.isPending}
         isVerifying={verifyMutation.isPending}
@@ -87,7 +100,7 @@ export default function DomainsPage() {
       <ConfirmDialog
         open={confirmDeleteId != null}
         title="Remove domain?"
-        description="All mailboxes on this domain will stop receiving email."
+        description="This only works while no mailboxes remain on the domain — remove those first if there are any."
         confirmLabel="Remove domain"
         variant="danger"
         onConfirm={handleDeleteConfirmed}
