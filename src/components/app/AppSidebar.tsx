@@ -5,7 +5,7 @@ import {
   ExternalLink, Settings, ChevronDown,
   Globe, Key, Webhook, Share2, LogOut, Mail, Loader2,
   CreditCard, User, Bell, ArrowRight, Shield, AtSign, Server,
-  Palette, Megaphone,
+  Palette, Megaphone, Users, UserX, FileText, Terminal,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -36,6 +36,9 @@ const MAIL_LINKS = [
   { label: 'Domains', href: '/app/settings/domains', icon: Globe },
   { label: 'Forwarding', href: '/app/settings/forwarding', icon: ArrowRight },
   { label: 'Aliases', href: '/app/settings/aliases', icon: AtSign },
+  { label: 'Shared Inboxes', href: '/app/settings/shared-inbox', icon: Users },
+  { label: 'Unsubscribes', href: '/app/settings/unsubscribes', icon: UserX },
+  { label: 'Templates', href: '/app/settings/templates', icon: FileText },
   { label: 'Branding', href: '/app/settings/branding', icon: Palette },
 ];
 
@@ -46,6 +49,7 @@ const MARKETING_LINKS = [
 const DEVELOPER_LINKS = [
   { label: 'API Keys', href: '/app/settings/api-keys', icon: Key },
   { label: 'Webhooks', href: '/app/settings/webhooks', icon: Webhook },
+  { label: 'API Console', href: '/app/api-console', icon: Terminal },
   { label: 'Partner', href: '/app/partner', icon: Share2 },
 ];
 
