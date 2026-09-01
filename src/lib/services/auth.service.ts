@@ -16,8 +16,11 @@ export const authService = {
   checkUsername: (username: string) =>
     customAxiosGet(`${base}/auth/username-check`, { username }),
 
-  getWebmailToken: () =>
-    customAxiosPost(`${base}/auth/webmail-token`, {}),
+  // mailbox_id targets a specific mailbox (support@/sales@ etc.) instead of
+  // whichever one the current session happens to be — omit it for the
+  // primary/current mailbox, unchanged from before this param existed.
+  getWebmailToken: (mailboxId?: number) =>
+    customAxiosPost(`${base}/auth/webmail-token`, mailboxId ? { mailbox_id: mailboxId } : {}),
 
   refreshToken: () =>
     customAxiosPost(`${base}/auth/refresh`, {}),

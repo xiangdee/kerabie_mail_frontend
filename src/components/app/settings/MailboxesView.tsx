@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Plus, Trash2, Mail, Eye, EyeOff, Loader2, ArrowDownToLine, ArrowUpFromLine, BellOff, Pencil, Check, X, AlertTriangle, RotateCw, CloudUpload } from 'lucide-react';
+import { Plus, Trash2, Mail, Eye, EyeOff, Loader2, ArrowDownToLine, ArrowUpFromLine, BellOff, Pencil, Check, X, AlertTriangle, RotateCw, CloudUpload, ExternalLink } from 'lucide-react';
 import { ConvertMailboxDialog } from './ConvertMailboxDialog';
 import { UpdateConnectionDialog } from './UpdateConnectionDialog';
 import { useAuth } from '@/lib/context/auth.context';
@@ -57,17 +57,24 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { IMAP_HOST, SMTP_HOST } from '@/lib/constants/links';
-import type { UserEmailAccount } from '@/lib/types/api.types';
+import type { UserEmailAccount, Domain } from '@/lib/types/api.types';
+import { authService } from '@/lib/services/auth.service';
+import { useAppToast } from '@/components/ui/app-toast';
+
+const WEBMAIL_URL = process.env.NEXT_PUBLIC_WEBMAIL_URL ?? 'https://webmail.kerabie.email';
 
 interface CreateForm {
-  email: string;
+  localPart: string;
+  domain: string;
   display_name: string;
   password: string;
 }
 
 interface MailboxesViewProps {
   mailboxes: UserEmailAccount[];
+  domains: Domain[];
   isLoading: boolean;
   isCreating: boolean;
   onCreate: (data: { email: string; display_name: string; password: string }) => Promise<void>;
@@ -81,6 +88,7 @@ interface MailboxesViewProps {
 
 export function MailboxesView({
   mailboxes,
+  domains,
   isLoading,
   isCreating,
   onCreate,
@@ -93,21 +101,55 @@ export function MailboxesView({
 }: MailboxesViewProps) {
   const [open, setOpen] = useState(false);
   const [showPw, setShowPw] = useState(false);
-  const [form, setForm] = useState<CreateForm>({ email: '', display_name: '', password: '' });
+  const [form, setForm] = useState<CreateForm>({ localPart: '', domain: '', display_name: '', password: '' });
   const [editingSenderNameId, setEditingSenderNameId] = useState<number | null>(null);
   const [senderNameDraft, setSenderNameDraft] = useState('');
   const [reactivatePasswordDraft, setReactivatePasswordDraft] = useState<Record<string, string>>({});
   const [convertEmail, setConvertEmail] = useState<string | null>(null);
   const [updateConnectionEmail, setUpdateConnectionEmail] = useState<string | null>(null);
+  const [openingWebmailId, setOpeningWebmailId] = useState<number | null>(null);
+  const { error: toastError } = useAppToast();
 
-  const set = (k: keyof CreateForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const handleOpenWebmail = async (mailboxId: number) => {
+    setOpeningWebmailId(mailboxId);
+    try {
+      const res = await authService.getWebmailToken(mailboxId);
+      if (res.status === true && res.response?.token) {
+        window.open(`${WEBMAIL_URL}?sso=${encodeURIComponent(res.response.token)}`, '_blank', 'noopener,noreferrer');
+      } else {
+        toastError('Could not open webmail');
+      }
+    } catch {
+      toastError('Could not open webmail');
+    } finally {
+      setOpeningWebmailId(null);
+    }
+  };
+
+  const set = (k: 'localPart' | 'display_name' | 'password') => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [k]: e.target.value }));
+
+  // Default to the only verified domain (or the first one) once the list
+  // loads, since the dialog can open before useDomains resolves.
+  const effectiveDomain = form.domain || domains[0]?.domain || '';
+
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (next && !form.domain && domains[0]) {
+      setForm((prev) => ({ ...prev, domain: domains[0].domain }));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onCreate(form);
+    if (!form.localPart.trim() || !effectiveDomain) return;
+    await onCreate({
+      email: `${form.localPart.trim()}@${effectiveDomain}`,
+      display_name: form.display_name,
+      password: form.password,
+    });
     setOpen(false);
-    setForm({ email: '', display_name: '', password: '' });
+    setForm({ localPart: '', domain: '', display_name: '', password: '' });
   };
 
   return (
@@ -120,7 +162,7 @@ export function MailboxesView({
             Manage email accounts on your domain.
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-1.5">
               <Plus className="h-4 w-4" />
@@ -132,16 +174,39 @@ export function MailboxesView({
               <DialogTitle>Create mailbox</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <Label>Email address</Label>
-                <Input
-                  value={form.email}
-                  onChange={set('email')}
-                  placeholder="name@yourdomain.com"
-                  type="email"
-                  required
-                />
-              </div>
+              {domains.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  You need a verified domain before you can create a mailbox on it — add one under
+                  Settings &gt; Domains first.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Email address</Label>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      value={form.localPart}
+                      onChange={set('localPart')}
+                      placeholder="sales"
+                      className="flex-1"
+                      required
+                    />
+                    <span className="text-muted-foreground">@</span>
+                    <Select
+                      value={effectiveDomain}
+                      onValueChange={(domain) => setForm((prev) => ({ ...prev, domain }))}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Domain" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {domains.map((d) => (
+                          <SelectItem key={d.id} value={d.domain}>{d.domain}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Display name</Label>
                 <Input
@@ -173,7 +238,7 @@ export function MailboxesView({
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isCreating}>
+                <Button type="submit" disabled={isCreating || domains.length === 0}>
                   {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Create
                 </Button>
@@ -334,15 +399,29 @@ export function MailboxesView({
                   </div>
                 )}
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground/40 shrink-0 cursor-not-allowed"
-                disabled
-                title="Deleting mailboxes isn't available yet"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <div className="flex flex-col gap-1 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-primary"
+                  disabled={openingWebmailId === mb.id}
+                  onClick={() => handleOpenWebmail(mb.id)}
+                  title={`Open ${mb.email_address} in Webmail`}
+                >
+                  {openingWebmailId === mb.id
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <ExternalLink className="h-4 w-4" />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground/40 cursor-not-allowed"
+                  disabled
+                  title="Deleting mailboxes isn't available yet"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </Card>
           ))}
         </div>

@@ -30,7 +30,7 @@ function LoginForm() {
       // bouncing an unauthenticated user here) — only ever a relative path,
       // never an absolute/external URL, so this can't become an open redirect.
       const redirect = searchParams.get('redirect');
-      router.push(redirect && redirect.startsWith('/') ? redirect : '/app/settings');
+      router.push(redirect && redirect.startsWith('/') ? redirect : '/app');
     } else {
       toastError(result.error || 'Invalid credentials');
     }

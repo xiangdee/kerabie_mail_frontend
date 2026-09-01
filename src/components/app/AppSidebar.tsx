@@ -2,10 +2,11 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  ExternalLink, Settings, ChevronDown,
+  ChevronDown, ChevronRight,
   Globe, Key, Webhook, Share2, LogOut, Mail, Loader2,
   CreditCard, User, Bell, ArrowRight, Shield, AtSign, Server,
   Palette, Megaphone, Users, UserX, FileText, Terminal,
+  LayoutDashboard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -16,13 +17,11 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/lib/context/auth.context';
 import { useAppToast } from '@/components/ui/app-toast';
-import { authService } from '@/lib/services/auth.service';
 import { useState } from 'react';
-
-const WEBMAIL_URL = process.env.NEXT_PUBLIC_WEBMAIL_URL ?? 'https://webmail.kerabie.email';
 
 const ACCOUNT_LINKS = [
   { label: 'Profile', href: '/app/settings', icon: User, exact: true },
@@ -62,22 +61,44 @@ function NavGroup({
   links: { label: string; href: string; icon: React.ElementType; exact?: boolean }[];
   isActive: (href: string, exact?: boolean) => boolean;
 }) {
+  // Open by default; a group containing the current page always starts open
+  // regardless, so navigating never hides where you already are.
+  const containsActive = links.some((l) => isActive(l.href, l.exact));
+  const [open, setOpen] = useState(true);
+
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>{label}</SidebarGroupLabel>
-      <SidebarMenu>
-        {links.map(({ label: l, href, icon: Icon, exact }) => (
-          <SidebarMenuItem key={href}>
-            <SidebarMenuButton asChild isActive={isActive(href, exact)}>
-              <Link href={href} className="flex items-center gap-2">
-                <Icon className="h-4 w-4" />
-                {l}
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        ))}
-      </SidebarMenu>
-    </SidebarGroup>
+    <Collapsible open={open || containsActive} onOpenChange={setOpen}>
+      <SidebarGroup className="py-1">
+        <CollapsibleTrigger className="flex w-full items-center justify-between px-2 group/trigger">
+          <SidebarGroupLabel className="p-0">{label}</SidebarGroupLabel>
+          <ChevronRight className="h-3 w-3 text-muted-foreground transition-transform group-data-[state=open]/trigger:rotate-90" />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenu className="mt-0.5">
+            {links.map(({ label: l, href, icon: Icon, exact }) => {
+              const active = isActive(href, exact);
+              return (
+                <SidebarMenuItem key={href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={active}
+                    className={cn(
+                      'border-l-2 border-transparent rounded-l-none pl-3',
+                      active && 'border-primary bg-primary/5 font-medium text-primary hover:bg-primary/10 hover:text-primary',
+                    )}
+                  >
+                    <Link href={href} className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 shrink-0" />
+                      {l}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </CollapsibleContent>
+      </SidebarGroup>
+    </Collapsible>
   );
 }
 
@@ -87,34 +108,12 @@ export function AppSidebar() {
   const { success } = useAppToast();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
-  const [openingWebmail, setOpeningWebmail] = useState(false);
 
   const handleLogout = async () => {
     setLoggingOut(true);
     await logout();
     success('Signed out');
     router.push('/auth/login');
-  };
-
-  const handleOpenWebmail = async () => {
-    if (!user) {
-      window.open(WEBMAIL_URL, '_blank', 'noopener,noreferrer');
-      return;
-    }
-    setOpeningWebmail(true);
-    try {
-      const res = await authService.getWebmailToken();
-      if (res.status === true && res.response?.token) {
-        const url = `${WEBMAIL_URL}?sso=${encodeURIComponent(res.response.token)}`;
-        window.open(url, '_blank', 'noopener,noreferrer');
-      } else {
-        window.open(WEBMAIL_URL, '_blank', 'noopener,noreferrer');
-      }
-    } catch {
-      window.open(WEBMAIL_URL, '_blank', 'noopener,noreferrer');
-    } finally {
-      setOpeningWebmail(false);
-    }
   };
 
   const initials = user?.full_name
@@ -130,23 +129,33 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="p-4">
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2">
           <Mail className="h-5 w-5 text-primary" />
           <span className="font-bold text-base">Kerabie Mail</span>
         </div>
-        <button
-          onClick={handleOpenWebmail}
-          disabled={openingWebmail}
-          className="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-70"
-        >
-          {openingWebmail
-            ? <Loader2 className="h-4 w-4 animate-spin" />
-            : <ExternalLink className="h-4 w-4" />}
-          Open Webmail
-        </button>
       </SidebarHeader>
 
       <SidebarContent>
+        <SidebarGroup className="py-1">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={isActive('/app', true)}
+                className={cn(
+                  'border-l-2 border-transparent rounded-l-none pl-3',
+                  isActive('/app', true) && 'border-primary bg-primary/5 font-medium text-primary hover:bg-primary/10 hover:text-primary',
+                )}
+              >
+                <Link href="/app" className="flex items-center gap-2">
+                  <LayoutDashboard className="h-4 w-4 shrink-0" />
+                  Dashboard
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
+        <SidebarSeparator />
         <NavGroup label="Account" links={ACCOUNT_LINKS} isActive={isActive} />
         <SidebarSeparator />
         <NavGroup label="Mail" links={MAIL_LINKS} isActive={isActive} />

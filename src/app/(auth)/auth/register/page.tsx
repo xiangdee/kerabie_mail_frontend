@@ -165,7 +165,7 @@ function KerabieForm() {
     setLoading(false);
     if (result.ok) {
       success('Account created!', { description: `Your mailbox ${username}@${KERABIE_DOMAIN} is ready.` });
-      router.push(redirect && redirect.startsWith('/') ? redirect : '/app/settings');
+      router.push(redirect && redirect.startsWith('/') ? redirect : '/app');
     } else {
       toastError(typeof result.error === 'string' ? result.error : 'Registration failed');
     }
@@ -321,7 +321,7 @@ function DomainForm() {
   const [senderName, setSenderName] = useState('');
   const [savingName, setSavingName] = useState(false);
 
-  const goToApp = () => router.push(redirect && redirect.startsWith('/') ? redirect : '/app/settings');
+  const goToApp = () => router.push(redirect && redirect.startsWith('/') ? redirect : '/app');
 
   const attemptConnect = async () => {
     setLoading(true);

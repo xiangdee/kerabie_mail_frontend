@@ -23,6 +23,31 @@ export function useMailboxes(token: string | null) {
   });
 }
 
+export interface MailboxHealth {
+  email: string;
+  is_active: boolean;
+  suspended_reason: string | null;
+  suspension_reason_code: string | null;
+  reputation: { sent_24h: number; bounced_24h: number; bounce_rate_pct: number | null };
+  storage: { used_bytes: number; used_mb: number; limit_mb: number; percentage: number };
+}
+
+// GET /mail/mailbox-usage?email=... — per-mailbox health for the Dashboard.
+// bounce_rate_pct is null (not 0) below a minimum sample size on the
+// backend, since a rate computed from a handful of sends isn't meaningful —
+// render that as "not enough data yet," not as a clean bill of health.
+export function useMailboxHealth(token: string | null, email: string | undefined) {
+  return useQuery({
+    queryKey: ['mailbox-health', email, token],
+    queryFn: async () => {
+      const res = await customAxiosGet(`${base}/mail/mailbox-usage`, { email }, token ?? undefined);
+      return res.status === true ? (res.response as MailboxHealth) : null;
+    },
+    enabled: !!email,
+    staleTime: 60_000,
+  });
+}
+
 export function useCreateMailbox(token: string | null) {
   const qc = useQueryClient();
   return useMutation({

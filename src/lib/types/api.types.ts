@@ -394,6 +394,7 @@ export interface UserEmailAccount {
   email_address: string;
   connection_type: 'imap' | 'dns';
   is_managed: boolean;
+  is_primary?: boolean;
   display_name?: string | null;
   signature_html?: string | null;
   alternate_email?: string | null;
