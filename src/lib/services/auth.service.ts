@@ -70,11 +70,16 @@ export const authService = {
   verify2faSetup: (token: string | null | undefined, code: string) =>
     customAxiosPost(`${base}/auth/2fa/verify-setup`, { code }, '', token ?? undefined),
 
-  disable2fa: (token: string | null | undefined, password: string) =>
-    customAxiosPost(`${base}/auth/2fa/disable`, { password }, '', token ?? undefined),
+  // Both require a current TOTP/backup code, not the account password —
+  // proves the caller still holds the authenticator being removed/rotated
+  // rather than just an authenticated session + password.
+  disable2fa: (token: string | null | undefined, code: string) =>
+    customAxiosPost(`${base}/auth/2fa/disable`, { code }, '', token ?? undefined),
 
-  regenerate2faBackupCodes: (token: string | null | undefined, password: string) =>
-    customAxiosPost(`${base}/auth/2fa/regenerate-backup-codes`, { password }, '', token ?? undefined),
+  // Backend requires a live TOTP code specifically here (not a backup
+  // code) — one leaked backup code shouldn't be able to mint a whole new set.
+  regenerate2faBackupCodes: (token: string | null | undefined, code: string) =>
+    customAxiosPost(`${base}/auth/2fa/regenerate-backup-codes`, { code }, '', token ?? undefined),
 
   getSecurityOverview: (token?: string | null) =>
     customAxiosGet(`${base}/auth/security-overview`, undefined, token ?? undefined),

@@ -64,7 +64,8 @@ export function TwoFactorCard({ token, unusedBackupCodes, onChanged }: Props) {
   const [code, setCode] = useState('');
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
-  const [password, setPassword] = useState('');
+  const [disableCode, setDisableCode] = useState('');
+  const [regenCode, setRegenCode] = useState('');
   const [loading, setLoading] = useState(false);
 
   const reset = () => {
@@ -73,7 +74,8 @@ export function TwoFactorCard({ token, unusedBackupCodes, onChanged }: Props) {
     setOtpauthUri('');
     setCode('');
     setBackupCodes([]);
-    setPassword('');
+    setDisableCode('');
+    setRegenCode('');
   };
 
   const handleStart = async () => {
@@ -107,7 +109,7 @@ export function TwoFactorCard({ token, unusedBackupCodes, onChanged }: Props) {
 
   const handleDisable = async () => {
     setLoading(true);
-    const res = await authService.disable2fa(token, password);
+    const res = await authService.disable2fa(token, disableCode);
     setLoading(false);
     if (res.status === true) {
       success('Two-factor authentication disabled');
@@ -115,22 +117,22 @@ export function TwoFactorCard({ token, unusedBackupCodes, onChanged }: Props) {
       refetch();
       onChanged();
     } else {
-      toastError(typeof res.response === 'string' ? res.response : 'Failed to disable.');
+      toastError(typeof res.response === 'string' ? res.response : 'Incorrect code.');
     }
   };
 
   const handleRegenerate = async () => {
     setLoading(true);
-    const res = await authService.regenerate2faBackupCodes(token, password);
+    const res = await authService.regenerate2faBackupCodes(token, regenCode);
     setLoading(false);
     if (res.status === true) {
       const body = res.response as { backup_codes: string[] };
       setBackupCodes(body.backup_codes);
-      setPassword('');
+      setRegenCode('');
       setView('backup-codes');
       onChanged();
     } else {
-      toastError(typeof res.response === 'string' ? res.response : 'Failed to regenerate codes.');
+      toastError(typeof res.response === 'string' ? res.response : 'Incorrect code.');
     }
   };
 
@@ -238,23 +240,33 @@ export function TwoFactorCard({ token, unusedBackupCodes, onChanged }: Props) {
           </div>
         )}
 
-        {(view === 'disable' || view === 'regenerate') && (
+        {view === 'disable' && (
           <div className="flex flex-col gap-4 max-w-sm">
-            <FieldLabel>
-              {view === 'disable' ? 'Confirm your password to disable two-factor authentication' : 'Confirm your password to regenerate backup codes'}
-            </FieldLabel>
+            <FieldLabel>Enter a code from your authenticator app, or one of your backup codes, to disable two-factor authentication</FieldLabel>
             <Input
-              type="password" autoComplete="current-password"
-              value={password} onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && (view === 'disable' ? handleDisable() : handleRegenerate())}
+              autoComplete="one-time-code"
+              value={disableCode} onChange={(e) => setDisableCode(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleDisable()}
+              placeholder="123456 or a1b2-c3d4"
               autoFocus
             />
             <div className="flex gap-2">
-              {view === 'disable' ? (
-                <GhostButton tone="red" onClick={handleDisable}>{loading ? 'Disabling…' : 'Disable'}</GhostButton>
-              ) : (
-                <AccentButton onClick={handleRegenerate} disabled={!password} loading={loading}>REGENERATE</AccentButton>
-              )}
+              <GhostButton tone="red" onClick={handleDisable}>{loading ? 'Disabling…' : 'Disable'}</GhostButton>
+              <GhostButton onClick={reset}>Cancel</GhostButton>
+            </div>
+          </div>
+        )}
+
+        {view === 'regenerate' && (
+          <div className="flex flex-col gap-4">
+            <FieldLabel>Enter the current code from your authenticator app — a backup code won&apos;t work here, since one leaked code shouldn&apos;t be able to mint a whole new set</FieldLabel>
+            <InputOTP maxLength={6} value={regenCode} onChange={setRegenCode}>
+              <InputOTPGroup>
+                {[0, 1, 2, 3, 4, 5].map((i) => <InputOTPSlot key={i} index={i} />)}
+              </InputOTPGroup>
+            </InputOTP>
+            <div className="flex gap-2">
+              <AccentButton onClick={handleRegenerate} disabled={regenCode.length !== 6} loading={loading}>REGENERATE</AccentButton>
               <GhostButton onClick={reset}>Cancel</GhostButton>
             </div>
           </div>
