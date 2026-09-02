@@ -1,13 +1,19 @@
 'use client';
 import { useState } from 'react';
-import { Loader2, ShieldQuestion, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useAppToast } from '@/components/ui/app-toast';
 import { mailPasswordService } from '@/lib/services/mail-password.service';
 import { useMailboxes } from '@/lib/hooks/useMailboxes';
+import { PlusCorners } from '@/components/app/console/PlusCorners';
+import { cn } from '@/lib/utils';
+
+const MONO = "font-[family-name:var(--font-plex-mono)]";
+const DISPLAY = "font-[family-name:var(--font-barlow-condensed)]";
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return <div className={cn(MONO, 'text-[10px] tracking-[0.12em] text-console-muted2 mb-1.5')}>{children}</div>;
+}
 
 interface RecoveryEmailCardProps {
   mailboxEmail: string;
@@ -41,40 +47,35 @@ export function RecoveryEmailCard({ mailboxEmail, token }: RecoveryEmailCardProp
     }
   };
 
+  const verified = !!mailbox?.alternate_email_verified;
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <ShieldQuestion className="h-4 w-4" />
-          Recovery email
-        </CardTitle>
-        <CardDescription>
-          Add a backup address for <strong>{mailboxEmail}</strong> so you can reset your
-          password if you&apos;re ever locked out and can&apos;t receive mail here. Without
-          one, recovery falls back to proving domain ownership via DNS.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="border border-console-border bg-white flex flex-col">
+      <div className="px-5 py-4 border-b border-console-border flex items-center gap-3 flex-wrap">
+        <div className={cn(DISPLAY, 'font-semibold text-xl')}>Recovery email</div>
+        <div className="flex-1" />
         {mailbox?.alternate_email && (
-          <div className="flex items-center gap-2 text-sm rounded-md border px-3 py-2">
-            {mailbox.alternate_email_verified ? (
-              <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-            ) : (
-              <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
-            )}
-            <span className="truncate">{mailbox.alternate_email}</span>
-            <span className={mailbox.alternate_email_verified ? 'text-emerald-500' : 'text-amber-500'}>
-              {mailbox.alternate_email_verified ? 'Verified' : 'Pending verification'}
-            </span>
+          <span
+            className={cn(MONO, 'text-[9.5px] tracking-[0.08em] uppercase px-1.5 py-0.5 border')}
+            style={{ borderColor: verified ? 'var(--color-console-accent)' : 'var(--color-console-amber)', color: verified ? 'var(--color-console-accent)' : 'var(--color-console-amber)' }}
+          >
+            {verified ? 'Verified' : 'Pending'}
+          </span>
+        )}
+      </div>
+      <div className="p-5 flex flex-col gap-3.5">
+        <p className="text-[13.5px] text-console-muted text-wrap-pretty">
+          Kerabie cannot email a reset link to an address hosted on the account it&apos;s locking you out of. Without a recovery address, resets fall back to proving domain ownership over DNS — that takes hours.
+        </p>
+        {mailbox?.alternate_email && (
+          <div className="border border-console-border-soft bg-console-hover px-4 py-3 text-[13.5px] truncate">
+            {mailbox.alternate_email}
           </div>
         )}
         <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 sm:items-end">
-          <div className="flex-1 space-y-2">
-            <Label htmlFor="alternate-email">
-              {mailbox?.alternate_email ? 'Replace alternate email' : 'Alternate email'}
-            </Label>
+          <div className="flex-1 min-w-[200px]">
+            <FieldLabel>{mailbox?.alternate_email ? 'Replace alternate email' : 'Alternate email'}</FieldLabel>
             <Input
-              id="alternate-email"
               type="email"
               placeholder="you@somewhere-else.com"
               value={alternateEmail}
@@ -82,12 +83,17 @@ export function RecoveryEmailCard({ mailboxEmail, token }: RecoveryEmailCardProp
               required
             />
           </div>
-          <Button type="submit" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Send verification
-          </Button>
+          <button
+            type="submit"
+            disabled={loading}
+            className={cn('relative bg-console-accent text-white border-0 h-9 px-5 hover:bg-console-accent-dark transition-colors disabled:opacity-40 flex items-center gap-2 shrink-0', DISPLAY, 'font-semibold text-[15px] tracking-[0.04em]')}
+          >
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            SEND VERIFICATION
+            <PlusCorners variant="all" />
+          </button>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

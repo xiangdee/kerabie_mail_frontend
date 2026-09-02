@@ -1,8 +1,27 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { customAxiosGet, customAxiosDelete } from '@/lib/utils/CustomAxiosRequest';
 import { apiLink } from '@/lib/constants/links';
+import { authService } from '@/lib/services/auth.service';
 
 const base = apiLink;
+
+export interface SecurityOverview {
+  totp_enabled: boolean;
+  unused_backup_codes: number;
+  password_changed_at: string | null;
+}
+
+export function useSecurityOverview(token: string | null) {
+  return useQuery({
+    queryKey: ['security-overview', token],
+    queryFn: async () => {
+      const res = await authService.getSecurityOverview(token);
+      return res.status === true
+        ? (res.response as SecurityOverview)
+        : { totp_enabled: false, unused_backup_codes: 0, password_changed_at: null };
+    },
+  });
+}
 
 export interface Session {
   id: number;

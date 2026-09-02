@@ -72,4 +72,10 @@ export const authService = {
 
   disable2fa: (token: string | null | undefined, password: string) =>
     customAxiosPost(`${base}/auth/2fa/disable`, { password }, '', token ?? undefined),
+
+  regenerate2faBackupCodes: (token: string | null | undefined, password: string) =>
+    customAxiosPost(`${base}/auth/2fa/regenerate-backup-codes`, { password }, '', token ?? undefined),
+
+  getSecurityOverview: (token?: string | null) =>
+    customAxiosGet(`${base}/auth/security-overview`, undefined, token ?? undefined),
 };

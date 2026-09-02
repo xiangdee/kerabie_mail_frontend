@@ -3,24 +3,30 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/context/auth.context';
 import { useAppToast, ConfirmDialog } from '@/components/ui/app-toast';
-import { useSessions, useRevokeSession, useRevokeAllSessions } from '@/lib/hooks/useSecurity';
+import { useSessions, useRevokeSession, useRevokeAllSessions, useSecurityOverview } from '@/lib/hooks/useSecurity';
 import { useMailboxes } from '@/lib/hooks/useMailboxes';
+import { useDomains } from '@/lib/hooks/useDomains';
+import { useTemplates } from '@/lib/hooks/useTemplates';
 import { usePhoneStatus } from '@/lib/hooks/usePhoneVerification';
-import { useTwoFactorStatus } from '@/lib/hooks/useTwoFactor';
+import { useQueryClient } from '@tanstack/react-query';
 import SecurityView from '@/components/app/settings/SecurityView';
 import { RecoveryEmailCard } from '@/components/app/settings/RecoveryEmailCard';
 import { ChangePasswordCard } from '@/components/app/settings/ChangePasswordCard';
 import { TwoFactorCard } from '@/components/app/settings/TwoFactorCard';
+import { PlusCorners } from '@/components/app/console/PlusCorners';
 import { authService } from '@/lib/services/auth.service';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
+
+const MONO = "font-[family-name:var(--font-plex-mono)]";
+const DISPLAY = "font-[family-name:var(--font-barlow-condensed)]";
 
 export default function SecurityPage() {
   const router = useRouter();
   const { token, user, logout } = useAuth();
   const { success, error: toastError } = useAppToast();
+  const qc = useQueryClient();
 
   // ── session management ──────────────────────────────────────────────
   const [confirmRevokeId, setConfirmRevokeId] = useState<number | null>(null);
@@ -32,42 +38,53 @@ export default function SecurityPage() {
 
   // ── security recommendations ────────────────────────────────────────
   const { data: mailboxes = [] } = useMailboxes(token);
+  const { data: domains = [] } = useDomains(token);
+  const { data: templates = [] } = useTemplates(token);
   const { data: phoneStatus } = usePhoneStatus(token);
-  const { data: twoFactorStatus } = useTwoFactorStatus(token);
+  const { data: overview } = useSecurityOverview(token);
   const selfMailbox = mailboxes.find((m) => m.email_address === user?.email);
   const isTrial = user && (user as { plan_status?: string }).plan_status === 'trial';
   const otherSessionsCount = sessions.filter((s) => !s.is_current).length;
+  const refetchOverview = () => qc.invalidateQueries({ queryKey: ['security-overview'] });
 
   const recommendations = [
     {
       id: 'two-factor',
       title: 'Two-factor authentication',
-      desc: twoFactorStatus?.enabled
-        ? 'Enabled'
-        : 'Require an authenticator app code in addition to your password.',
-      done: !!twoFactorStatus?.enabled,
+      desc: overview?.totp_enabled
+        ? 'Enabled — a code from your authenticator app is required at sign in.'
+        : 'A password alone is one leak away from full mailbox access.',
+      done: !!overview?.totp_enabled,
+      cta: overview?.totp_enabled ? 'Manage' : 'Turn on',
+      href: '#two-factor-section',
     },
     {
       id: 'recovery-email',
       title: 'Recovery email',
       desc: selfMailbox?.alternate_email_verified
         ? `Verified — ${selfMailbox.alternate_email}`
-        : 'Add and verify a backup email so you can recover your account if locked out.',
+        : 'Without one, a lockout means proving domain ownership over DNS.',
       done: !!selfMailbox?.alternate_email_verified,
+      cta: selfMailbox?.alternate_email_verified ? 'Change' : 'Add address',
+      href: '#recovery-section',
     },
     ...(isTrial ? [{
       id: 'phone',
       title: 'Phone verification',
       desc: phoneStatus?.is_verified ? 'Verified' : 'Verify your phone to unlock full sending limits.',
       done: !!phoneStatus?.is_verified,
+      cta: phoneStatus?.is_verified ? 'View' : 'Verify',
+      href: '/app/settings',
     }] : []),
     {
       id: 'sessions',
       title: 'Active sessions',
       desc: otherSessionsCount === 0
         ? 'Only this device is signed in.'
-        : `${otherSessionsCount} other device${otherSessionsCount === 1 ? '' : 's'} signed in — review them above.`,
+        : `${otherSessionsCount} other device${otherSessionsCount === 1 ? '' : 's'} signed in — review them below.`,
       done: otherSessionsCount === 0,
+      cta: 'Review',
+      href: '#sessions-section',
     },
   ];
 
@@ -112,9 +129,12 @@ export default function SecurityPage() {
     }
   };
 
+  const domain = domains[0]?.domain;
+
   return (
     <>
       <SecurityView
+        mailboxEmail={user?.email}
         sessions={sessions}
         isLoading={isLoading}
         isRevoking={revokeSession.isPending}
@@ -124,79 +144,85 @@ export default function SecurityPage() {
         onRevokeAll={() => setConfirmRevokeAll(true)}
       />
 
-      <div className="mt-6">
-        <ChangePasswordCard token={token} />
-      </div>
+      {!isLoading && (
+        <div className="grid lg:grid-cols-2 gap-5 mt-6 items-start">
+          <div id="password-section" className="scroll-mt-20">
+            <ChangePasswordCard token={token} changedAt={overview?.password_changed_at ?? user?.created_at ?? null} />
+          </div>
 
-      <div className="mt-6">
-        <TwoFactorCard token={token} />
-      </div>
+          <div className="flex flex-col gap-5">
+            <div id="two-factor-section" className="scroll-mt-20">
+              <TwoFactorCard token={token} unusedBackupCodes={overview?.unused_backup_codes ?? 0} onChanged={refetchOverview} />
+            </div>
 
-      {user?.email && (
-        <div className="mt-6">
-          <RecoveryEmailCard mailboxEmail={user.email} token={token} />
+            {user?.email && (
+              <div id="recovery-section" className="scroll-mt-20">
+                <RecoveryEmailCard mailboxEmail={user.email} token={token} />
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {/* ── Danger zone ─────────────────────────────────────────────── */}
-      <div className="mt-10 rounded-xl border border-destructive/30 bg-destructive/5 p-6">
-        <div className="flex items-start gap-3 mb-4">
-          <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
-          <div>
-            <h3 className="font-semibold text-destructive">Danger zone</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Permanently delete your account and all associated data — mailboxes, emails, domains, billing, and settings. This cannot be undone.
-            </p>
-          </div>
-        </div>
-
-        {!deleteOpen ? (
-          <Button
-            variant="outline"
-            className="border-destructive/50 text-destructive hover:bg-destructive hover:text-white"
-            onClick={() => { setPassword(''); setDeleteError(null); setDeleteOpen(true); }}
-          >
-            Delete my account
-          </Button>
-        ) : (
-          <div className="space-y-4 pt-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="del-password" className="text-sm font-medium">
-                Confirm your password to continue
-              </Label>
-              <Input
-                id="del-password"
-                type="password"
-                placeholder="Your current password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleDeleteAccount()}
-                className="max-w-sm"
-                autoFocus
-              />
-              {deleteError && (
-                <p className="text-sm text-destructive">{deleteError}</p>
-              )}
+      {!isLoading && (
+        <section className="mt-10 border border-console-red bg-[#fbf1ef] p-5 sm:p-6 flex flex-col sm:flex-row items-start gap-5">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2.5">
+              <span className="w-[7px] h-[7px] bg-console-red shrink-0" />
+              <div className={cn(DISPLAY, 'font-semibold text-2xl')} style={{ color: 'var(--color-console-red)' }}>Delete this account</div>
             </div>
-            <div className="flex items-center gap-3">
-              <Button
-                variant="destructive"
-                disabled={deleting}
-                onClick={handleDeleteAccount}
-              >
-                {deleting ? 'Deleting…' : 'Permanently delete my account'}
-              </Button>
-              <Button
-                variant="ghost"
-                disabled={deleting}
-                onClick={() => setDeleteOpen(false)}
-              >
-                Cancel
-              </Button>
+            <div className="text-[13.5px] mt-1.5 max-w-[76ch]" style={{ color: '#7d4a43' }}>
+              Removes {mailboxes.length} mailbox{mailboxes.length === 1 ? '' : 'es'}, {domains.length} domain{domains.length === 1 ? '' : 's'} and {templates.length} template{templates.length === 1 ? '' : 's'}
+              {domain && <> — mail sent to <span className={cn(MONO, 'text-[12.5px]')}>{domain}</span> starts bouncing immediately</>}. Kerabie keeps nothing after 30 days and this cannot be undone.
             </div>
           </div>
-        )}
-      </div>
+          <div className="flex flex-col gap-2 shrink-0 w-full sm:w-auto">
+            {!deleteOpen ? (
+              <button
+                type="button"
+                onClick={() => { setPassword(''); setDeleteError(null); setDeleteOpen(true); }}
+                className="bg-transparent border border-console-red text-console-red h-9 px-4.5 text-[13px] hover:bg-console-red hover:text-white transition-colors"
+              >
+                Delete my account
+              </button>
+            ) : (
+              <div className="flex flex-col gap-2 min-w-[240px]">
+                <div className={cn(MONO, 'text-[10px] tracking-[0.08em]')} style={{ color: '#8a5f2a' }}>CONFIRM YOUR PASSWORD</div>
+                <Input
+                  type="password"
+                  placeholder="Your current password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleDeleteAccount()}
+                  autoFocus
+                />
+                {deleteError && <p className="text-[12.5px] text-console-red">{deleteError}</p>}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    onClick={handleDeleteAccount}
+                    className={cn('relative bg-console-red text-white border-0 h-9 px-4 hover:bg-[#8a2f27] transition-colors disabled:opacity-50 flex items-center gap-2', DISPLAY, 'font-semibold text-[14px] tracking-[0.04em]')}
+                  >
+                    {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
+                    PERMANENTLY DELETE
+                    <PlusCorners variant="all" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    onClick={() => setDeleteOpen(false)}
+                    className="border border-console-border bg-white h-9 px-4 text-[13px] text-console-muted hover:border-console-accent hover:text-console-accent transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* ── Dialogs ─────────────────────────────────────────────────── */}
       <ConfirmDialog
