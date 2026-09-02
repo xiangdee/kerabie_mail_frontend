@@ -152,7 +152,8 @@ export default function BillingPage() {
           isLoading={isLoading}
           isCancelling={cancelMutation.isPending}
           isReactivating={reactivateMutation.isPending}
-          planType={user?.plan_type}
+          planType={user?.plan_status}
+          plans={plansData?.plans}
           refunds={refunds ?? []}
           refundsLoading={refundsLoading}
           onCancel={() => setConfirmCancel(true)}

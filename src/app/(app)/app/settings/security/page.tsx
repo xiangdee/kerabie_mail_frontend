@@ -4,8 +4,13 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/context/auth.context';
 import { useAppToast, ConfirmDialog } from '@/components/ui/app-toast';
 import { useSessions, useRevokeSession, useRevokeAllSessions } from '@/lib/hooks/useSecurity';
+import { useMailboxes } from '@/lib/hooks/useMailboxes';
+import { usePhoneStatus } from '@/lib/hooks/usePhoneVerification';
+import { useTwoFactorStatus } from '@/lib/hooks/useTwoFactor';
 import SecurityView from '@/components/app/settings/SecurityView';
 import { RecoveryEmailCard } from '@/components/app/settings/RecoveryEmailCard';
+import { ChangePasswordCard } from '@/components/app/settings/ChangePasswordCard';
+import { TwoFactorCard } from '@/components/app/settings/TwoFactorCard';
 import { authService } from '@/lib/services/auth.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,14 +23,55 @@ export default function SecurityPage() {
   const { success, error: toastError } = useAppToast();
 
   // ── session management ──────────────────────────────────────────────
-  const [confirmRevokeId, setConfirmRevokeId] = useState<string | null>(null);
+  const [confirmRevokeId, setConfirmRevokeId] = useState<number | null>(null);
   const [confirmRevokeAll, setConfirmRevokeAll] = useState(false);
 
   const { data: sessions = [], isLoading } = useSessions(token);
   const revokeSession = useRevokeSession(token);
   const revokeAll = useRevokeAllSessions(token);
 
-  const handleRevoke = async (id: string) => {
+  // ── security recommendations ────────────────────────────────────────
+  const { data: mailboxes = [] } = useMailboxes(token);
+  const { data: phoneStatus } = usePhoneStatus(token);
+  const { data: twoFactorStatus } = useTwoFactorStatus(token);
+  const selfMailbox = mailboxes.find((m) => m.email_address === user?.email);
+  const isTrial = user && (user as { plan_status?: string }).plan_status === 'trial';
+  const otherSessionsCount = sessions.filter((s) => !s.is_current).length;
+
+  const recommendations = [
+    {
+      id: 'two-factor',
+      title: 'Two-factor authentication',
+      desc: twoFactorStatus?.enabled
+        ? 'Enabled'
+        : 'Require an authenticator app code in addition to your password.',
+      done: !!twoFactorStatus?.enabled,
+    },
+    {
+      id: 'recovery-email',
+      title: 'Recovery email',
+      desc: selfMailbox?.alternate_email_verified
+        ? `Verified — ${selfMailbox.alternate_email}`
+        : 'Add and verify a backup email so you can recover your account if locked out.',
+      done: !!selfMailbox?.alternate_email_verified,
+    },
+    ...(isTrial ? [{
+      id: 'phone',
+      title: 'Phone verification',
+      desc: phoneStatus?.is_verified ? 'Verified' : 'Verify your phone to unlock full sending limits.',
+      done: !!phoneStatus?.is_verified,
+    }] : []),
+    {
+      id: 'sessions',
+      title: 'Active sessions',
+      desc: otherSessionsCount === 0
+        ? 'Only this device is signed in.'
+        : `${otherSessionsCount} other device${otherSessionsCount === 1 ? '' : 's'} signed in — review them above.`,
+      done: otherSessionsCount === 0,
+    },
+  ];
+
+  const handleRevoke = async (id: number) => {
     const res = await revokeSession.mutateAsync(id);
     if (res.status === true) success('Session revoked');
     else toastError('Failed to revoke session');
@@ -73,13 +119,22 @@ export default function SecurityPage() {
         isLoading={isLoading}
         isRevoking={revokeSession.isPending}
         isRevokingAll={revokeAll.isPending}
+        recommendations={recommendations}
         onRevoke={(id) => setConfirmRevokeId(id)}
         onRevokeAll={() => setConfirmRevokeAll(true)}
       />
 
+      <div className="mt-6">
+        <ChangePasswordCard token={token} />
+      </div>
+
+      <div className="mt-6">
+        <TwoFactorCard token={token} />
+      </div>
+
       {user?.email && (
         <div className="mt-6">
-          <RecoveryEmailCard mailboxEmail={user.email} />
+          <RecoveryEmailCard mailboxEmail={user.email} token={token} />
         </div>
       )}
 

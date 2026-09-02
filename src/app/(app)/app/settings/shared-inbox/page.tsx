@@ -32,7 +32,7 @@ export default function SharedInboxPage() {
   const removeMutation = useRemoveMember(token);
   const leaveMutation = useLeaveSharedInbox(token);
 
-  const isPremium = user?.plan_type === 'premium';
+  const isPremium = user?.plan_status === 'premium';
 
   const handleInvite = async (data: { invite_email: string; role: string }) => {
     if (!selectedEmailId) return;

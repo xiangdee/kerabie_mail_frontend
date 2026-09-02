@@ -1,6 +1,6 @@
 # Project Instructions
 
-Before making any design, UI, or visual decision in this repo — layout, color, spacing, component choices, styling conventions, iconography — read `Design.md` in the repo root first. It documents this project's design system and conventions.
+Before making any design, UI, or visual decision in this repo — layout, color, spacing, component choices, styling conventions, iconography — (re-)read `Design.md` in the repo root. It documents this project's design system and conventions. Do this every time, even if you already read it earlier in the same session — a rule read once and then forgotten mid-session is as good as never read.
 
 When creating or updating a feature that already exists — especially one that shares data with another page — always check the existing implementation first, so changes don't ship as breaking changes.
 
@@ -18,3 +18,14 @@ Custom Branding and the full Campaigns feature (list/create/segments/drip steps/
 - `connection_type='dns'` (register or log in by proving ownership of your own domain via DNS) — **legitimately belongs here too.** It's a real alternative to `/auth/register`'s `username@kerabie.email` path ("I want my account to be admin@mycompany.com instead"), not a mailbox-aggregation feature. If you build this, it's a signup/login flow (parallel to the existing login/register pages), not a Settings > Mailboxes feature — there's no logged-in user to attach anything to yet.
 
 This app's *existing*, logged-in-only mailbox model is still different on purpose: one `User` owning multiple `UserEmail` rows via `POST /mail/mailbox/add`, which requires already owning a verified domain — a domain-owner ("I run mycompany.com, I'm adding sales@/support@ under my one account") pattern. That one still doesn't take IMAP credentials for an external provider — don't conflate it with the `connection_type='dns'` registration path above.
+
+
+- Study how established products solve the problem before designing a solution. Adopt their proven patterns and conventions rather than inventing an approach from scratch.
+
+
+-always close all process you work on whenever you are  done
+-always test for edge cases
+-when working on another project in this ecosystem always read the Design.md, Agents.md, Claude.md when it is availaible
+-if working on the mobile app at kerabie_mail\apps\kerabie_mail make sure these changes reflect the frontend at kerabie_mail\kerabie_mail_frontend,kerabie_mail\kerabie-mail-webmail(where this is mostly maoling features) and vice versa
+
+-make sure the admin reflects the ability to manage features you create at kerabie_mail\kerabie_mail_admin

@@ -68,7 +68,7 @@ function buildFallbackPlans(currency: 'usd' | 'ngn'): Plan[] {
       name: 'Free',
       description: 'Get started with one mailbox',
       billing_cycles: { forever: cycle(0, 0) },
-      features: ['1 mailbox', '500 MB storage', '50 emails/day', 'Basic spam filter'],
+      features: ['1 mailbox', '500 MB storage', '50 emails/day', 'Basic spam filter', 'API access'],
       limits: { mailboxes: 1, storage_gb: 0.5, emails_per_day: 50 },
       highlighted: false,
     },
@@ -84,7 +84,7 @@ function buildFallbackPlans(currency: 'usd' | 'ngn'): Plan[] {
       },
       features: [
         '3 mailboxes', '10 GB per mailbox', 'AI compose', 'Calendar & contacts',
-        'Read receipts', 'Unsend', 'Custom domain',
+        'Read receipts', 'Unsend', 'Custom domain', 'API access',
       ],
       limits: { mailboxes: 3, storage_gb: 10, emails_per_day: -1 },
       highlighted: true,

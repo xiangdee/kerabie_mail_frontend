@@ -9,8 +9,10 @@ export function useAliases(token: string | null) {
   return useQuery({
     queryKey: ['aliases', token],
     queryFn: async () => {
-      const res = await customAxiosGet(`${base}/mail/aliases`, undefined, token ?? undefined);
-      return res.status === true ? (res.response as EmailAlias[]) : ([] as EmailAlias[]);
+      // GET /mail/aliases returns a paginated {items, total, has_more}
+      // envelope, not a bare array.
+      const res = await customAxiosGet(`${base}/mail/aliases`, { page_size: 100 }, token ?? undefined);
+      return res.status === true ? ((res.response?.items ?? []) as EmailAlias[]) : ([] as EmailAlias[]);
     },
     enabled: true,
   });

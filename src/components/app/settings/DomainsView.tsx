@@ -12,9 +12,11 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import type { Domain, DnsRecord } from '@/lib/types/api.types';
+import type { DomainUsage } from '@/lib/hooks/useDomains';
 
 interface DomainsViewProps {
   domains: Domain[];
+  usage: DomainUsage | null;
   isLoading: boolean;
   isAdding: boolean;
   isVerifying: boolean;
@@ -58,8 +60,13 @@ const DnsRow = ({ record }: { record: DnsRecord }) => {
   );
 };
 
+// The backend uses this as its internal "no real cap" sentinel for
+// Pro/Premium (see PLAN_LIMITS in plan.py) rather than a dedicated
+// unlimited marker — mirrored here just for display purposes.
+const UNLIMITED_SENTINEL = 999999;
+
 export function DomainsView({
-  domains, isLoading, isAdding, isVerifying, isDeleting, isSendingInstructions,
+  domains, usage, isLoading, isAdding, isVerifying, isDeleting, isSendingInstructions,
   onAdd, onVerify, onDelete, onSendInstructions, onToggleNoReply, togglingNoReplyId,
 }: DomainsViewProps) {
   const [newDomain, setNewDomain] = useState('');
@@ -68,9 +75,12 @@ export function DomainsView({
   const [sendDialogDomain, setSendDialogDomain] = useState<Domain | null>(null);
   const [developerEmail, setDeveloperEmail] = useState('');
 
+  const isUnlimited = !usage || usage.limit >= UNLIMITED_SENTINEL;
+  const atLimit = !!usage && !isUnlimited && usage.used >= usage.limit;
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newDomain.trim()) return;
+    if (!newDomain.trim() || atLimit) return;
     await onAdd(newDomain.trim().toLowerCase());
     setNewDomain('');
   };
@@ -98,6 +108,11 @@ export function DomainsView({
         <p className="text-sm text-muted-foreground mt-0.5">
           Add your custom domains to send and receive email.
         </p>
+        {usage && (
+          <p className="text-xs text-muted-foreground mt-1">
+            {isUnlimited ? `${usage.used} domain${usage.used === 1 ? '' : 's'} · unlimited on your plan` : `${usage.used} / ${usage.limit} domains used`}
+          </p>
+        )}
       </div>
 
       {/* Add form */}
@@ -107,12 +122,19 @@ export function DomainsView({
           onChange={(e) => setNewDomain(e.target.value)}
           placeholder="yourdomain.com"
           className="flex-1"
+          disabled={atLimit}
         />
-        <Button type="submit" disabled={isAdding || !newDomain.trim()}>
+        <Button type="submit" disabled={isAdding || !newDomain.trim() || atLimit}>
           {isAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
           <span className="ml-1.5">Add domain</span>
         </Button>
       </form>
+      {atLimit && (
+        <p className="text-xs text-amber-600 -mt-3">
+          You've reached your plan's domain limit ({usage!.used}/{usage!.limit}).{' '}
+          <a href="/app/settings/billing" className="underline font-medium">Upgrade</a> to add more.
+        </p>
+      )}
 
       {/* List */}
       {isLoading ? (

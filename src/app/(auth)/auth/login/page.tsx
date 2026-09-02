@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/context/auth.context';
 
 function LoginForm() {
-  const { login } = useAuth();
+  const { login, verifyTwoFactor } = useAuth();
   const { success, error: toastError } = useAppToast();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -18,6 +18,17 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [pendingToken, setPendingToken] = useState<string | null>(null);
+  const [code, setCode] = useState('');
+
+  const goHome = () => {
+    success('Welcome back!');
+    // Honor a same-origin ?redirect= (e.g. from the OAuth consent flow
+    // bouncing an unauthenticated user here) — only ever a relative path,
+    // never an absolute/external URL, so this can't become an open redirect.
+    const redirect = searchParams.get('redirect');
+    router.push(redirect && redirect.startsWith('/') ? redirect : '/app');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,16 +36,67 @@ function LoginForm() {
     const result = await login(email, password);
     setLoading(false);
     if (result.ok) {
-      success('Welcome back!');
-      // Honor a same-origin ?redirect= (e.g. from the OAuth consent flow
-      // bouncing an unauthenticated user here) — only ever a relative path,
-      // never an absolute/external URL, so this can't become an open redirect.
-      const redirect = searchParams.get('redirect');
-      router.push(redirect && redirect.startsWith('/') ? redirect : '/app');
+      goHome();
+    } else if (result.requires2fa) {
+      setPendingToken(result.pendingToken);
     } else {
       toastError(result.error || 'Invalid credentials');
     }
   };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pendingToken) return;
+    setLoading(true);
+    const result = await verifyTwoFactor(pendingToken, code);
+    setLoading(false);
+    if (result.ok) {
+      goHome();
+    } else {
+      toastError(result.error || 'Incorrect code');
+    }
+  };
+
+  if (pendingToken) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-1">
+          <span className="font-mono text-[11px] uppercase tracking-[.13em] text-primary">Two-factor authentication</span>
+          <h1 className="text-[28px] font-bold tracking-tight">Enter your code</h1>
+          <p className="text-sm text-muted-foreground">
+            Enter the 6-digit code from your authenticator app, or one of your backup codes.
+          </p>
+        </div>
+        <form onSubmit={handleVerifyCode} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="totp-code">Code</Label>
+            <Input
+              id="totp-code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="123456"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              required
+              autoFocus
+              className="rounded-none"
+            />
+          </div>
+          <Button type="submit" className="w-full rounded-none" disabled={loading || !code.trim()}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Verify
+          </Button>
+          <button
+            type="button"
+            onClick={() => { setPendingToken(null); setCode(''); }}
+            className="w-full text-center text-sm text-muted-foreground hover:text-foreground"
+          >
+            ← Back to sign in
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -2,20 +2,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { customAxiosGet, customAxiosPost, customAxiosDelete, customAxiosRequest } from '@/lib/utils/CustomAxiosRequest';
 import { apiLink } from '@/lib/constants/links';
 import type {
-  Campaign, CampaignStep, CampaignStats, CampaignAnalytics, ContactGroup, SegmentCondition,
+  Campaign, CampaignStep, CampaignStats, CampaignAnalytics, CampaignsSummary, SegmentCondition,
 } from '@/lib/types/api.types';
 
 const base = apiLink;
 
-export function useContactGroups(token: string | null) {
-  return useQuery({
-    queryKey: ['contact-groups', token],
-    queryFn: async () => {
-      const res = await customAxiosGet(`${base}/contacts/groups`, undefined, token ?? undefined);
-      return res.status === true ? (res.response as ContactGroup[]) : ([] as ContactGroup[]);
-    },
-  });
-}
+// Contacts and their groups are managed on the /app/contacts page —
+// re-exported here so existing campaign call sites importing it from this
+// module don't need to change.
+export { useContactGroups } from './useContacts';
 
 export function useCampaigns(token: string | null) {
   return useQuery({
@@ -23,6 +18,16 @@ export function useCampaigns(token: string | null) {
     queryFn: async () => {
       const res = await customAxiosGet(`${base}/campaigns`, undefined, token ?? undefined);
       return res.status === true ? (res.response as Campaign[]) : ([] as Campaign[]);
+    },
+  });
+}
+
+export function useCampaignsSummary(token: string | null, days = 30) {
+  return useQuery({
+    queryKey: ['campaigns-summary', days, token],
+    queryFn: async () => {
+      const res = await customAxiosGet(`${base}/campaigns/stats/summary`, { days }, token ?? undefined);
+      return res.status === true ? (res.response as CampaignsSummary) : null;
     },
   });
 }
@@ -86,6 +91,28 @@ export function useSendCampaign(id: number, token: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => customAxiosPost(`${base}/campaigns/${id}/send`, undefined, '', token ?? ''),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['campaigns'] });
+      qc.invalidateQueries({ queryKey: ['campaign', id] });
+    },
+  });
+}
+
+export function usePauseCampaign(id: number, token: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => customAxiosPost(`${base}/campaigns/${id}/pause`, undefined, '', token ?? ''),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['campaigns'] });
+      qc.invalidateQueries({ queryKey: ['campaign', id] });
+    },
+  });
+}
+
+export function useResumeCampaign(id: number, token: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => customAxiosPost(`${base}/campaigns/${id}/resume`, undefined, '', token ?? ''),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['campaigns'] });
       qc.invalidateQueries({ queryKey: ['campaign', id] });

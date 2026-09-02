@@ -12,7 +12,7 @@ export default function DashboardPage() {
   const { data: mailboxes = [], isLoading: loadingMailboxes } = useMailboxes(token);
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8">
+    <div className="px-4 py-4 sm:px-8 sm:py-7">
       <DashboardView
         usage={usage ?? null}
         domains={domains}

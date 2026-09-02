@@ -6,6 +6,11 @@ import type { User } from '@/lib/types/api.types';
 
 const SESSION_REFRESH_INTERVAL_MS = 15 * 60 * 1000; // half the 30min access-token TTL
 
+export type LoginResult =
+  | { ok: true }
+  | { ok: false; requires2fa: true; pendingToken: string }
+  | { ok: false; requires2fa?: false; error?: string };
+
 interface AuthContextValue {
   user: User | null;
   // Always null now — auth is httpOnly-cookie based (unreadable by JS).
@@ -15,7 +20,8 @@ interface AuthContextValue {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<LoginResult>;
+  verifyTwoFactor: (pendingToken: string, code: string) => Promise<{ ok: boolean; error?: string }>;
   register: (username: string, password: string, full_name?: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -63,8 +69,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(id);
   }, [user]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<LoginResult> => {
     const res = await authService.login({ email, password });
+    if (res.status === true) {
+      const body = res.response as { user?: User; requires_2fa?: boolean; two_factor_pending_token?: string };
+      if (body.requires_2fa) {
+        return { ok: false, requires2fa: true, pendingToken: body.two_factor_pending_token! };
+      }
+      setUser(body.user!);
+      return { ok: true };
+    }
+    return { ok: false, error: res.response as string };
+  };
+
+  const verifyTwoFactor = async (pendingToken: string, code: string) => {
+    const res = await authService.verifyTwoFactorLogin(pendingToken, code);
     if (res.status === true) {
       const { user: u } = res.response as { user: User };
       setUser(u);
@@ -90,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, token: null, isLoading, isAuthenticated: !!user, login, register, logout, refreshUser }}
+      value={{ user, token: null, isLoading, isAuthenticated: !!user, login, verifyTwoFactor, register, logout, refreshUser }}
     >
       {children}
     </AuthContext.Provider>

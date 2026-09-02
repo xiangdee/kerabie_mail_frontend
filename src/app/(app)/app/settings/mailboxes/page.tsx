@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/lib/context/auth.context';
 import { useMailboxes, useCreateMailbox, useSetMailboxNoReply, useUpdateMailbox, useReactivateMailbox } from '@/lib/hooks/useMailboxes';
+import { useDomains } from '@/lib/hooks/useDomains';
 import { useAppToast } from '@/components/ui/app-toast';
 import { MailboxesView } from '@/components/app/settings/MailboxesView';
 
@@ -13,6 +14,8 @@ export default function MailboxesPage() {
   const [reactivatingEmail, setReactivatingEmail] = useState<string | null>(null);
 
   const { data: mailboxes = [], isLoading } = useMailboxes(token);
+  const { data: domains = [] } = useDomains(token);
+  const verifiedDomains = domains.filter((d) => d.status === 'verified');
   const createMutation = useCreateMailbox(token);
   const noReplyMutation = useSetMailboxNoReply(token);
   const updateMutation = useUpdateMailbox(token);
@@ -63,6 +66,7 @@ export default function MailboxesPage() {
   return (
     <MailboxesView
       mailboxes={mailboxes}
+      domains={verifiedDomains}
       isLoading={isLoading}
       isCreating={createMutation.isPending}
       onCreate={handleCreate}

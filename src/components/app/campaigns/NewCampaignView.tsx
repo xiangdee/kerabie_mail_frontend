@@ -1,61 +1,70 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { PlusCorners } from '@/components/app/console/PlusCorners';
+import { TemplatePicker } from '@/components/app/campaigns/TemplatePicker';
+import { HtmlBodyField } from '@/components/app/campaigns/HtmlBodyField';
+import { cn } from '@/lib/utils';
 import type { UserEmailAccount } from '@/lib/types/api.types';
 import type { CampaignCreateInput } from '@/lib/hooks/useCampaigns';
+import type { EmailTemplate } from '@/lib/hooks/useTemplates';
+
+const MONO = "font-[family-name:var(--font-plex-mono)]";
+const DISPLAY = "font-[family-name:var(--font-barlow-condensed)]";
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return <div className={cn(MONO, 'text-[10px] tracking-[0.12em] text-console-muted2 mb-1.5')}>{children}</div>;
+}
 
 interface Props {
   mailboxes: UserEmailAccount[];
+  templates: EmailTemplate[];
   isCreating: boolean;
   onCreate: (data: CampaignCreateInput) => void;
 }
 
-export default function NewCampaignView({ mailboxes, isCreating, onCreate }: Props) {
+export default function NewCampaignView({ mailboxes, templates, isCreating, onCreate }: Props) {
   const [name, setName] = useState('');
-  const [fromEmail, setFromEmail] = useState('');
+  const [fromEmailChoice, setFromEmailChoice] = useState<string | null>(null);
   const [subject, setSubject] = useState('');
   const [bodyHtml, setBodyHtml] = useState('');
 
-  useEffect(() => {
-    if (mailboxes.length > 0 && !fromEmail) {
-      setFromEmail(mailboxes[0].email_address);
-    }
-  }, [mailboxes, fromEmail]);
-
+  const fromEmail = fromEmailChoice ?? mailboxes[0]?.email_address ?? '';
   const canCreate = name.trim() && fromEmail && subject.trim() && bodyHtml.trim();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/app/campaigns"><ArrowLeft className="h-4 w-4" /></Link>
-        </Button>
-        <div>
-          <h1 className="text-xl font-bold text-foreground">New Campaign</h1>
-          <p className="text-sm text-muted-foreground">You can add drip steps and a recipient segment after creating it.</p>
-        </div>
+        <Link href="/app/campaigns">
+          <button type="button" className="bg-transparent border border-console-border h-8 px-3 text-[12.5px] text-console-muted hover:border-console-accent hover:text-console-accent transition-colors">
+            ← Campaigns
+          </button>
+        </Link>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Content</CardTitle>
-          <CardDescription>This becomes step 1 of the sequence.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Spring Sale" />
+      <div>
+        <div className={cn(MONO, 'text-[10px] tracking-[0.12em] text-console-muted2')}>NEW CAMPAIGN</div>
+        <h1 className={cn(DISPLAY, 'font-semibold text-3xl sm:text-4xl leading-none mt-1')}>Name it and write the first send</h1>
+        <div className="text-console-muted mt-1.5 max-w-[60ch]">You can add drip follow-up steps and a recipient segment after creating it.</div>
+      </div>
+
+      <div className="border border-console-border bg-white">
+        <div className="px-5 py-4 border-b border-console-border">
+          <div className={cn(MONO, 'text-[10px] tracking-[0.12em] text-console-muted2')}>STEP 1</div>
+          <div className={cn(DISPLAY, 'font-semibold text-xl mt-0.5')}>Content</div>
+          <div className="text-console-muted text-[13px] mt-0.5">This becomes step 1 of the sequence.</div>
+        </div>
+        <div className="p-5 space-y-4">
+          <div>
+            <FieldLabel>Name</FieldLabel>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. October digest" />
           </div>
-          <div className="space-y-1.5">
-            <Label>From</Label>
-            <Select value={fromEmail} onValueChange={setFromEmail}>
+          <div>
+            <FieldLabel>From</FieldLabel>
+            <Select value={fromEmail} onValueChange={setFromEmailChoice}>
               <SelectTrigger><SelectValue placeholder="Select mailbox" /></SelectTrigger>
               <SelectContent>
                 {mailboxes.map((m) => (
@@ -64,23 +73,27 @@ export default function NewCampaignView({ mailboxes, isCreating, onCreate }: Pro
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5">
-            <Label>Subject</Label>
+          <TemplatePicker
+            templates={templates}
+            onApply={(s, b) => { setSubject(s); setBodyHtml(b); }}
+          />
+          <div>
+            <FieldLabel>Subject</FieldLabel>
             <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject line" />
           </div>
-          <div className="space-y-1.5">
-            <Label>Body (HTML)</Label>
-            <Textarea value={bodyHtml} onChange={(e) => setBodyHtml(e.target.value)} className="min-h-[180px]" placeholder="<p>Hello!</p>" />
-          </div>
-          <Button
+          <HtmlBodyField value={bodyHtml} onChange={setBodyHtml} minHeight={180} />
+          <button
+            type="button"
             disabled={!canCreate || isCreating}
             onClick={() => onCreate({ from_email: fromEmail, name, subject, body_html: bodyHtml })}
+            className={cn('relative bg-console-accent text-white border-0 h-9 px-5 hover:bg-console-accent-dark transition-colors disabled:opacity-50', DISPLAY, 'font-semibold text-[15px] tracking-[0.04em] flex items-center gap-2')}
           >
-            {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Create Draft
-          </Button>
-        </CardContent>
-      </Card>
+            {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
+            CREATE DRAFT
+            <PlusCorners variant="all" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

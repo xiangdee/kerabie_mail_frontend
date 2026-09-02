@@ -49,7 +49,7 @@ export default function WebhooksDocsPage() {
             <h1 className="text-4xl font-bold mb-3">Webhooks</h1>
             <p className="text-muted-foreground text-lg">
               Webhooks deliver real-time HTTP POST notifications to your server when events happen in Kerabie Mail.
-              Available on the <strong>Premium plan</strong>. Configure endpoints in <strong>Settings → Webhooks</strong>.
+              Available on the <strong>Premium plan</strong>. Configure endpoints under <strong>Webhooks</strong> in the sidebar.
             </p>
             <p className="text-sm text-muted-foreground mt-3">
               Hosting partner? The <code className="bg-muted px-1 rounded text-xs">partner_*</code> events below use this exact
@@ -285,7 +285,7 @@ def verify_webhook(raw_body: bytes, signature_header: str, secret: str) -> bool:
             <p className="text-muted-foreground mb-4">
               If your endpoint returns a non-2xx response or times out (10s), Kerabie retries with
               exponential backoff. After 5 failures the delivery is marked <strong>dead</strong> and
-              no further retries occur. Dead deliveries appear in <strong>Settings → Webhooks → Delivery log</strong>.
+              no further retries occur. Dead deliveries appear in the <strong>Webhooks</strong> page's delivery log.
             </p>
             <div className="overflow-x-auto">
               <table className="w-full border rounded-xl text-sm">

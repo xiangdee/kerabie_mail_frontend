@@ -21,7 +21,7 @@ const comparisonRows = [
   { feature: "Custom domains", free: "—", pro: "1 included", premium: "Unlimited" },
   { feature: "AI Compose", free: "Trial", pro: "Included", premium: "Included" },
   { feature: "Shared inboxes", free: "—", pro: "—", premium: "Included" },
-  { feature: "API access", free: "—", pro: "—", premium: "Included" },
+  { feature: "API access", free: "Included", pro: "Included", premium: "Included" },
   { feature: "Audit logs", free: "—", pro: "—", premium: "Included" },
 ];
 

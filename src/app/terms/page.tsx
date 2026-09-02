@@ -268,6 +268,19 @@ function T4() {
         enters a 7-day grace period with restricted features. If payment is not resolved during the
         grace period, the account downgrades to Free.
       </P>
+
+      <H3>Mobile App Store Subscriptions</H3>
+      <P>
+        If you subscribe through the Kerabie Mail app on the Apple App Store or Google Play, the
+        following applies in addition to the terms above:
+      </P>
+      <UL items={[
+        'Payment will be charged to your Apple ID or Google Play account at confirmation of purchase.',
+        'Subscriptions automatically renew unless auto-renew is turned off at least 24 hours before the end of the current period.',
+        'Your account will be charged for renewal within 24 hours prior to the end of the current period, at the price for your selected plan and billing period shown above.',
+        'You can manage your subscription or turn off auto-renewal at any time by going to your Account Settings on the App Store or Google Play after purchase.',
+        'Any unused portion of a free trial period, if one is offered, will be forfeited when you purchase a subscription.',
+      ]} />
     </div>
   );
 }

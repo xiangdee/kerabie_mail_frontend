@@ -56,4 +56,20 @@ export const authService = {
 
   deleteAccount: (token: string | null | undefined, password: string) =>
     customAxiosDelete(`${base}/auth/account`, { password }, token ?? undefined),
+
+  // ── Two-factor auth (TOTP) ──────────────────────────────────────────
+  verifyTwoFactorLogin: (pending_token: string, code: string) =>
+    customAxiosPost(`${base}/auth/2fa/verify-login`, { pending_token, code, auth_channel: 'web' }),
+
+  get2faStatus: (token?: string | null) =>
+    customAxiosGet(`${base}/auth/2fa/status`, undefined, token ?? undefined),
+
+  start2faSetup: (token?: string | null) =>
+    customAxiosPost(`${base}/auth/2fa/setup`, {}, '', token ?? undefined),
+
+  verify2faSetup: (token: string | null | undefined, code: string) =>
+    customAxiosPost(`${base}/auth/2fa/verify-setup`, { code }, '', token ?? undefined),
+
+  disable2fa: (token: string | null | undefined, password: string) =>
+    customAxiosPost(`${base}/auth/2fa/disable`, { password }, '', token ?? undefined),
 };

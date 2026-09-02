@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useMailboxes } from '@/lib/hooks/useMailboxes';
+import { useTemplates } from '@/lib/hooks/useTemplates';
 import { useAuth } from '@/lib/context/auth.context';
 import { useAppToast } from '@/components/ui/app-toast';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, Key, ExternalLink, Loader2 } from 'lucide-react';
 import { apiLink } from '@/lib/constants/links';
+import { cn } from '@/lib/utils';
+import { DEFAULT_SAMPLE_VALUES, extractTemplateVariables } from '@/lib/constants/templateDesigns';
 
 interface ApiResponse {
   status: number;
@@ -23,7 +26,7 @@ interface ApiResponse {
 
 export default function ApiConsolePage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 py-4 sm:px-8 sm:py-7">
       <div>
         <h1 className="text-2xl font-bold">API Console</h1>
         <p className="text-muted-foreground text-sm mt-1">
@@ -60,17 +63,49 @@ export default function ApiConsolePage() {
 function SendTestTab() {
   const { token } = useAuth();
   const { data: mailboxes = [] } = useMailboxes(token);
+  const { data: templates = [] } = useTemplates(token);
   const { success, error: toastError } = useAppToast();
 
+  const [mode, setMode] = useState<'standard' | 'template'>('standard');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+
+  // standard mode
   const [subject, setSubject] = useState('Test email from Kerabie API');
   const [body, setBody] = useState('<p>Hello! This is a test email sent via the Kerabie Mail API.</p>');
+
+  // template mode
+  const [templateId, setTemplateId] = useState('');
+  const [variables, setVariables] = useState<Record<string, string>>({});
+  const selectedTemplate = templates.find((t) => String(t.id) === templateId) ?? null;
+  const templateVarNames = selectedTemplate
+    ? extractTemplateVariables(selectedTemplate.subject, selectedTemplate.body_html).filter((n) => n !== 'unsubscribe_url')
+    : [];
+
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<ApiResponse | null>(null);
 
+  const handlePickTemplate = (id: string) => {
+    setTemplateId(id);
+    const t = templates.find((tpl) => String(tpl.id) === id);
+    if (!t) return;
+    // unsubscribe_url is deliberately excluded — POST /mail/send already
+    // auto-generates a real, working one-click link for it (see send.py)
+    // *unless* the caller's variables already set that key. Pre-filling it
+    // here with the editor's fake preview placeholder would silently
+    // override that and ship a non-functional unsubscribe link.
+    const names = extractTemplateVariables(t.subject, t.body_html).filter((n) => n !== 'unsubscribe_url');
+    setVariables(Object.fromEntries(names.map((n) => [n, DEFAULT_SAMPLE_VALUES[n] ?? ''])));
+  };
+
+  const requestBody =
+    mode === 'template'
+      ? { from_email: from || 'you@domain.com', to: [to || 'recipient@example.com'], template_id: templateId ? Number(templateId) : 0, variables }
+      : { from_email: from || 'you@domain.com', to: [to || 'recipient@example.com'], subject, body_html: body };
+
   const handleSend = async () => {
     if (!from || !to) return;
+    if (mode === 'template' && !templateId) return;
     setLoading(true);
     setResponse(null);
     const start = Date.now();
@@ -82,12 +117,11 @@ function SendTestTab() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          from_email: from,
-          to: [to],
-          subject,
-          body_html: body,
-        }),
+        body: JSON.stringify(
+          mode === 'template'
+            ? { from_email: from, to: [to], template_id: Number(templateId), variables }
+            : { from_email: from, to: [to], subject, body_html: body },
+        ),
       });
 
       const text = await res.text();
@@ -116,8 +150,8 @@ function SendTestTab() {
             <Select value={from} onValueChange={setFrom}>
               <SelectTrigger><SelectValue placeholder="Select a mailbox…" /></SelectTrigger>
               <SelectContent>
-                {mailboxes.map((m: any) => (
-                  <SelectItem key={m.email} value={m.email}>{m.email}</SelectItem>
+                {mailboxes.map((m) => (
+                  <SelectItem key={m.id} value={m.email_address}>{m.email_address}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -133,23 +167,91 @@ function SendTestTab() {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Subject</Label>
-            <Input value={subject} onChange={e => setSubject(e.target.value)} />
+            <Label>Content</Label>
+            <div className="flex border rounded-lg p-0.5 w-fit">
+              <button
+                type="button" onClick={() => setMode('standard')}
+                className={cn('px-3 py-1.5 text-sm rounded-md transition-colors', mode === 'standard' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}
+              >
+                Standard text
+              </button>
+              <button
+                type="button" onClick={() => setMode('template')}
+                className={cn('px-3 py-1.5 text-sm rounded-md transition-colors', mode === 'template' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}
+              >
+                Use template
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label>Body (HTML)</Label>
-            <Textarea
-              value={body}
-              onChange={e => setBody(e.target.value)}
-              rows={5}
-              className="font-mono text-sm"
-            />
-          </div>
+          {mode === 'template' ? (
+            <>
+              <div className="space-y-1.5">
+                <Label>Template</Label>
+                <Select value={templateId} onValueChange={handlePickTemplate}>
+                  <SelectTrigger><SelectValue placeholder={templates.length ? 'Choose a saved template…' : 'No templates yet'} /></SelectTrigger>
+                  <SelectContent>
+                    {templates.map((t) => (
+                      <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {templates.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    <Link href="/app/templates/new" className="text-primary hover:underline">Create a template</Link> first, then send with it here.
+                  </p>
+                )}
+              </div>
+
+              {selectedTemplate && (
+                <div className="space-y-2">
+                  <Label>Variables</Label>
+                  {templateVarNames.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">This template has no {'{{placeholders}}'}.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {templateVarNames.map((name) => (
+                        <div key={name} className="flex items-center gap-2">
+                          <code className="text-xs bg-muted px-1.5 py-1 rounded shrink-0 w-2/5 truncate">{'{{' + name + '}}'}</code>
+                          <Input
+                            value={variables[name] ?? ''}
+                            onChange={(e) => setVariables((prev) => ({ ...prev, [name]: e.target.value }))}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {selectedTemplate && extractTemplateVariables(selectedTemplate.subject, selectedTemplate.body_html).includes('unsubscribe_url') && (
+                    <p className="text-xs text-muted-foreground">
+                      This template has an {'{{unsubscribe_url}}'} placeholder — it's filled with a real, working one-click link automatically, not something you need to provide.
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="space-y-1.5">
+                <Label>Subject</Label>
+                <Input value={subject} onChange={e => setSubject(e.target.value)} />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Body (HTML)</Label>
+                <Textarea
+                  value={body}
+                  onChange={e => setBody(e.target.value)}
+                  rows={5}
+                  className="font-mono text-sm"
+                />
+              </div>
+            </>
+          )}
 
           <Button
             onClick={handleSend}
-            disabled={loading || !from || !to}
+            disabled={loading || !from || !to || (mode === 'template' && !templateId)}
             className="w-full"
           >
             {loading
@@ -165,13 +267,10 @@ function SendTestTab() {
           <CardContent>
             <pre className="text-xs font-mono bg-muted rounded-lg p-4 overflow-x-auto whitespace-pre-wrap">
 {`POST ${apiLink}/mail/send
-Cookie: access_token=<your session cookie>
+Cookie: access_token=<sent automatically by your browser>
 Content-Type: application/json
 
-${JSON.stringify(
-  { from_email: from || 'you@domain.com', to: [to || 'recipient@example.com'], subject, body_html: body },
-  null, 2
-)}`}
+${JSON.stringify(requestBody, null, 2)}`}
             </pre>
           </CardContent>
         </Card>

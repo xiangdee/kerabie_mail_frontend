@@ -1,12 +1,12 @@
 'use client';
 import { format, parseISO } from 'date-fns';
-import { CreditCard, Zap, Crown, Building2, AlertTriangle, CheckCircle2, Loader2, ExternalLink, RotateCcw, Clock, CheckCheck, XCircle, Paperclip, MousePointerClick, BarChart3 } from 'lucide-react';
+import { Zap, Crown, Building2, AlertTriangle, CheckCircle2, Loader2, RotateCcw, Clock, CheckCheck, XCircle, Paperclip, MousePointerClick, BarChart3 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import type { Subscription } from '@/lib/types/api.types';
-import type { RefundRequest } from '@/lib/hooks/useBilling';
+import type { RefundRequest, Plan } from '@/lib/hooks/useBilling';
 
 const PLAN_ICONS = {
   free: Zap,
@@ -35,6 +35,7 @@ interface BillingViewProps {
   isCancelling: boolean;
   isReactivating: boolean;
   planType?: string;
+  plans?: Plan[];
   refunds?: RefundRequest[];
   refundsLoading?: boolean;
   onCancel: () => void;
@@ -45,7 +46,7 @@ interface BillingViewProps {
 
 export function BillingView({
   subscription, isLoading, isCancelling, isReactivating,
-  planType, refunds, refundsLoading, onCancel, onReactivate, onRequestRefund, onUpgrade,
+  planType, plans, refunds, refundsLoading, onCancel, onReactivate, onRequestRefund, onUpgrade,
 }: BillingViewProps) {
   const plan = (planType ?? 'free') as keyof typeof PLAN_ICONS;
   const PlanIcon = PLAN_ICONS[plan] ?? Zap;
@@ -81,13 +82,35 @@ export function BillingView({
                 )}
               </div>
             </div>
-            {subscription && (
-              <p className="text-2xl font-bold">
-                {subscription.currency === 'NGN' ? '₦' : '$'}
-                {subscription.amount.toLocaleString()}
-                <span className="text-sm font-normal text-muted-foreground">/{subscription.billing_cycle}</span>
-              </p>
-            )}
+            {subscription && (() => {
+              const price = subscription.amount ?? subscription.total_price ?? 0;
+              // price=0 on a paid plan_type with auto_renew off means this
+              // was admin-comped (see PATCH /admin/users/{id}/subscription),
+              // not a real $0 charge — label it as such instead of showing
+              // a price that looks like a data error.
+              const isComped = plan !== 'free' && price === 0 && subscription.auto_renew === false;
+              const cyclePrice = plans?.find((p) => p.id === plan)?.billing_cycles?.[subscription.billing_cycle];
+
+              if (!isComped) {
+                return (
+                  <p className="text-2xl font-bold">
+                    {subscription.currency?.toLowerCase() === 'ngn' ? '₦' : '$'}
+                    {price.toLocaleString()}
+                    <span className="text-sm font-normal text-muted-foreground">/{subscription.billing_cycle}</span>
+                  </p>
+                );
+              }
+              return (
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-primary">Complimentary</p>
+                  {cyclePrice && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {cyclePrice.symbol}{cyclePrice.amount.toLocaleString()}/{subscription.billing_cycle} value
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           {subscription && (
@@ -153,13 +176,6 @@ export function BillingView({
                 Request refund
               </Button>
             )}
-            <Button variant="outline" size="sm" className="gap-1.5" asChild>
-              <a href="https://billing.kerabie.email" target="_blank" rel="noopener">
-                <CreditCard className="h-3.5 w-3.5" />
-                Manage payment
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            </Button>
           </div>
         </Card>
       )}
@@ -218,7 +234,7 @@ export function BillingView({
               refunds.map((r) => {
                 const cfg = REFUND_STATUS_CONFIG[r.status] ?? REFUND_STATUS_CONFIG.pending;
                 const StatusIcon = cfg.icon;
-                const currencySymbol = r.currency === 'NGN' ? '₦' : '$';
+                const currencySymbol = r.currency?.toLowerCase() === 'ngn' ? '₦' : '$';
                 return (
                   <div key={r.id} className="flex items-center justify-between rounded-lg border px-4 py-3 text-sm">
                     <div className="flex items-center gap-3">

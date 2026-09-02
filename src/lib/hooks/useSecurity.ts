@@ -5,11 +5,11 @@ import { apiLink } from '@/lib/constants/links';
 const base = apiLink;
 
 export interface Session {
-  id: string;
-  ip_address: string;
-  user_agent: string;
+  id: number;
+  ip_address: string | null;
+  user_agent: string | null;
   created_at: string;
-  last_active_at: string;
+  last_active_at: string | null;
   is_current: boolean;
 }
 
@@ -27,7 +27,7 @@ export function useSessions(token: string | null) {
 export function useRevokeSession(token: string | null) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
+    mutationFn: (id: number) =>
       customAxiosDelete(`${base}/auth/sessions/${id}`, undefined, token ?? ''),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sessions'] }),
   });

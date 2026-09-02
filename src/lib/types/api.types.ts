@@ -4,7 +4,13 @@ export interface User {
   email: string;
   full_name: string;
   is_admin: boolean;
-  plan_type: 'free' | 'pro' | 'premium';
+  // The API returns plan_status (not plan_type) on /auth/login, /auth/register
+  // and /auth/me — see UserResponse in the backend's auth.py. It holds the
+  // plan tier string ('free' | 'pro' | 'premium') or 'trial'.
+  plan_status: string;
+  is_trial?: boolean;
+  trial_end?: string | null;
+  is_phone_verified?: boolean;
   is_verified: boolean;
   phone?: string;
   phone_verified?: boolean;
@@ -172,7 +178,7 @@ export interface Subscription {
   status: 'active' | 'past_due' | 'canceled' | 'trial';
   billing_cycle: string;
   currency: string;
-  amount: number;          // kept for display compat (maps to total_price from backend)
+  amount?: number;         // not always populated by the backend — fall back to total_price
   total_price?: number;
   current_period_start: string;
   current_period_end: string;
@@ -218,10 +224,33 @@ export interface Campaign {
   segment_filter: SegmentCondition[] | null;
   recipient_count: number;
   step_count: number;
-  status: 'draft' | 'sending' | 'sent';
+  status: 'draft' | 'sending' | 'paused' | 'sent';
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
+}
+
+export interface CampaignDailyPoint {
+  date: string;
+  sent: number;
+  opened: number;
+  clicked: number;
+  unsubscribed: number;
+}
+
+export interface CampaignsSummary {
+  days: number;
+  total_sent: number;
+  prev_total_sent: number;
+  mean_open_rate: number;
+  prev_mean_open_rate: number;
+  mean_click_rate: number;
+  prev_mean_click_rate: number;
+  unsubscribed: number;
+  unsubscribe_rate: number;
+  prev_unsubscribe_rate: number;
+  campaigns_sent_count: number;
+  daily: CampaignDailyPoint[];
 }
 
 export interface CampaignStep {
@@ -269,12 +298,11 @@ export interface CampaignAnalytics {
 export interface Contact {
   id: number;
   email: string;
-  display_name: string;
-  phone?: string;
-  company?: string;
-  avatar_url?: string;
-  notes?: string;
-  created_at: string;
+  name: string | null;
+  phone: string | null;
+  company: string | null;
+  notes: string | null;
+  group_id: number | null;
 }
 
 // ── Calendar ──────────────────────────────────────────────────────────────────

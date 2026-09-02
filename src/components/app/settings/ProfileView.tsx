@@ -95,7 +95,7 @@ export function ProfileView({
             )}
           </div>
           <Badge variant="secondary" className="mt-1 capitalize text-xs">
-            {user?.plan_type} plan
+            {user?.plan_status ?? 'free'} plan
           </Badge>
         </div>
       </div>

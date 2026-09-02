@@ -39,6 +39,51 @@ All colors MUST be HSL.
   --color-input: oklch(from hsl(160 15% 90%) l c h);
   --color-ring: oklch(from hsl(160 22% 33%) l c h);
 
+  /* components/ui/sidebar.tsx (vendored shadcn) references these directly
+     (bg-sidebar, sidebar-accent, etc.) but they were never added here --
+     the class names silently resolved to nothing, leaving the mobile
+     drawer's Sheet fully transparent over whatever page content sat
+     behind it. Desktop hid this by accident (nothing colorful directly
+     behind the sidebar's own column), mobile didn't.
+     Values now match the "Kerabie Console" design (dark editorial sidebar)
+     since components/ui/sidebar.tsx is only ever used by AppSidebar.tsx. */
+  --color-sidebar: #0e1210;
+  --color-sidebar-foreground: #e8ebe7;
+  --color-sidebar-accent: #19201c;
+  --color-sidebar-accent-foreground: #ffffff;
+  --color-sidebar-border: #1e2420;
+  --color-sidebar-ring: #1c6b47;
+
+  /* "Kerabie Console" design system — scoped to the /app shell (sidebar,
+     header, dashboard) via the console-* prefix so it sits alongside the
+     shadcn tokens above without touching the rest of the app (settings
+     pages, marketing site, auth). Sharp corners, borders not shadows,
+     values taken directly from the approved design mock. */
+  --color-console-bg: #f2f2f0;
+  --color-console-ink: #14171a;
+  --color-console-accent: #1c6b47;
+  --color-console-accent-dark: #0d3d29;
+  --color-console-accent-tint: #e9f0eb;
+  --color-console-border: #d7d9d3;
+  --color-console-border-soft: #eceee8;
+  --color-console-muted: #6b7269;
+  --color-console-muted2: #7b8279;
+  --color-console-muted3: #8b9189;
+  --color-console-tick: #b3b9b1;
+  --color-console-hover: #f7f7f5;
+  --color-console-amber: #c98b4b;
+  --color-console-red: #a33b32;
+  --color-console-sidebar-bg: #0e1210;
+  --color-console-sidebar-fg: #e8ebe7;
+  --color-console-sidebar-muted: #b9c1ba;
+  --color-console-sidebar-muted2: #6f7a72;
+  --color-console-sidebar-border: #1e2420;
+  --color-console-sidebar-hover: #19201c;
+  --color-console-sidebar-warn-border: #3b2f22;
+  --color-console-sidebar-warn-bg: #1a1512;
+  --color-console-sidebar-warn-text: #e0b487;
+  --color-console-sidebar-warn-dot: #c98b4b;
+
   --radius: 0.75rem;
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -81,6 +126,69 @@ All colors MUST be HSL.
     --color-ring: oklch(from hsl(160 22% 63%) l c h);
   }
 } */
+
+/* Scoped "Kerabie Console" theme — recolors + de-rounds every shadcn/ui
+   primitive (Card, Button, Input, Badge, Table, Dialog, ...) used within
+   the /app account portal, by overriding the same tokens those components
+   already read (bg-primary, bg-card, border, rounded-lg, shadow-sm, ...).
+   Scoped to a wrapper class instead of the top-level @theme block so
+   marketing/auth pages sharing these components keep the original brand
+   theme untouched. */
+.app-console {
+  --color-background: var(--color-console-bg);
+  --color-foreground: var(--color-console-ink);
+  --color-card: #ffffff;
+  --color-card-foreground: var(--color-console-ink);
+  --color-popover: #ffffff;
+  --color-popover-foreground: var(--color-console-ink);
+  --color-primary: var(--color-console-accent);
+  --color-primary-hover: var(--color-console-accent-dark);
+  --color-primary-foreground: #ffffff;
+  --color-primary-muted: var(--color-console-accent-tint);
+  --color-secondary: var(--color-console-muted3);
+  --color-secondary-hover: var(--color-console-muted2);
+  --color-secondary-foreground: #ffffff;
+  --color-muted: var(--color-console-hover);
+  --color-muted-foreground: var(--color-console-muted);
+  --color-accent: var(--color-console-accent-tint);
+  --color-accent-foreground: var(--color-console-accent);
+  --color-destructive: var(--color-console-red);
+  --color-destructive-foreground: #ffffff;
+  --color-border: var(--color-console-border);
+  --color-input: var(--color-console-border);
+  --color-ring: var(--color-console-accent);
+}
+.app-console :is(.rounded, .rounded-sm, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl) {
+  border-radius: 0;
+}
+.app-console :is(.shadow, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl) {
+  box-shadow: none;
+}
+.app-console :is(h1, h2) {
+  font-family: var(--font-barlow-condensed), system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* Thin, subtle scrollbar for the dark console sidebar — replaces the
+   browser's default chunky one. Firefox + WebKit both covered. */
+.console-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #3a423c transparent;
+}
+.console-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.console-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.console-scroll::-webkit-scrollbar-thumb {
+  background: #3a423c;
+  border-radius: 0;
+}
+.console-scroll::-webkit-scrollbar-thumb:hover {
+  background: #4c564e;
+}
 
 /* Base styles */
 * {

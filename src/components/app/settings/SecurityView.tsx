@@ -3,19 +3,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Shield, Monitor, Smartphone, Loader2, LogOut } from 'lucide-react';
+import { Shield, Monitor, Smartphone, Loader2, LogOut, CheckCircle2, AlertCircle } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import type { Session } from '@/lib/hooks/useSecurity';
 
-function deviceIcon(ua: string) {
-  const lower = ua.toLowerCase();
+function deviceIcon(ua: string | null) {
+  const lower = (ua ?? '').toLowerCase();
   if (lower.includes('mobile') || lower.includes('android') || lower.includes('iphone')) {
     return <Smartphone className="h-4 w-4 text-muted-foreground" />;
   }
   return <Monitor className="h-4 w-4 text-muted-foreground" />;
 }
 
-function parseDevice(ua: string) {
+function parseDevice(ua: string | null) {
   if (!ua) return 'Unknown device';
   if (ua.includes('Chrome')) return 'Chrome';
   if (ua.includes('Firefox')) return 'Firefox';
@@ -24,17 +24,25 @@ function parseDevice(ua: string) {
   return ua.slice(0, 40);
 }
 
+export interface SecurityRecommendation {
+  id: string;
+  title: string;
+  desc: string;
+  done: boolean;
+}
+
 interface Props {
   sessions: Session[];
   isLoading: boolean;
   isRevoking: boolean;
   isRevokingAll: boolean;
-  onRevoke: (id: string) => void;
+  recommendations: SecurityRecommendation[];
+  onRevoke: (id: number) => void;
   onRevokeAll: () => void;
 }
 
 export default function SecurityView({
-  sessions, isLoading, isRevoking, isRevokingAll,
+  sessions, isLoading, isRevoking, isRevokingAll, recommendations,
   onRevoke, onRevokeAll,
 }: Props) {
   const otherSessions = sessions.filter((s) => !s.is_current);
@@ -105,8 +113,8 @@ export default function SecurityView({
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {session.ip_address} · Active{' '}
-                      {formatDistanceToNow(new Date(session.last_active_at), { addSuffix: true })}
+                      {session.ip_address ?? 'Unknown location'} · Active{' '}
+                      {formatDistanceToNow(new Date(session.last_active_at ?? session.created_at), { addSuffix: true })}
                       {' '}· Signed in {format(new Date(session.created_at), 'PP')}
                     </p>
                   </div>
@@ -132,28 +140,22 @@ export default function SecurityView({
         </CardContent>
       </Card>
 
-      {/* Security Tips */}
+      {/* Security recommendations */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Security recommendations</CardTitle>
+          <CardDescription>
+            {recommendations.filter((r) => r.done).length} of {recommendations.length} in good shape
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {[
-            {
-              title: 'Use a strong, unique password',
-              desc: 'Change your password regularly and never reuse it across services.',
-            },
-            {
-              title: 'Review active sessions regularly',
-              desc: 'Sign out sessions you don\'t recognise immediately.',
-            },
-            {
-              title: 'Keep your recovery email up to date',
-              desc: 'Ensure you can recover your account if you lose access.',
-            },
-          ].map(({ title, desc }) => (
-            <div key={title} className="flex gap-3 p-3 bg-muted/30 rounded-xl">
-              <Shield className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+          {recommendations.map(({ id, title, desc, done }) => (
+            <div key={id} className="flex gap-3 p-3 bg-muted/30 rounded-xl">
+              {done ? (
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+              ) : (
+                <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+              )}
               <div>
                 <p className="text-sm font-medium">{title}</p>
                 <p className="text-xs text-muted-foreground">{desc}</p>

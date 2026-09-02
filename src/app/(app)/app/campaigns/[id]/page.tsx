@@ -2,8 +2,10 @@
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/context/auth.context';
 import { useAppToast } from '@/components/ui/app-toast';
+import { useTemplates } from '@/lib/hooks/useTemplates';
 import {
-  useCampaign, useUpdateCampaign, useSendCampaign, useCampaignStats, useCampaignAnalytics,
+  useCampaign, useUpdateCampaign, useSendCampaign, usePauseCampaign, useResumeCampaign,
+  useCampaignStats, useCampaignAnalytics,
   useCampaignSteps, useAddCampaignStep, useDeleteCampaignStep, useContactGroups,
   type CampaignUpdateInput, type CampaignStepInput,
 } from '@/lib/hooks/useCampaigns';
@@ -18,12 +20,15 @@ export default function CampaignDetailPage() {
   const { data: campaign } = useCampaign(id, token);
   const { data: groups = [] } = useContactGroups(token);
   const { data: steps = [] } = useCampaignSteps(id, token);
+  const { data: templates = [] } = useTemplates(token);
   const showResults = campaign && campaign.status !== 'draft';
   const { data: stats } = useCampaignStats(showResults ? id : null, token);
   const { data: analytics } = useCampaignAnalytics(showResults ? id : null, token);
 
   const updateCampaign = useUpdateCampaign(id, token);
   const sendCampaign = useSendCampaign(id, token);
+  const pauseCampaign = usePauseCampaign(id, token);
+  const resumeCampaign = useResumeCampaign(id, token);
   const addStep = useAddCampaignStep(id, token);
   const deleteStep = useDeleteCampaignStep(id, token);
 
@@ -42,6 +47,24 @@ export default function CampaignDetailPage() {
       success('Campaign started');
     } else {
       toastError('Failed to send campaign', { description: typeof res.response === 'string' ? res.response : undefined });
+    }
+  };
+
+  const handlePause = async () => {
+    const res = await pauseCampaign.mutateAsync();
+    if (res.status === true) {
+      success('Campaign paused');
+    } else {
+      toastError('Failed to pause campaign', { description: typeof res.response === 'string' ? res.response : undefined });
+    }
+  };
+
+  const handleResume = async () => {
+    const res = await resumeCampaign.mutateAsync();
+    if (res.status === true) {
+      success('Campaign resumed');
+    } else {
+      toastError('Failed to resume campaign', { description: typeof res.response === 'string' ? res.response : undefined });
     }
   };
 
@@ -66,13 +89,18 @@ export default function CampaignDetailPage() {
       campaign={campaign}
       groups={groups}
       steps={steps}
+      templates={templates}
       stats={stats}
       analytics={analytics}
       isSaving={updateCampaign.isPending}
       isSending={sendCampaign.isPending}
+      isPausing={pauseCampaign.isPending}
+      isResuming={resumeCampaign.isPending}
       isAddingStep={addStep.isPending}
       onSave={handleSave}
       onSend={handleSend}
+      onPause={handlePause}
+      onResume={handleResume}
       onAddStep={handleAddStep}
       onDeleteStep={handleDeleteStep}
     />

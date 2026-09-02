@@ -38,7 +38,7 @@ export default function ApiDocsPage() {
             <p className="text-muted-foreground text-lg">
               The Kerabie Mail REST API lets you send emails, manage mailboxes, contacts, calendar
               events, and more. Available on every plan tier, including <strong>Free</strong> —
-              generate a key under Settings → API Keys.
+              generate a key under <strong>API Keys</strong> in the sidebar.
             </p>
             <div className="flex flex-wrap gap-3 mt-4">
               <Link href="/api-docs/webhooks" className="text-sm text-primary hover:underline">Webhooks docs →</Link>
@@ -145,7 +145,7 @@ function AuthSection() {
         API requests are authenticated with an API key in the <code className="bg-muted px-1 rounded text-sm">X-API-Key</code> header
         — not <code className="bg-muted px-1 rounded text-sm">Authorization: Bearer</code> (that&apos;s used for browser/mobile session
         tokens instead, obtained via <code className="bg-muted px-1 rounded text-sm">/auth/login</code>, not for API keys).
-        Generate keys with the <code className="bg-muted px-1 rounded text-sm">send</code> scope in <strong>Settings → API Keys</strong>
+        Generate keys with the <code className="bg-muted px-1 rounded text-sm">send</code> scope under <strong>API Keys</strong> in the sidebar
         — available on every plan tier, including Free.
       </p>
       <CodeBlock lang="http">{`X-API-Key: YOUR_API_KEY\nContent-Type: application/json`}</CodeBlock>
@@ -247,9 +247,10 @@ function TemplatesSection() {
   return (
     <Section id="templates" title="Templates">
       <p className="text-muted-foreground">
-        Reusable HTML emails with <code className="bg-muted px-1 rounded text-sm">{'{{placeholder}}'}</code> tags — manage them under
-        <strong> Settings → Templates</strong> (three starter designs included), then send with them via <code className="bg-muted px-1 rounded text-sm">template_id</code> on
-        <code className="bg-muted px-1 rounded text-sm"> POST /mail/send</code> above.
+        Reusable HTML emails with <code className="bg-muted px-1 rounded text-sm">{'{{placeholder}}'}</code> tags — build them visually
+        under <strong>Templates</strong> in the sidebar (11 starter designs included, or start blank), then send with them via
+        <code className="bg-muted px-1 rounded text-sm"> template_id</code> on <code className="bg-muted px-1 rounded text-sm">POST /mail/send</code> above.
+        Each template&apos;s ID is shown on its edit page and is copyable from the templates list.
       </p>
       <Endpoint method="GET" path="/mail/templates" desc="List your templates (paginated)." />
       <Endpoint method="POST" path="/mail/templates" desc="Create a template.">

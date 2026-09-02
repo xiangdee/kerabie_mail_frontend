@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/context/auth.context';
 import { useAppToast } from '@/components/ui/app-toast';
 import { useMailboxes } from '@/lib/hooks/useMailboxes';
+import { useTemplates } from '@/lib/hooks/useTemplates';
 import { useCreateCampaign, type CampaignCreateInput } from '@/lib/hooks/useCampaigns';
 import NewCampaignView from '@/components/app/campaigns/NewCampaignView';
 
@@ -12,6 +13,7 @@ export default function NewCampaignPage() {
   const { success, error: toastError } = useAppToast();
 
   const { data: mailboxes = [] } = useMailboxes(token);
+  const { data: templates = [] } = useTemplates(token);
   const createCampaign = useCreateCampaign(token);
 
   const handleCreate = async (data: CampaignCreateInput) => {
@@ -24,5 +26,5 @@ export default function NewCampaignPage() {
     }
   };
 
-  return <NewCampaignView mailboxes={mailboxes} isCreating={createCampaign.isPending} onCreate={handleCreate} />;
+  return <NewCampaignView mailboxes={mailboxes} templates={templates} isCreating={createCampaign.isPending} onCreate={handleCreate} />;
 }
