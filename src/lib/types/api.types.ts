@@ -191,6 +191,10 @@ export interface Subscription {
   has_autoresponder?: boolean;
   has_custom_branding?: boolean;
   has_campaigns?: boolean;
+  // App Store/Play Store subscriptions (revenuecat, or the legacy apple_pay/
+  // google_pay values) can't be managed here — see BillingView's
+  // "manage subscription" branch.
+  payment_provider?: string;
 }
 
 // ── Branding ──────────────────────────────────────────────────────────────────

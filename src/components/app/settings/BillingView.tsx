@@ -51,6 +51,10 @@ export function BillingView({
   const plan = (planType ?? 'free') as keyof typeof PLAN_ICONS;
   const PlanIcon = PLAN_ICONS[plan] ?? Zap;
   const statusCfg = subscription ? STATUS_CONFIG[subscription.status] : null;
+  // RevenueCat (App Store/Play Store) — and the legacy apple_pay/google_pay
+  // values some older rows may still carry — can't be cancelled/reactivated/
+  // refunded through our own endpoints; Apple/Google own that relationship.
+  const isAppStoreManaged = ['revenuecat', 'apple_pay', 'google_pay'].includes(subscription?.payment_provider ?? '');
 
   const fmt = (d: string) => {
     try { return format(parseISO(d), 'MMM d, yyyy'); } catch { return d; }
@@ -134,49 +138,76 @@ export function BillingView({
           )}
 
           {/* Actions */}
-          <div className="flex flex-wrap gap-3 pt-1">
-            {plan === 'free' && (
-              <Button size="sm" onClick={onUpgrade}>
-                <Crown className="mr-1.5 h-3.5 w-3.5" />
-                Upgrade plan
-              </Button>
-            )}
-            {plan !== 'free' && subscription?.cancel_at_period_end && (
-              <Button
-                size="sm"
-                onClick={onReactivate}
-                disabled={isReactivating}
-                className="gap-1.5"
-              >
-                {isReactivating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                Reactivate
-              </Button>
-            )}
-            {plan !== 'free' && !subscription?.cancel_at_period_end && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onCancel}
-                disabled={isCancelling}
-                className="text-destructive border-destructive/30 hover:bg-destructive/5 gap-1.5"
-              >
-                {isCancelling && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                Cancel plan
-              </Button>
-            )}
-            {plan !== 'free' && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onRequestRefund}
-                className="gap-1.5"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Request refund
-              </Button>
-            )}
-          </div>
+          {isAppStoreManaged ? (
+            <div className="rounded-lg border border-console-border-soft bg-console-hover px-4 py-3 space-y-2">
+              <p className="text-[13.5px]">
+                This subscription was purchased through the {subscription?.payment_provider === 'apple_pay' ? 'App Store' : subscription?.payment_provider === 'google_pay' ? 'Play Store' : 'App Store or Play Store'}
+                {' '}— manage or cancel it from there, not here.
+              </p>
+              <div className="flex flex-wrap gap-3 pt-1">
+                <a
+                  href="https://apps.apple.com/account/subscriptions"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  Manage on iPhone/iPad →
+                </a>
+                <a
+                  href="https://play.google.com/store/account/subscriptions"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  Manage on Android →
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-3 pt-1">
+              {plan === 'free' && (
+                <Button size="sm" onClick={onUpgrade}>
+                  <Crown className="mr-1.5 h-3.5 w-3.5" />
+                  Upgrade plan
+                </Button>
+              )}
+              {plan !== 'free' && subscription?.cancel_at_period_end && (
+                <Button
+                  size="sm"
+                  onClick={onReactivate}
+                  disabled={isReactivating}
+                  className="gap-1.5"
+                >
+                  {isReactivating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Reactivate
+                </Button>
+              )}
+              {plan !== 'free' && !subscription?.cancel_at_period_end && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onCancel}
+                  disabled={isCancelling}
+                  className="text-destructive border-destructive/30 hover:bg-destructive/5 gap-1.5"
+                >
+                  {isCancelling && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  Cancel plan
+                </Button>
+              )}
+              {plan !== 'free' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onRequestRefund}
+                  className="gap-1.5"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Request refund
+                </Button>
+              )}
+            </div>
+          )}
         </Card>
       )}
 
