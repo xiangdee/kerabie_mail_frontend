@@ -50,7 +50,12 @@ function PhoneVerificationGate({ children }: { children: React.ReactNode }) {
   const { data: phoneStatus, refetch } = usePhoneStatus(token);
   const [dismissed, setDismissed] = useState(false);
 
-  const isTrial = user && (user as any).plan_status === 'trial';
+  // plan_status is the PLAN ("pro"/"premium"/"free"), never the literal
+  // string "trial" — is_trial is the actual boolean for that (see
+  // build_user_response/GET /auth/me on the backend). The old
+  // `plan_status === 'trial'` check here could never be true, so this gate
+  // has never actually fired in production.
+  const isTrial = user?.is_trial === true;
   const needsVerification =
     isTrial &&
     phoneStatus !== undefined &&
@@ -109,7 +114,12 @@ function AlternateEmailGate({ children }: { children: React.ReactNode }) {
   const [dismissed, setDismissed] = useState(false);
   const router = useRouter();
 
-  const isTrial = user && (user as any).plan_status === 'trial';
+  // plan_status is the PLAN ("pro"/"premium"/"free"), never the literal
+  // string "trial" — is_trial is the actual boolean for that (see
+  // build_user_response/GET /auth/me on the backend). The old
+  // `plan_status === 'trial'` check here could never be true, so this gate
+  // has never actually fired in production.
+  const isTrial = user?.is_trial === true;
   const phoneGateActive = isTrial && phoneStatus !== undefined && phoneStatus !== null && !phoneStatus.is_verified;
 
   const mailbox = mailboxes?.find((m) => m.email_address === user?.email);
