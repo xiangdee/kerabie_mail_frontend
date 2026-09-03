@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Check, Minus, Plus } from "lucide-react";
 import { Corners } from "@/components/ui/corners";
 import { NavLink } from "@/components/NavLink";
+import { useAuth } from "@/lib/context/auth.context";
 import type { ComponentType } from "react";
 
 interface PricingCardProps {
@@ -40,6 +41,7 @@ const PricingCard = ({
   addonPrice,
 }: PricingCardProps) => {
   const [extraMailboxes, setExtraMailboxes] = useState(0);
+  const { isAuthenticated } = useAuth();
 
   const formatPrice = (val: number) => {
     return currency === 'ngn'
@@ -72,6 +74,24 @@ const PricingCard = ({
 
   const isFree = name.toLowerCase() === 'free' || price === 0 && !originalPrice;
   const currentSavings = getSavingsPercent();
+
+  // Every signup already starts a 3-day Pro trial regardless of which card
+  // is clicked (see registerutils.create_trial_subscription) — so "Start
+  // for free" and a paid-plan CTA both lead to the same signup form for a
+  // logged-out visitor. The difference is what happens next: a paid-plan
+  // click carries the chosen plan/cycle/add-ons through so the visitor lands
+  // straight on a pre-filled upgrade dialog instead of the inbox — either
+  // right after signup (via the existing ?redirect= param) or immediately,
+  // if they're already signed in. The real checkout flow only offers
+  // monthly/yearly (Flutterwave doesn't sync recurring plans for longer
+  // cycles), so 2yr/3yr selections here fall back to yearly at that step.
+  const checkoutCycle = billingCycle === 'biennial' || billingCycle === 'triennial' ? 'yearly' : billingCycle;
+  const billingTarget = `/app/settings/billing?upgrade=${name.toLowerCase()}&cycle=${checkoutCycle}&mailboxes=${extraMailboxes}`;
+  const ctaHref = isFree
+    ? '/auth/register'
+    : isAuthenticated
+    ? billingTarget
+    : `/auth/register?redirect=${encodeURIComponent(billingTarget)}`;
   const addonUnit = addonPrice ? (currency === 'ngn' ? addonPrice.ngn : addonPrice.usd) : 0;
   // Flat per-cycle add-on, matching how the backend actually charges it
   // (CreateSubscriptionRequest.addons — added once per cycle, not scaled
@@ -172,7 +192,7 @@ const PricingCard = ({
       </div>
 
       <NavLink
-        href="/auth/register"
+        href={ctaHref}
         className={`mt-auto flex items-center justify-center gap-2 border px-[18px] py-3 text-sm font-semibold transition-colors ${
           highlighted
             ? "border-transparent bg-[#E8EDEB] text-[#1A1F1E] hover:bg-white"

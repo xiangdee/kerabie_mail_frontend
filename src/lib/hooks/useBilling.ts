@@ -159,3 +159,33 @@ export function useCreateSubscription(token: string | null) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['subscription'] }),
   });
 }
+
+/**
+ * Every signup starts a 3-day Pro trial automatically, and /subscriptions/create
+ * rejects outright while a TRIAL/ACTIVE/PENDING_PAYMENT subscription already
+ * exists — so a trial user upgrading to a paid plan has to go through this
+ * endpoint instead, which cancels the trial and starts the paid one. Note the
+ * route's own path really does repeat "subscriptions" (a pre-existing quirk
+ * on the backend, not a typo here).
+ */
+export function useUpgradeFromTrial(token: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: CreateSubscriptionPayload) => {
+      const res = await customAxiosPost(
+        `${base}/subscriptions/subscriptions/upgrade-from-trial`,
+        {
+          plan: payload.plan,
+          billing_cycle: payload.billing_cycle,
+          currency: payload.currency,
+          addons: payload.addons,
+        },
+        '',
+        token ?? '',
+      );
+      if (!res.status) throw new Error((res as any)?.message ?? 'Failed to upgrade from trial');
+      return res.response as CreateSubscriptionResult;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['subscription'] }),
+  });
+}

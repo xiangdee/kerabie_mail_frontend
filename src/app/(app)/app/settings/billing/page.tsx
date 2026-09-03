@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/context/auth.context';
 import {
   useSubscription,
@@ -8,6 +9,7 @@ import {
   useRequestRefund,
   useMyRefunds,
   useCreateSubscription,
+  useUpgradeFromTrial,
   type RefundReason,
 } from '@/lib/hooks/useBilling';
 import { useAppToast } from '@/components/ui/app-toast';
@@ -55,7 +57,16 @@ const REFUND_REASONS: { value: RefundReason; label: string }[] = [
 
 
 export default function BillingPage() {
+  return (
+    <Suspense fallback={null}>
+      <BillingPageInner />
+    </Suspense>
+  );
+}
+
+function BillingPageInner() {
   const { token, user } = useAuth();
+  const searchParams = useSearchParams();
   const { success, error: toastError } = useAppToast();
 
   const [confirmCancel, setConfirmCancel] = useState(false);
@@ -81,6 +92,26 @@ export default function BillingPage() {
   const reactivateMutation = useReactivateSubscription(token);
   const refundMutation = useRequestRefund(token);
   const createMutation = useCreateSubscription(token);
+  const upgradeFromTrialMutation = useUpgradeFromTrial(token);
+  const isUpgradeSubmitting = createMutation.isPending || upgradeFromTrialMutation.isPending;
+
+  // Arriving from a pricing-card CTA (?upgrade=pro&cycle=yearly&mailboxes=1)
+  // — either directly (already signed in) or via /auth/register's existing
+  // ?redirect= mechanism after a fresh signup. Pre-fill and open the same
+  // dialog instead of making them re-pick what they already chose.
+  useEffect(() => {
+    const upgrade = searchParams.get('upgrade');
+    if (upgrade !== 'pro' && upgrade !== 'premium') return;
+    const cycle = searchParams.get('cycle');
+    const mailboxes = parseInt(searchParams.get('mailboxes') ?? '0', 10);
+
+    setUpgradePlan(upgrade);
+    if (cycle === 'monthly' || cycle === 'yearly') setUpgradeCycle(cycle);
+    if (Number.isFinite(mailboxes) && mailboxes > 0) setExtraMailboxes(mailboxes);
+    setShowUpgrade(true);
+    // Only meant to apply once, off the URL that brought us here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCancel = async () => {
     const res = await cancelMutation.mutateAsync();
@@ -125,14 +156,20 @@ export default function BillingPage() {
 
   const handleUpgradeSubmit = async () => {
     try {
-      const result = await createMutation.mutateAsync({
+      const payload = {
         plan: upgradePlan,
         billing_cycle: upgradeCycle,
         currency: upgradeCurrency,
         return_url: `${window.location.origin}/app/settings/billing`,
         country_code: upgradeCurrency === 'ngn' ? 'NG' : 'US',
-        addons: extraMailboxes > 0 ? [{ type: 'extra_mailbox', quantity: extraMailboxes }] : undefined,
-      });
+        addons: extraMailboxes > 0 ? [{ type: 'extra_mailbox' as const, quantity: extraMailboxes }] : undefined,
+      };
+      // Every signup starts a 3-day Pro trial automatically — /subscriptions/create
+      // rejects outright while that trial is still active, so a trial user has
+      // to go through the dedicated trial->paid endpoint instead.
+      const result = subscription?.status === 'trial'
+        ? await upgradeFromTrialMutation.mutateAsync(payload)
+        : await createMutation.mutateAsync(payload);
       // Redirect to the payment provider's checkout page
       window.location.href = result.authorization_url;
     } catch (err: unknown) {
@@ -307,11 +344,11 @@ export default function BillingPage() {
           </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowUpgrade(false)} disabled={createMutation.isPending}>
+            <Button variant="outline" onClick={() => setShowUpgrade(false)} disabled={isUpgradeSubmitting}>
               Cancel
             </Button>
-            <Button onClick={handleUpgradeSubmit} disabled={createMutation.isPending} className="gap-1.5">
-              {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            <Button onClick={handleUpgradeSubmit} disabled={isUpgradeSubmitting} className="gap-1.5">
+              {isUpgradeSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
               Continue to payment
             </Button>
           </DialogFooter>

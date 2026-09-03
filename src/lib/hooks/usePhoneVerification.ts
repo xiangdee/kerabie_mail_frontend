@@ -26,8 +26,11 @@ export function useSendOtp(token: string | null) {
 export function useVerifyOtp(token: string | null) {
   const qc = useQueryClient();
   return useMutation({
+    // Backend's VerifyOTPRequest expects `otp`, not `code` — sending `code`
+    // (the old body shape here) fails Pydantic validation with a 422 on
+    // every attempt, so verification could never actually succeed.
     mutationFn: ({ phone, code }: { phone: string; code: string }) =>
-      customAxiosPost(`${base}/phone/verify-otp`, { phone, code }, '', token ?? ''),
+      customAxiosPost(`${base}/phone/verify-otp`, { phone, otp: code }, '', token ?? ''),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['phone-status'] }),
   });
 }
