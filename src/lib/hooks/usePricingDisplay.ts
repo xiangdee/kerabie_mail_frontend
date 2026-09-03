@@ -77,10 +77,10 @@ function buildFallbackPlans(currency: 'usd' | 'ngn'): Plan[] {
       name: 'Pro',
       description: 'For professionals and small teams',
       billing_cycles: {
-        monthly: cycle(5, 3500),
-        yearly: cycle(48, 33600),
-        biennial: cycle(84, 58800),
-        triennial: cycle(108, 75600),
+        monthly: cycle(2.8, 3500),
+        yearly: cycle(26.88, 33600),
+        biennial: cycle(47.04, 58800),
+        triennial: cycle(60.48, 75600),
       },
       features: [
         '3 mailboxes', '10 GB per mailbox', 'AI compose', 'Calendar & contacts',
@@ -94,10 +94,10 @@ function buildFallbackPlans(currency: 'usd' | 'ngn'): Plan[] {
       name: 'Premium',
       description: 'For businesses that need full control',
       billing_cycles: {
-        monthly: cycle(10, 7500),
-        yearly: cycle(96, 96000),
-        biennial: cycle(168, 126000),
-        triennial: cycle(216, 162000),
+        monthly: cycle(8, 7500),
+        yearly: cycle(76.8, 96000),
+        biennial: cycle(134.4, 126000),
+        triennial: cycle(172.8, 162000),
       },
       features: [
         '10 mailboxes', '50 GB per mailbox', 'Everything in Pro', 'Shared inboxes',

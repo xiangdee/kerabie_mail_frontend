@@ -1,4 +1,5 @@
-import { Check } from "lucide-react";
+import { useState } from "react";
+import { Check, Minus, Plus } from "lucide-react";
 import { Corners } from "@/components/ui/corners";
 import { NavLink } from "@/components/NavLink";
 import type { ComponentType } from "react";
@@ -20,6 +21,9 @@ interface PricingCardProps {
     biennial?: number;
     triennial?: number;
   };
+  /** Per-unit extra-mailbox add-on price, flat per cycle (matches how the
+   * backend actually charges it — see CreateSubscriptionRequest.addons). */
+  addonPrice?: { usd: number; ngn: number };
 }
 
 const PricingCard = ({
@@ -33,12 +37,14 @@ const PricingCard = ({
   billingCycle,
   currency,
   savings,
+  addonPrice,
 }: PricingCardProps) => {
+  const [extraMailboxes, setExtraMailboxes] = useState(0);
 
   const formatPrice = (val: number) => {
     return currency === 'ngn'
       ? `₦${val.toLocaleString()}`
-      : `$${val}`;
+      : `$${val % 1 === 0 ? val : val.toFixed(2)}`;
   };
 
   const getCycleLabel = () => {
@@ -66,6 +72,12 @@ const PricingCard = ({
 
   const isFree = name.toLowerCase() === 'free' || price === 0 && !originalPrice;
   const currentSavings = getSavingsPercent();
+  const addonUnit = addonPrice ? (currency === 'ngn' ? addonPrice.ngn : addonPrice.usd) : 0;
+  // Flat per-cycle add-on, matching how the backend actually charges it
+  // (CreateSubscriptionRequest.addons — added once per cycle, not scaled
+  // by the cycle's length).
+  const addonCost = addonUnit * extraMailboxes;
+  const displayPrice = price + addonCost;
   const kicker = isFree ? 'FREE' : highlighted ? 'MOST POPULAR' : 'SCALE';
 
   return (
@@ -90,11 +102,11 @@ const PricingCard = ({
         <>
           {billingCycle !== 'monthly' && originalPrice && price < originalPrice && (
             <span className={`mb-1 block text-lg line-through ${highlighted ? "text-[#8FB3A6]" : "text-muted-foreground"}`}>
-              {formatPrice(originalPrice)}
+              {formatPrice(originalPrice + addonCost)}
             </span>
           )}
           <span className={`block text-4xl font-bold leading-none tracking-tight ${highlighted ? "text-white" : ""}`}>
-            {formatPrice(price)}
+            {formatPrice(displayPrice)}
           </span>
           <span className={`mt-1 block text-[12.5px] ${highlighted ? "text-[#8FB3A6]" : "text-muted-foreground"}`}>
             per mailbox / {getCycleLabel()}
@@ -107,13 +119,44 @@ const PricingCard = ({
           {billingCycle !== 'monthly' && (
             <div className="mt-2.5 flex flex-col gap-1">
               <p className={`text-xs font-semibold ${highlighted ? "text-[#8FB3A6]" : "text-muted-foreground"}`}>
-                Billed {formatPrice(price)} {getBillingText()}
+                Billed {formatPrice(displayPrice)} {getBillingText()}
               </p>
               {currentSavings ? (
                 <span className="inline-block w-fit border border-[#4CAF80]/40 bg-[#4CAF80]/10 px-2 py-0.5 text-[10px] font-bold text-[#4CAF80]">
                   SAVE {currentSavings}%
                 </span>
               ) : null}
+            </div>
+          )}
+
+          {addonPrice && (
+            <div className={`mt-3.5 flex items-center justify-between border-t pt-3 ${highlighted ? "border-white/15" : "border-border"}`}>
+              <div>
+                <p className={`text-xs font-medium ${highlighted ? "text-[#D8E5E0]" : ""}`}>Extra mailboxes</p>
+                <p className={`text-[11px] ${highlighted ? "text-[#8FB3A6]" : "text-muted-foreground"}`}>
+                  {formatPrice(addonUnit)}/mo each
+                </p>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  aria-label="Remove an extra mailbox"
+                  disabled={extraMailboxes <= 0}
+                  onClick={() => setExtraMailboxes((n) => Math.max(0, n - 1))}
+                  className={`grid h-6 w-6 place-items-center border text-xs disabled:opacity-30 ${highlighted ? "border-white/30 text-white" : "border-border text-foreground"}`}
+                >
+                  <Minus size={12} />
+                </button>
+                <span className="w-3 text-center text-sm font-semibold tabular-nums">{extraMailboxes}</span>
+                <button
+                  type="button"
+                  aria-label="Add an extra mailbox"
+                  onClick={() => setExtraMailboxes((n) => Math.min(50, n + 1))}
+                  className={`grid h-6 w-6 place-items-center border text-xs ${highlighted ? "border-white/30 text-white" : "border-border text-foreground"}`}
+                >
+                  <Plus size={12} />
+                </button>
+              </div>
             </div>
           )}
         </>

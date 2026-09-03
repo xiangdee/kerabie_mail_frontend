@@ -219,15 +219,15 @@ function Section2() {
             </tr>
             <tr>
               <td className="p-3 font-medium text-foreground">Pro</td>
-              <td className="p-3">$5.00</td>
-              <td className="p-3">$48.00 <span className="text-xs text-green-600">($4/mo)</span></td>
+              <td className="p-3">$2.80</td>
+              <td className="p-3">$26.88 <span className="text-xs text-green-600">($2.24/mo)</span></td>
               <td className="p-3">₦3,500</td>
               <td className="p-3">₦33,600 <span className="text-xs text-green-600">(₦2,800/mo)</span></td>
             </tr>
             <tr>
               <td className="p-3 font-medium text-foreground">Premium</td>
-              <td className="p-3">$10.00</td>
-              <td className="p-3">$96.00 <span className="text-xs text-green-600">($8/mo)</span></td>
+              <td className="p-3">$8.00</td>
+              <td className="p-3">$76.80 <span className="text-xs text-green-600">($6.40/mo)</span></td>
               <td className="p-3">₦7,500</td>
               <td className="p-3">₦72,000 <span className="text-xs text-green-600">(₦6,000/mo)</span></td>
             </tr>

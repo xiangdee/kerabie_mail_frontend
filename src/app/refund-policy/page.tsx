@@ -168,13 +168,13 @@ const RefundPolicy = () => {
                   <h3 className="text-lg font-semibold mb-3">Pro Plan Example:</h3>
                   <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
                     <p className="text-sm text-muted-foreground mb-2">
-                      Annual Pro plan: <span className="font-semibold text-foreground">$28.80/year</span> ($0.24/mailbox/month × 12 months)
+                      Annual Pro plan: <span className="font-semibold text-foreground">$26.88/year</span> ($2.24/month × 12 months)
                     </p>
                     <p className="text-sm text-muted-foreground mb-3">
                       If you cancel after 4 months with 8 months remaining:
                     </p>
                     <p className="text-sm font-semibold text-foreground">
-                      Refund: $19.20 (8 months × $2.40 per month)
+                      Refund: $17.92 (8 months × $2.24 per month)
                     </p>
                   </div>
                 </div>
@@ -183,13 +183,13 @@ const RefundPolicy = () => {
                   <h3 className="text-lg font-semibold mb-3">Premium Plan Example:</h3>
                   <div className="bg-amber-50 dark:bg-amber-950/20 p-4 rounded-lg">
                     <p className="text-sm text-muted-foreground mb-2">
-                      Annual Premium plan: <span className="font-semibold text-foreground">$19.80/year</span> ($1.65/mailbox/month × 12 months)
+                      Annual Premium plan: <span className="font-semibold text-foreground">$76.80/year</span> ($6.40/month × 12 months)
                     </p>
                     <p className="text-sm text-muted-foreground mb-3">
                       If you cancel after 6 months with 6 months remaining:
                     </p>
                     <p className="text-sm font-semibold text-foreground">
-                      Refund: $9.90 (6 months × $1.65 per month)
+                      Refund: $38.40 (6 months × $6.40 per month)
                     </p>
                   </div>
                 </div>
@@ -216,7 +216,7 @@ const RefundPolicy = () => {
                     </div>
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-2">Pro Monthly: $2/mailbox/month</h3>
+                    <h3 className="font-semibold mb-2">Pro Monthly: $2.80/month</h3>
                     <p className="text-sm text-muted-foreground">
                       Cancel anytime. Continue using until your billing date. No mid-month refunds after 14 days.
                     </p>
@@ -229,7 +229,7 @@ const RefundPolicy = () => {
                     </div>
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-2">Premium Monthly: $5/mailbox/month</h3>
+                    <h3 className="font-semibold mb-2">Premium Monthly: $8.00/month</h3>
                     <p className="text-sm text-muted-foreground">
                       Cancel anytime. Continue using until your billing date. No mid-month refunds after 14 days.
                     </p>
@@ -256,7 +256,7 @@ const RefundPolicy = () => {
             <div>
               <h2 className="text-2xl font-bold mb-4">Add-on Purchases</h2>
               <p className="text-muted-foreground mb-4">
-                Add-ons (extra storage at $1/10GB or extra mailboxes at $1.50 each) follow the same refund 
+                Add-ons (extra storage at $1/10GB or extra mailboxes at $2 each) follow the same refund
                 policy as your base plan but are calculated separately.
               </p>
               <div className="bg-card border rounded-xl p-6">

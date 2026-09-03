@@ -113,6 +113,7 @@ const PricingPage = () => {
                 savings={getSavings(plan)}
                 currency={currency}
                 billingCycle={billingCycle}
+                addonPrice={plan.id === 'free' ? undefined : { usd: 2, ngn: 2000 }}
               />
             ))}
           </div>

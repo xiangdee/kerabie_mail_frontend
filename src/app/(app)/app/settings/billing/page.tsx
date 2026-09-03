@@ -34,7 +34,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Crown, Building2, Loader2, Check } from 'lucide-react';
+import { Crown, Building2, Loader2, Check, Minus, Plus } from 'lucide-react';
 import {
   usePlans,
   type Plan,
@@ -67,6 +67,7 @@ export default function BillingPage() {
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [upgradePlan, setUpgradePlan] = useState<'pro' | 'premium'>('pro');
   const [upgradeCycle, setUpgradeCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [extraMailboxes, setExtraMailboxes] = useState(0);
   const defaultCurrency = (user as any)?.currency === 'usd' ? 'usd' : 'ngn';
   const [upgradeCurrency] = useState<'ngn' | 'usd'>(defaultCurrency);
 
@@ -130,8 +131,9 @@ export default function BillingPage() {
         currency: upgradeCurrency,
         return_url: `${window.location.origin}/app/settings/billing`,
         country_code: upgradeCurrency === 'ngn' ? 'NG' : 'US',
+        addons: extraMailboxes > 0 ? [{ type: 'extra_mailbox', quantity: extraMailboxes }] : undefined,
       });
-      // Redirect to Flutterwave / Paddle checkout page
+      // Redirect to the payment provider's checkout page
       window.location.href = result.authorization_url;
     } catch (err: unknown) {
       const msg = (err as Error)?.message;
@@ -142,7 +144,10 @@ export default function BillingPage() {
   const paidPlans = (plansData?.plans ?? []).filter(p => p.id !== 'free') as Plan[];
   const selectedPlan = paidPlans.find(p => p.id === upgradePlan) ?? null;
   const currencySymbol = plansData?.currency === 'NGN' ? '₦' : '$';
-  const price = selectedPlan?.billing_cycles[upgradeCycle]?.amount ?? 0;
+  const mailboxAddon = plansData?.addons?.find(a => a.type === 'extra_mailbox');
+  const planPrice = selectedPlan?.billing_cycles[upgradeCycle]?.amount ?? 0;
+  const addonTotal = (mailboxAddon?.amount ?? 0) * extraMailboxes;
+  const price = planPrice + addonTotal;
 
   return (
     <>
@@ -165,7 +170,7 @@ export default function BillingPage() {
       </div>
 
       {/* Upgrade dialog */}
-      <Dialog open={showUpgrade} onOpenChange={setShowUpgrade}>
+      <Dialog open={showUpgrade} onOpenChange={(open) => { setShowUpgrade(open); if (!open) setExtraMailboxes(0); }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Upgrade your plan</DialogTitle>
@@ -238,23 +243,65 @@ export default function BillingPage() {
               </div>
             </div>
 
+            {/* Extra mailboxes add-on */}
+            {mailboxAddon && (
+              <div className="flex items-center justify-between rounded-lg border px-4 py-2.5">
+                <div>
+                  <p className="text-sm font-medium">Extra mailboxes</p>
+                  <p className="text-xs text-muted-foreground">
+                    {mailboxAddon.symbol}{mailboxAddon.amount}/mo each, added to your plan
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7"
+                    disabled={extraMailboxes <= 0}
+                    onClick={() => setExtraMailboxes(n => Math.max(0, n - 1))}
+                  >
+                    <Minus className="h-3.5 w-3.5" />
+                  </Button>
+                  <span className="w-4 text-center text-sm font-semibold tabular-nums">{extraMailboxes}</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => setExtraMailboxes(n => Math.min(100, n + 1))}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Price summary */}
             {selectedPlan && (
-              <div className="rounded-xl border bg-muted/40 px-4 py-3 flex items-baseline justify-between">
-                <p className="text-sm text-muted-foreground">
-                  {selectedPlan.name} · {upgradeCycle}
-                </p>
-                <p className="font-bold text-lg">
-                  {currencySymbol}{price.toLocaleString()}
-                  <span className="text-sm font-normal text-muted-foreground">
-                    /{upgradeCycle === 'monthly' ? 'mo' : 'yr'}
-                  </span>
-                </p>
+              <div className="rounded-xl border bg-muted/40 px-4 py-3 space-y-1">
+                <div className="flex items-baseline justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    {selectedPlan.name} · {upgradeCycle}
+                    {extraMailboxes > 0 && ` + ${extraMailboxes} mailbox${extraMailboxes > 1 ? 'es' : ''}`}
+                  </p>
+                  <p className="font-bold text-lg">
+                    {currencySymbol}{price.toLocaleString()}
+                    <span className="text-sm font-normal text-muted-foreground">
+                      /{upgradeCycle === 'monthly' ? 'mo' : 'yr'}
+                    </span>
+                  </p>
+                </div>
+                {addonTotal > 0 && (
+                  <p className="text-xs text-muted-foreground text-right">
+                    {currencySymbol}{planPrice.toLocaleString()} plan + {currencySymbol}{addonTotal.toLocaleString()} mailboxes
+                  </p>
+                )}
               </div>
             )}
 
             <p className="text-xs text-muted-foreground">
-              Payment is processed securely via {upgradeCurrency === 'ngn' ? 'Flutterwave' : 'Paddle'}.
+              Payment is processed securely via {upgradeCurrency === 'ngn' ? 'Flutterwave' : 'our payment partner'}.
               You can cancel anytime from this page.
             </p>
           </div>

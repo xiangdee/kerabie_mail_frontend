@@ -23,9 +23,20 @@ export interface Plan {
   highlighted: boolean;
 }
 
+export interface Addon {
+  type: 'extra_storage' | 'extra_mailbox';
+  name: string;
+  description: string;
+  amount: number;
+  currency: string;
+  symbol: string;
+  quantity_increment: number;
+}
+
 export interface PlansResponse {
   currency: string;
   plans: Plan[];
+  addons: Addon[];
 }
 
 export function usePlans(currency?: string) {
@@ -121,6 +132,7 @@ export interface CreateSubscriptionPayload {
   /** Flutterwave redirects here after payment */
   return_url: string;
   country_code?: string;
+  addons?: { type: 'extra_storage' | 'extra_mailbox'; quantity: number }[];
 }
 
 export interface CreateSubscriptionResult {
