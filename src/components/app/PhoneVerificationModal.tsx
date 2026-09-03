@@ -53,7 +53,7 @@ export default function PhoneVerificationModal({ open, token, onVerified }: Prop
     if (!code.trim()) return;
     const res = await verifyOtp.mutateAsync({ phone, code: code.trim() });
     if (res.status === true) {
-      success('Phone verified! You can now use your trial account.');
+      success('Phone verified!');
       onVerified();
     } else {
       toastError('Verification failed', { description: res.response?.detail ?? 'Invalid code' });
@@ -75,7 +75,7 @@ export default function PhoneVerificationModal({ open, token, onVerified }: Prop
             <DialogTitle>Verify your phone number</DialogTitle>
           </div>
           <DialogDescription>
-            Trial accounts require phone verification to prevent abuse. This is a one-time step.
+            Free accounts require phone verification to prevent abuse. This is a one-time step, and paid plans are exempt.
           </DialogDescription>
         </DialogHeader>
 

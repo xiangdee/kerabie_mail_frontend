@@ -45,19 +45,26 @@ const CRUMBS: { match: (path: string) => boolean; label: string }[] = [
   { match: (p) => p.startsWith('/app/partner'), label: 'Partner' },
 ];
 
+// Gate everyone who hasn't verified AND hasn't actually paid — trial
+// accounts (free Pro access, no card) and free-forever accounts alike.
+// Scoping this to isTrial only (the old, since-fixed bug) left a real
+// abuse hole: once a trial expires and downgrades to free, is_trial flips
+// to false and the gate would stop applying forever, even for an account
+// that was never verified — exactly the bot/spam case this exists to
+// prevent. plan_status !== 'free' with is_trial === false means a real
+// paid subscription (the only case that should be exempt, per "no
+// verification needed once you've signed up with a card").
+function ownsAPaidPlan(user: { plan_status?: string; is_trial?: boolean } | null | undefined): boolean {
+  return !!user && user.plan_status !== 'free' && user.is_trial !== true;
+}
+
 function PhoneVerificationGate({ children }: { children: React.ReactNode }) {
   const { user, token } = useAuth();
   const { data: phoneStatus, refetch } = usePhoneStatus(token);
   const [dismissed, setDismissed] = useState(false);
 
-  // plan_status is the PLAN ("pro"/"premium"/"free"), never the literal
-  // string "trial" — is_trial is the actual boolean for that (see
-  // build_user_response/GET /auth/me on the backend). The old
-  // `plan_status === 'trial'` check here could never be true, so this gate
-  // has never actually fired in production.
-  const isTrial = user?.is_trial === true;
   const needsVerification =
-    isTrial &&
+    !ownsAPaidPlan(user) &&
     phoneStatus !== undefined &&
     phoneStatus !== null &&
     !phoneStatus.is_verified &&
@@ -114,13 +121,7 @@ function AlternateEmailGate({ children }: { children: React.ReactNode }) {
   const [dismissed, setDismissed] = useState(false);
   const router = useRouter();
 
-  // plan_status is the PLAN ("pro"/"premium"/"free"), never the literal
-  // string "trial" — is_trial is the actual boolean for that (see
-  // build_user_response/GET /auth/me on the backend). The old
-  // `plan_status === 'trial'` check here could never be true, so this gate
-  // has never actually fired in production.
-  const isTrial = user?.is_trial === true;
-  const phoneGateActive = isTrial && phoneStatus !== undefined && phoneStatus !== null && !phoneStatus.is_verified;
+  const phoneGateActive = !ownsAPaidPlan(user) && phoneStatus !== undefined && phoneStatus !== null && !phoneStatus.is_verified;
 
   const mailbox = mailboxes?.find((m) => m.email_address === user?.email);
   const storageKey = mailbox ? `alt_email_prompted:${mailbox.email_address}` : null;
