@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/context/auth.context';
+import TurnstileWidget from '@/components/TurnstileWidget';
 
 function LoginForm() {
   const { login, verifyTwoFactor } = useAuth();
@@ -20,6 +21,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [pendingToken, setPendingToken] = useState<string | null>(null);
   const [code, setCode] = useState('');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const goHome = () => {
     success('Welcome back!');
@@ -32,8 +34,12 @@ function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!captchaToken) {
+      toastError('Please complete the captcha');
+      return;
+    }
     setLoading(true);
-    const result = await login(email, password);
+    const result = await login(email, password, captchaToken);
     setLoading(false);
     if (result.ok) {
       goHome();
@@ -148,6 +154,8 @@ function LoginForm() {
             </button>
           </div>
         </div>
+
+        <TurnstileWidget onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
 
         <Button type="submit" className="w-full rounded-none" disabled={loading}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

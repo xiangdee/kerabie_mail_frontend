@@ -30,12 +30,14 @@ export interface AuthResponse extends AuthTokens {
 export interface LoginRequest {
   email: string;
   password: string;
+  captcha_token?: string;
 }
 
 export interface RegisterRequest {
   username: string;
   password: string;
   full_name?: string;
+  captcha_token?: string;
 }
 
 // ── Alias ─────────────────────────────────────────────────────────────────────

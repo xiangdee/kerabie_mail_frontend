@@ -20,9 +20,9 @@ interface AuthContextValue {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<LoginResult>;
+  login: (email: string, password: string, captchaToken?: string) => Promise<LoginResult>;
   verifyTwoFactor: (pendingToken: string, code: string) => Promise<{ ok: boolean; error?: string }>;
-  register: (username: string, password: string, full_name?: string) => Promise<{ ok: boolean; error?: string }>;
+  register: (username: string, password: string, full_name?: string, captchaToken?: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -69,8 +69,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(id);
   }, [user]);
 
-  const login = async (email: string, password: string): Promise<LoginResult> => {
-    const res = await authService.login({ email, password });
+  const login = async (email: string, password: string, captchaToken?: string): Promise<LoginResult> => {
+    const res = await authService.login({ email, password, captcha_token: captchaToken });
     if (res.status === true) {
       const body = res.response as { user?: User; requires_2fa?: boolean; two_factor_pending_token?: string };
       if (body.requires_2fa) {
@@ -92,8 +92,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { ok: false, error: res.response as string };
   };
 
-  const register = async (username: string, password: string, full_name?: string) => {
-    const res = await authService.register({ username, password, full_name });
+  const register = async (username: string, password: string, full_name?: string, captchaToken?: string) => {
+    const res = await authService.register({ username, password, full_name, captcha_token: captchaToken });
     if (res.status === true) {
       const { user: u } = res.response as { user: User };
       setUser(u);

@@ -12,6 +12,7 @@ import { authService } from '@/lib/services/auth.service';
 import { useUpdateMailbox } from '@/lib/hooks/useMailboxes';
 import { mailConnectService, type DnsRecord, type DnsSetupInfo, type MailConnectionResponse } from '@/lib/services/mail-connect.service';
 import { cn } from '@/lib/utils';
+import TurnstileWidget from '@/components/TurnstileWidget';
 
 const KERABIE_DOMAIN = 'kerabie.email';
 const USERNAME_RE = /^[a-z0-9]([a-z0-9._-]{1,28}[a-z0-9])?$/;
@@ -120,6 +121,7 @@ function KerabieForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [avail, setAvail] = useState<AvailState>('idle');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -160,8 +162,12 @@ function KerabieForm() {
       warning('Password must be at least 8 characters');
       return;
     }
+    if (!captchaToken) {
+      warning('Please complete the captcha');
+      return;
+    }
     setLoading(true);
-    const result = await register(username.toLowerCase().trim(), password, fullName || undefined);
+    const result = await register(username.toLowerCase().trim(), password, fullName || undefined, captchaToken);
     setLoading(false);
     if (result.ok) {
       success('Account created!', { description: `Your mailbox ${username}@${KERABIE_DOMAIN} is ready.` });
@@ -276,6 +282,8 @@ function KerabieForm() {
             className="rounded-none"
           />
         </div>
+
+        <TurnstileWidget onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
 
         <Button
           type="submit"
