@@ -77,7 +77,13 @@ export function useDeleteMailbox(token: string | null) {
   return useMutation({
     mutationFn: async (id: number) => {
       const res = await customAxiosPost(`${base}/mail/mailbox/${id}/delete`, {}, '', token ?? '');
-      if (!res.status) throw new Error((res as any)?.message ?? 'Could not start mailbox deletion.');
+      // On success `status` is the literal boolean true; on failure it's a
+      // string like 'FORBIDDEN'/'NOT_FOUND' (see extractErrorMessage) — a
+      // non-empty string is truthy, so `!res.status` never catches it and
+      // `res.response` (a plain error string on failure, not this shape)
+      // would otherwise get returned and silently destructured into
+      // job_id: undefined.
+      if (res.status !== true) throw new Error(typeof res.response === 'string' ? res.response : 'Could not start mailbox deletion.');
       return res.response as DeleteMailboxStart;
     },
   });
