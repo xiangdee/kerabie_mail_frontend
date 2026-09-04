@@ -1,5 +1,5 @@
 'use client';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { customAxiosPost } from '@/lib/utils/CustomAxiosRequest';
@@ -21,8 +21,18 @@ function SsoPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [failed, setFailed] = useState(false);
+  // The exchange token is one-time-use — the backend deletes it on first
+  // lookup. React 18 Strict Mode (dev) and some remount scenarios run this
+  // effect twice; without this guard the second call always hits an
+  // already-consumed token and reports "expired," even seconds after the
+  // link was opened — this is what was surfacing as a near-instant
+  // "link expired" report despite the token's real TTL being minutes long.
+  const didRun = useRef(false);
 
   useEffect(() => {
+    if (didRun.current) return;
+    didRun.current = true;
+
     const token = searchParams.get('token');
     const redirect = searchParams.get('redirect');
     const target = redirect && redirect.startsWith('/') ? redirect : '/app';
