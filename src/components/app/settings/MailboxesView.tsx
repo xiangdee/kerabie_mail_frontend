@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Trash2, Mail, Eye, EyeOff, Loader2, ArrowDownToLine, ArrowUpFromLine, BellOff, Pencil, Check, X, AlertTriangle, RotateCw, CloudUpload, ExternalLink } from 'lucide-react';
 import { ConvertMailboxDialog } from './ConvertMailboxDialog';
 import { UpdateConnectionDialog } from './UpdateConnectionDialog';
@@ -58,10 +58,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
 import { IMAP_HOST, SMTP_HOST } from '@/lib/constants/links';
 import type { UserEmailAccount, Domain } from '@/lib/types/api.types';
 import { authService } from '@/lib/services/auth.service';
-import { useAppToast } from '@/components/ui/app-toast';
+import { useAppToast, ConfirmDialog } from '@/components/ui/app-toast';
+import { useQueryClient } from '@tanstack/react-query';
+import { useDeleteMailbox, useMailboxDeleteStatus } from '@/lib/hooks/useMailboxes';
 
 const WEBMAIL_URL = process.env.NEXT_PUBLIC_WEBMAIL_URL ?? 'https://webmail.kerabie.email';
 
@@ -108,7 +111,40 @@ export function MailboxesView({
   const [convertEmail, setConvertEmail] = useState<string | null>(null);
   const [updateConnectionEmail, setUpdateConnectionEmail] = useState<string | null>(null);
   const [openingWebmailId, setOpeningWebmailId] = useState<number | null>(null);
-  const { error: toastError } = useAppToast();
+  const { token } = useAuth();
+  const { success, error: toastError } = useAppToast();
+  const qc = useQueryClient();
+
+  // ── Delete mailbox (confirm → background job → progress) ────────────────
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; email: string } | null>(null);
+  const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
+  const deleteMutation = useDeleteMailbox(token);
+  const { data: deleteProgress } = useMailboxDeleteStatus(token, deleteJobId, !!deleteJobId);
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      const { job_id } = await deleteMutation.mutateAsync(deleteTarget.id);
+      setDeleteJobId(job_id);
+    } catch (e: any) {
+      toastError('Could not start deletion', { description: e?.message });
+    } finally {
+      setDeleteTarget(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!deleteJobId || !deleteProgress) return;
+    if (deleteProgress.status === 'done') {
+      setDeleteJobId(null);
+      qc.invalidateQueries({ queryKey: ['mailboxes'] });
+      success('Mailbox deleted', { description: deleteProgress.email });
+    } else if (deleteProgress.status === 'error') {
+      setDeleteJobId(null);
+      toastError('Mailbox deletion failed', { description: deleteProgress.error });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deleteProgress?.status, deleteJobId]);
 
   const handleOpenWebmail = async (mailboxId: number) => {
     setOpeningWebmailId(mailboxId);
@@ -415,9 +451,10 @@ export function MailboxesView({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-muted-foreground/40 cursor-not-allowed"
-                  disabled
-                  title="Deleting mailboxes isn't available yet"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  disabled={!!deleteJobId}
+                  onClick={() => setDeleteTarget({ id: mb.id, email: mb.email_address })}
+                  title={`Delete ${mb.email_address}`}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -461,6 +498,43 @@ export function MailboxesView({
           emailAddress={convertEmail}
         />
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete this mailbox?"
+        description={deleteTarget ? `${deleteTarget.email} and all of its mail will be permanently deleted. This can't be undone.` : undefined}
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
+      <Dialog open={!!deleteJobId} onOpenChange={() => {}}>
+        <DialogContent
+          className="sm:max-w-sm [&>button]:hidden"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>Deleting {deleteProgress?.email ?? 'mailbox'}…</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            {deleteProgress && deleteProgress.total > 0 ? (
+              <>
+                <Progress value={(deleteProgress.done / deleteProgress.total) * 100} />
+                <p className="text-xs text-muted-foreground text-center">
+                  Removing archived mail — {deleteProgress.done} of {deleteProgress.total}
+                </p>
+              </>
+            ) : (
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Removing mailbox…
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

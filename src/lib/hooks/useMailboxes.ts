@@ -61,17 +61,47 @@ export function useCreateMailbox(token: string | null) {
   });
 }
 
-// No DELETE /mail/mailbox/{email} exists on the backend — deliberately
-// not faking one. Deleting a mailbox needs real design (Mailu-side
-// removal, cascade cleanup, guarding against deleting your own login
-// mailbox) that's out of scope here. Kept as a named export so
-// call sites fail loudly/obviously if wired up rather than silently
-// hitting a 404.
-export function useDeleteMailbox(_token: string | null) {
+// POST /mail/mailbox/{id}/delete — Mailu removal + DB row happen fast,
+// but any B2-archived messages (app/tasks/archive.py) are deleted one
+// object at a time in a background task, so this only starts the job;
+// poll useMailboxDeleteStatus with the returned job_id for progress.
+export interface DeleteMailboxStart {
+  job_id: string;
+  total: number;
+}
+
+export function useDeleteMailbox(token: string | null) {
+  // No onSuccess invalidate here — this only starts the background job,
+  // the mailbox isn't actually gone yet. The caller invalidates ['mailboxes']
+  // once useMailboxDeleteStatus below reports status === 'done'.
   return useMutation({
-    mutationFn: async (_email: string): Promise<never> => {
-      throw new Error('Deleting mailboxes isn\'t available yet.');
+    mutationFn: async (id: number) => {
+      const res = await customAxiosPost(`${base}/mail/mailbox/${id}/delete`, {}, '', token ?? '');
+      if (!res.status) throw new Error((res as any)?.message ?? 'Could not start mailbox deletion.');
+      return res.response as DeleteMailboxStart;
     },
+  });
+}
+
+export interface MailboxDeleteProgress {
+  status: 'running' | 'done' | 'error';
+  done: number;
+  total: number;
+  email?: string;
+  error?: string;
+}
+
+// Poll while status === 'running'. Caller controls refetchInterval so it
+// can stop once done/error comes back — see MailboxesView's delete modal.
+export function useMailboxDeleteStatus(token: string | null, jobId: string | null, enabled: boolean) {
+  return useQuery({
+    queryKey: ['mailbox-delete-status', jobId],
+    queryFn: async () => {
+      const res = await customAxiosGet(`${base}/mail/mailbox/delete-status/${jobId}`, undefined, token ?? undefined);
+      return res.status === true ? (res.response as MailboxDeleteProgress) : null;
+    },
+    enabled: enabled && !!jobId,
+    refetchInterval: (query) => (query.state.data?.status === 'running' ? 800 : false),
   });
 }
 
