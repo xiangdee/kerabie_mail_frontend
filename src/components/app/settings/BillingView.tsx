@@ -54,7 +54,14 @@ export function BillingView({
   // RevenueCat (App Store/Play Store) — and the legacy apple_pay/google_pay
   // values some older rows may still carry — can't be cancelled/reactivated/
   // refunded through our own endpoints; Apple/Google own that relationship.
-  const isAppStoreManaged = ['revenuecat', 'apple_pay', 'google_pay'].includes(subscription?.payment_provider ?? '');
+  // payment_provider is never cleared once a subscription expires (it's a
+  // historical record of how it was originally paid), so this must also
+  // require the plan to still actually be paid — otherwise an expired
+  // RevenueCat subscription that's already correctly downgraded to free
+  // permanently shows "manage on the App Store," with the last live
+  // billing period frozen in place, even though there's nothing left to
+  // manage there. Confirmed live against a real expired account.
+  const isAppStoreManaged = plan !== 'free' && ['revenuecat', 'apple_pay', 'google_pay'].includes(subscription?.payment_provider ?? '');
 
   const fmt = (d: string) => {
     try { return format(parseISO(d), 'MMM d, yyyy'); } catch { return d; }
@@ -117,7 +124,11 @@ export function BillingView({
             })()}
           </div>
 
-          {subscription && (
+          {/* plan !== 'free' — a subscription row's period dates freeze at
+              whatever they were when it last renewed and are never cleared
+              on downgrade, so an expired/free account would otherwise show
+              a stale billing period forever. */}
+          {subscription && plan !== 'free' && (
             <div className="grid grid-cols-2 gap-4 pt-3 border-t text-sm">
               <div>
                 <p className="text-xs text-muted-foreground">Current period</p>
