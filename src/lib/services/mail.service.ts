@@ -60,7 +60,9 @@ export const mailService = {
   getFolders: (token: string, mailbox: string) =>
     customAxiosGet(`${base}/inbox/folders`, { email: mailbox }, token),
 
-  // AI Compose
+  // AI Compose — Gemini generation legitimately runs past the default 10s
+  // timeout (see CustomAxiosRequest's DEFAULT_OPTIONS), especially a cold
+  // context-cache (first call in the last hour) plus a "long" draft.
   aiCompose: (token: string | null | undefined, data: { prompt: string; tone?: string; length?: string; subject_hint?: string; reply_context?: string }) =>
-    customAxiosPost(`${base}/ai/compose`, data, '', token ?? undefined),
+    customAxiosPost(`${base}/ai/compose`, data, '', token ?? undefined, { timeout: 45000 }),
 };
