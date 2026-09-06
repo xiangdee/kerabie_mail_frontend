@@ -38,23 +38,42 @@ export const useGetUserIpDetails = () => {
         const fetchData = async () => {
             setIsFetchingUserIp(true);
             try {
-                const { response, status } = await customAxiosGet(`${apiLink}/ip`);
-                
-                if (status === true && response && !response._dev_mode) {
-                    // Real IP data received (not dev/fallback)
-                    setUserIpDetails(response);
-                    
+                // GET /ip never existed on the backend (always 404'd) — every
+                // visitor silently fell back to the hardcoded CustomIpData
+                // mock (Nigeria/NGN) below and had it persisted to
+                // localStorage as their "detected" currency, regardless of
+                // where they actually were. The real endpoint is
+                // /pricing/currency, which returns {currency, country_code,
+                // country, ...} rather than the fuller ip-api-style shape
+                // this hook's type expects — adapted into that shape here
+                // rather than changing the type everywhere it's used
+                // (currency.code is the only field anything actually reads).
+                const { response, status } = await customAxiosGet(`${apiLink}/pricing/currency`);
+
+                if (status === true && response?.currency) {
+                    const adapted = {
+                        ...CustomIpData,
+                        country_code2: response.country_code ?? null,
+                        country_name: response.country ?? null,
+                        currency: {
+                            code: response.currency,
+                            name: response.currency === 'NGN' ? 'Nigerian Naira' : 'US Dollar',
+                            symbol: response.currency === 'NGN' ? '₦' : '$',
+                        },
+                    };
+                    setUserIpDetails(adapted);
+
                     // Store in localStorage with timestamp
                     try {
-                        localStorage.setItem(IP_STORAGE_KEY, JSON.stringify(response));
+                        localStorage.setItem(IP_STORAGE_KEY, JSON.stringify(adapted));
                         localStorage.setItem(IP_TIMESTAMP_KEY, Date.now().toString());
                     } catch (error) {
                         console.error("Error storing IP data in localStorage:", error);
                     }
-                    
-                    return true; // Success - got real IP
+
+                    return true; // Success - got real currency detection
                 } else {
-                    // Failed or got dev data, keep CustomIpData and retry
+                    // Failed, keep CustomIpData and retry
                     return false;
                 }
             } catch (error) {
@@ -94,14 +113,24 @@ export const useGetUserIpDetails = () => {
     const refreshData = async () => {
         localStorage.removeItem(IP_STORAGE_KEY);
         localStorage.removeItem(IP_TIMESTAMP_KEY);
-        
+
         setIsFetchingUserIp(true);
         try {
-            const { response, status } = await customAxiosGet(`${apiLink}/ip`);
-            
-            if (status === true && response && !response._dev_mode) {
-                setUserIpDetails(response);
-                localStorage.setItem(IP_STORAGE_KEY, JSON.stringify(response));
+            const { response, status } = await customAxiosGet(`${apiLink}/pricing/currency`);
+
+            if (status === true && response?.currency) {
+                const adapted = {
+                    ...CustomIpData,
+                    country_code2: response.country_code ?? null,
+                    country_name: response.country ?? null,
+                    currency: {
+                        code: response.currency,
+                        name: response.currency === 'NGN' ? 'Nigerian Naira' : 'US Dollar',
+                        symbol: response.currency === 'NGN' ? '₦' : '$',
+                    },
+                };
+                setUserIpDetails(adapted);
+                localStorage.setItem(IP_STORAGE_KEY, JSON.stringify(adapted));
                 localStorage.setItem(IP_TIMESTAMP_KEY, Date.now().toString());
             }
         } catch (error) {
