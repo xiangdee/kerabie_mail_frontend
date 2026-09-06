@@ -47,7 +47,12 @@ export function usePlans(currency?: string) {
         ? `${base}/pricing/plans?currency=${currency}`
         : `${base}/pricing/plans`;
       const res = await customAxiosGet(url, undefined, '');
-      if (!res.status) throw new Error('Failed to load plans');
+      // On success `status` is the literal boolean true; on failure it's a
+      // string like 'FORBIDDEN'/'NOT_FOUND' (see extractErrorMessage) — a
+      // non-empty string is truthy, so `!res.status` never caught it and
+      // res.response (a plain error string on failure) got returned and
+      // cast as PlansResponse instead of throwing.
+      if (res.status !== true) throw new Error(typeof res.response === 'string' ? res.response : 'Failed to load plans');
       return res.response as PlansResponse;
     },
     staleTime: 1000 * 60 * 60, // 1 hour — prices don't change often
@@ -153,7 +158,13 @@ export function useCreateSubscription(token: string | null) {
         '',
         token ?? '',
       );
-      if (!res.status) throw new Error((res as any)?.message ?? 'Failed to create subscription');
+      // Same bug as useMailboxes.ts's useDeleteMailbox fix: `status` is a
+      // non-empty (truthy) error-code STRING on failure, not boolean false,
+      // so `!res.status` never caught a real error here — the error string
+      // in res.response got returned and cast as CreateSubscriptionResult
+      // instead, so result.authorization_url was undefined and the caller
+      // redirected to the literal "/app/settings/undefined".
+      if (res.status !== true) throw new Error(typeof res.response === 'string' ? res.response : 'Failed to create subscription');
       return res.response as CreateSubscriptionResult;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['subscription'] }),
@@ -183,7 +194,9 @@ export function useUpgradeFromTrial(token: string | null) {
         '',
         token ?? '',
       );
-      if (!res.status) throw new Error((res as any)?.message ?? 'Failed to upgrade from trial');
+      // Same bug as useMailboxes.ts's useDeleteMailbox fix — see
+      // useCreateSubscription above for the full explanation.
+      if (res.status !== true) throw new Error(typeof res.response === 'string' ? res.response : 'Failed to upgrade from trial');
       return res.response as CreateSubscriptionResult;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['subscription'] }),
