@@ -255,11 +255,16 @@ export function useUpgradeFromTrial(token: string | null) {
 // (extra_mailboxes/extra_storage_gb) are meaningful.
 
 export interface AddonSummary {
-  payment_method_id: number;
+  /** null for a "bundled" entry — chosen at the original checkout, riding in
+   * that subscription's own product_cart with no separate id to cancel by. */
+  payment_method_id: number | null;
   addon_type: 'extra_mailbox' | 'extra_storage';
   quantity: number;
   price: number;
-  status: 'pending_payment' | 'active' | 'cancelled';
+  /** "bundled" = part of the original checkout, not individually cancellable
+   * (see payment_method_id above) — removing it means cancelling the whole
+   * plan. Every other status is a separate, cancellable add-on purchase. */
+  status: 'pending_payment' | 'active' | 'cancelled' | 'bundled';
 }
 
 export interface MyAddonsResult {

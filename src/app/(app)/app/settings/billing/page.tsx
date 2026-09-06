@@ -545,7 +545,7 @@ function BillingPageInner() {
                   <div className="space-y-2">
                     <Label>Your add-ons</Label>
                     {addonsData.addons.map((a) => (
-                      <div key={a.payment_method_id} className="flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm">
+                      <div key={a.payment_method_id ?? `bundled-${a.addon_type}`} className="flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm">
                         <div className="flex items-center gap-2">
                           {a.addon_type === 'extra_mailbox' ? (
                             <Mailbox className="h-3.5 w-3.5 text-muted-foreground" />
@@ -560,22 +560,29 @@ function BillingPageInner() {
                             'inline-flex items-center px-2 py-0.5 rounded-full text-xs border font-medium',
                             a.status === 'active' ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
                               : a.status === 'cancelled' ? 'bg-gray-100 text-gray-600 border-gray-200'
+                              : a.status === 'bundled' ? 'bg-blue-100 text-blue-700 border-blue-200'
                               : 'bg-amber-100 text-amber-700 border-amber-200',
                           )}>
-                            {a.status === 'pending_payment' ? 'pending' : a.status}
+                            {a.status === 'pending_payment' ? 'pending' : a.status === 'bundled' ? 'in original plan' : a.status}
                           </span>
                         </div>
-                        {a.status !== 'cancelled' && (
+                        {a.status !== 'cancelled' && a.status !== 'bundled' && a.payment_method_id != null && (
                           <Button
                             variant="ghost" size="icon" className="h-6 w-6"
                             disabled={cancelAddonMutation.isPending}
-                            onClick={() => handleCancelAddon(a.payment_method_id)}
+                            onClick={() => handleCancelAddon(a.payment_method_id as number)}
                           >
                             <X className="h-3.5 w-3.5" />
                           </Button>
                         )}
                       </div>
                     ))}
+                    {addonsData.addons.some(a => a.status === 'bundled') && (
+                      <p className="text-xs text-muted-foreground">
+                        &ldquo;In original plan&rdquo; add-ons were chosen at checkout and can&apos;t be
+                        removed individually — cancelling your plan removes them too.
+                      </p>
+                    )}
                   </div>
                 )}
               </>
