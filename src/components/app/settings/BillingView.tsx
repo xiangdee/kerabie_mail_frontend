@@ -1,6 +1,6 @@
 'use client';
 import { format, parseISO } from 'date-fns';
-import { Zap, Crown, Building2, AlertTriangle, CheckCircle2, Loader2, RotateCcw, Clock, CheckCheck, XCircle, Paperclip, MousePointerClick, BarChart3 } from 'lucide-react';
+import { Zap, Crown, Building2, AlertTriangle, CheckCircle2, Loader2, RotateCcw, Clock, CheckCheck, XCircle, Paperclip, MousePointerClick, BarChart3, Plus, Mailbox, HardDrive } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,15 +38,22 @@ interface BillingViewProps {
   plans?: Plan[];
   refunds?: RefundRequest[];
   refundsLoading?: boolean;
+  /** extra_mailboxes/extra_storage_gb currently on the subscription — shown
+   * as a quick summary; the full per-purchase breakdown lives in the
+   * add-ons dialog itself (opened via onManageAddons). */
+  extraMailboxes?: number;
+  extraStorageGb?: number;
   onCancel: () => void;
   onReactivate: () => void;
   onRequestRefund: () => void;
   onUpgrade: () => void;
+  onManageAddons: () => void;
 }
 
 export function BillingView({
   subscription, isLoading, isCancelling, isReactivating,
-  planType, plans, refunds, refundsLoading, onCancel, onReactivate, onRequestRefund, onUpgrade,
+  planType, plans, refunds, refundsLoading, extraMailboxes, extraStorageGb,
+  onCancel, onReactivate, onRequestRefund, onUpgrade, onManageAddons,
 }: BillingViewProps) {
   const plan = (planType ?? 'free') as keyof typeof PLAN_ICONS;
   const PlanIcon = PLAN_ICONS[plan] ?? Zap;
@@ -148,6 +155,23 @@ export function BillingView({
             </div>
           )}
 
+          {plan !== 'free' && ((extraMailboxes ?? 0) > 0 || (extraStorageGb ?? 0) > 0) && (
+            <div className="flex flex-wrap gap-4 pt-3 border-t text-sm">
+              {(extraMailboxes ?? 0) > 0 && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Mailbox className="h-3.5 w-3.5" />
+                  {extraMailboxes} extra mailbox{extraMailboxes === 1 ? '' : 'es'}
+                </div>
+              )}
+              {(extraStorageGb ?? 0) > 0 && (
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <HardDrive className="h-3.5 w-3.5" />
+                  +{extraStorageGb} GB storage
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Actions */}
           {isAppStoreManaged ? (
             <div className="rounded-lg border border-console-border-soft bg-console-hover px-4 py-3 space-y-2">
@@ -176,10 +200,17 @@ export function BillingView({
             </div>
           ) : (
             <div className="flex flex-wrap gap-3 pt-1">
-              {(plan === 'free' || subscription?.status === 'trial') && (
+              {(plan === 'free' || subscription?.status === 'trial'
+                || (subscription?.status === 'active' && plan !== 'premium')) && (
                 <Button size="sm" onClick={onUpgrade}>
                   <Crown className="mr-1.5 h-3.5 w-3.5" />
                   Upgrade plan
+                </Button>
+              )}
+              {plan !== 'free' && subscription?.status === 'active' && (
+                <Button size="sm" variant="outline" onClick={onManageAddons} className="gap-1.5">
+                  <Plus className="h-3.5 w-3.5" />
+                  Add-ons
                 </Button>
               )}
               {plan !== 'free' && subscription?.cancel_at_period_end && (

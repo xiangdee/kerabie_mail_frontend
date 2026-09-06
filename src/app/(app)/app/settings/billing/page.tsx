@@ -11,6 +11,9 @@ import {
   useCreateSubscription,
   useUpgradeFromTrial,
   useUpgradeExistingSubscription,
+  useMyAddons,
+  usePurchaseAddon,
+  useCancelAddon,
   type RefundReason,
 } from '@/lib/hooks/useBilling';
 import { useAppToast } from '@/components/ui/app-toast';
@@ -38,7 +41,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Crown, Building2, Loader2, Check, Minus, Plus } from 'lucide-react';
+import { Crown, Building2, Loader2, Check, Minus, Plus, X, Mailbox, HardDrive } from 'lucide-react';
 import {
   usePlans,
   type Plan,
@@ -82,6 +85,14 @@ function BillingPageInner() {
   const [upgradeCycle, setUpgradeCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [extraMailboxes, setExtraMailboxes] = useState(0);
 
+  // Add-ons dialog state (for an already-active subscriber buying more
+  // mailboxes/storage without changing plan tier — separate from the
+  // upgrade dialog's addon stepper, which only applies when creating or
+  // changing a plan)
+  const [showAddons, setShowAddons] = useState(false);
+  const [buyMailboxQty, setBuyMailboxQty] = useState(1);
+  const [buyStorageQty, setBuyStorageQty] = useState(1);
+
   const { data: subscription, isLoading } = useSubscription(token);
   const { data: usage, isLoading: usageLoading } = useUsage(token);
   const { data: refunds, isLoading: refundsLoading } = useMyRefunds(token);
@@ -103,6 +114,10 @@ function BillingPageInner() {
   const upgradeFromTrialMutation = useUpgradeFromTrial(token);
   const upgradeExistingMutation = useUpgradeExistingSubscription(token);
   const isUpgradeSubmitting = createMutation.isPending || upgradeFromTrialMutation.isPending || upgradeExistingMutation.isPending;
+
+  const { data: addonsData, isLoading: addonsLoading } = useMyAddons(token);
+  const purchaseAddonMutation = usePurchaseAddon(token);
+  const cancelAddonMutation = useCancelAddon(token);
 
   // Arriving from a pricing-card CTA (?upgrade=pro&cycle=yearly&mailboxes=1)
   // — either directly (already signed in) or via /auth/register's existing
@@ -210,10 +225,42 @@ function BillingPageInner() {
     }
   };
 
+  const handlePurchaseAddon = async (type: 'extra_mailbox' | 'extra_storage', quantity: number) => {
+    try {
+      const result = await purchaseAddonMutation.mutateAsync({
+        type,
+        quantity,
+        return_url: `${siteUrl}/app/settings/billing`,
+      });
+      // Bachs starts a brand-new checkout for the add-on and needs a
+      // redirect; Paddle updates the existing subscription in place with
+      // no redirect at all.
+      if (result.authorization_url) {
+        window.location.href = result.authorization_url;
+      } else {
+        success('Add-on added to your plan');
+      }
+    } catch (err: unknown) {
+      const msg = (err as Error)?.message;
+      toastError(msg || 'Could not start add-on purchase. Please try again.');
+    }
+  };
+
+  const handleCancelAddon = async (paymentMethodId: number) => {
+    try {
+      await cancelAddonMutation.mutateAsync(paymentMethodId);
+      success('Add-on cancelled');
+    } catch (err: unknown) {
+      const msg = (err as Error)?.message;
+      toastError(msg || 'Could not cancel add-on. Please try again.');
+    }
+  };
+
   const paidPlans = (plansData?.plans ?? []).filter(p => p.id !== 'free') as Plan[];
   const selectedPlan = paidPlans.find(p => p.id === upgradePlan) ?? null;
   const currencySymbol = plansData?.currency === 'NGN' ? '₦' : '$';
   const mailboxAddon = plansData?.addons?.find(a => a.type === 'extra_mailbox');
+  const storageAddon = plansData?.addons?.find(a => a.type === 'extra_storage');
   const planPrice = selectedPlan?.billing_cycles[upgradeCycle]?.amount ?? 0;
   const addonTotal = (mailboxAddon?.amount ?? 0) * extraMailboxes;
   const price = planPrice + addonTotal;
@@ -230,10 +277,22 @@ function BillingPageInner() {
           plans={plansData?.plans}
           refunds={refunds ?? []}
           refundsLoading={refundsLoading}
+          extraMailboxes={addonsData?.extra_mailboxes}
+          extraStorageGb={addonsData?.extra_storage_gb}
           onCancel={() => setConfirmCancel(true)}
           onReactivate={handleReactivate}
           onRequestRefund={() => setShowRefundDialog(true)}
-          onUpgrade={() => setShowUpgrade(true)}
+          onUpgrade={() => {
+            // The only real upgrade path today is Pro -> Premium (Premium
+            // has no higher tier — the button itself is hidden then).
+            // Defaulting to 'pro' for an already-active Pro subscriber
+            // would just fail the backend's own tier check.
+            if (subscription?.status === 'active' && user?.plan_status === 'pro') {
+              setUpgradePlan('premium');
+            }
+            setShowUpgrade(true);
+          }}
+          onManageAddons={() => setShowAddons(true)}
         />
         <UsageSummaryView usage={usage} isLoading={usageLoading} />
       </div>
@@ -383,6 +442,148 @@ function BillingPageInner() {
               {isUpgradeSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
               Continue to payment
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage add-ons dialog */}
+      <Dialog open={showAddons} onOpenChange={setShowAddons}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add-ons</DialogTitle>
+            <DialogDescription>
+              Buy more mailboxes or storage without changing your plan.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 py-2">
+            {addonsLoading ? (
+              <div className="h-24 flex items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <>
+                {/* Buy more mailboxes */}
+                {mailboxAddon && (
+                  <div className="flex items-center justify-between rounded-lg border px-4 py-2.5">
+                    <div>
+                      <p className="text-sm font-medium">Extra mailboxes</p>
+                      <p className="text-xs text-muted-foreground">
+                        {mailboxAddon.symbol}{mailboxAddon.amount}/mo each
+                        {(addonsData?.extra_mailboxes ?? 0) > 0 && ` · ${addonsData?.extra_mailboxes} active`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        type="button" variant="outline" size="icon" className="h-7 w-7"
+                        disabled={buyMailboxQty <= 1}
+                        onClick={() => setBuyMailboxQty(n => Math.max(1, n - 1))}
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </Button>
+                      <span className="w-4 text-center text-sm font-semibold tabular-nums">{buyMailboxQty}</span>
+                      <Button
+                        type="button" variant="outline" size="icon" className="h-7 w-7"
+                        onClick={() => setBuyMailboxQty(n => Math.min(100, n + 1))}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={purchaseAddonMutation.isPending}
+                        onClick={() => handlePurchaseAddon('extra_mailbox', buyMailboxQty)}
+                        className="gap-1.5"
+                      >
+                        {purchaseAddonMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                        Buy
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Buy more storage */}
+                {storageAddon && (
+                  <div className="flex items-center justify-between rounded-lg border px-4 py-2.5">
+                    <div>
+                      <p className="text-sm font-medium">Extra storage</p>
+                      <p className="text-xs text-muted-foreground">
+                        {storageAddon.symbol}{storageAddon.amount}/mo each (10GB)
+                        {(addonsData?.extra_storage_gb ?? 0) > 0 && ` · +${addonsData?.extra_storage_gb}GB active`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        type="button" variant="outline" size="icon" className="h-7 w-7"
+                        disabled={buyStorageQty <= 1}
+                        onClick={() => setBuyStorageQty(n => Math.max(1, n - 1))}
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </Button>
+                      <span className="w-4 text-center text-sm font-semibold tabular-nums">{buyStorageQty}</span>
+                      <Button
+                        type="button" variant="outline" size="icon" className="h-7 w-7"
+                        onClick={() => setBuyStorageQty(n => Math.min(100, n + 1))}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={purchaseAddonMutation.isPending}
+                        onClick={() => handlePurchaseAddon('extra_storage', buyStorageQty)}
+                        className="gap-1.5"
+                      >
+                        {purchaseAddonMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                        Buy
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Current add-on purchases (Bachs only — Paddle merges add-ons
+                    into a single quantity with no per-purchase breakdown) */}
+                {addonsData && addonsData.addons.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Your add-ons</Label>
+                    {addonsData.addons.map((a) => (
+                      <div key={a.payment_method_id} className="flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm">
+                        <div className="flex items-center gap-2">
+                          {a.addon_type === 'extra_mailbox' ? (
+                            <Mailbox className="h-3.5 w-3.5 text-muted-foreground" />
+                          ) : (
+                            <HardDrive className="h-3.5 w-3.5 text-muted-foreground" />
+                          )}
+                          <span>
+                            {a.quantity}x {a.addon_type === 'extra_mailbox' ? 'mailbox' : 'storage'}
+                            {a.quantity > 1 ? 'es' : ''}
+                          </span>
+                          <span className={cn(
+                            'inline-flex items-center px-2 py-0.5 rounded-full text-xs border font-medium',
+                            a.status === 'active' ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                              : a.status === 'cancelled' ? 'bg-gray-100 text-gray-600 border-gray-200'
+                              : 'bg-amber-100 text-amber-700 border-amber-200',
+                          )}>
+                            {a.status === 'pending_payment' ? 'pending' : a.status}
+                          </span>
+                        </div>
+                        {a.status !== 'cancelled' && (
+                          <Button
+                            variant="ghost" size="icon" className="h-6 w-6"
+                            disabled={cancelAddonMutation.isPending}
+                            onClick={() => handleCancelAddon(a.payment_method_id)}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddons(false)}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -243,3 +243,84 @@ export function useUpgradeFromTrial(token: string | null) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['subscription'] }),
   });
 }
+
+// ─── Add-ons on an already-active subscription ────────────────────────────────
+//
+// Bachs can't modify an existing subscription's line items at all, so buying
+// more mailboxes/storage there starts a brand-new, separate recurring
+// subscription just for the add-on (see bachs_service.purchase_addon on the
+// backend) — each one shows up as its own entry below and can be cancelled
+// independently. Paddle merges add-ons into a single quantity on the main
+// subscription instead, so `addons` is empty for those and only the totals
+// (extra_mailboxes/extra_storage_gb) are meaningful.
+
+export interface AddonSummary {
+  payment_method_id: number;
+  addon_type: 'extra_mailbox' | 'extra_storage';
+  quantity: number;
+  price: number;
+  status: 'pending_payment' | 'active' | 'cancelled';
+}
+
+export interface MyAddonsResult {
+  currency: string;
+  extra_mailboxes: number;
+  extra_storage_gb: number;
+  addon_mailbox_price: number;
+  addon_storage_price: number;
+  addons: AddonSummary[];
+}
+
+export function useMyAddons(token: string | null) {
+  return useQuery({
+    queryKey: ['my-addons', token],
+    queryFn: async () => {
+      const res = await customAxiosGet(`${base}/subscriptions/addons`, undefined, token ?? undefined);
+      return res.status === true ? (res.response as MyAddonsResult) : null;
+    },
+    enabled: !!token,
+  });
+}
+
+export interface PurchaseAddonPayload {
+  type: 'extra_mailbox' | 'extra_storage';
+  quantity: number;
+  return_url: string;
+}
+
+export interface PurchaseAddonResult {
+  /** Present for Bachs (a new checkout to redirect to); absent for Paddle,
+   * which updates the existing subscription in place with no redirect. */
+  authorization_url?: string | null;
+  status?: string;
+}
+
+export function usePurchaseAddon(token: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: PurchaseAddonPayload) => {
+      const res = await customAxiosPost(`${base}/subscriptions/addons/purchase`, payload, '', token ?? '');
+      if (res.status !== true) throw new Error(typeof res.response === 'string' ? res.response : 'Failed to start add-on purchase');
+      return res.response as PurchaseAddonResult;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['my-addons'] });
+      qc.invalidateQueries({ queryKey: ['subscription'] });
+    },
+  });
+}
+
+export function useCancelAddon(token: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (paymentMethodId: number) => {
+      const res = await customAxiosPost(`${base}/subscriptions/addons/${paymentMethodId}/cancel`, {}, '', token ?? '');
+      if (res.status !== true) throw new Error(typeof res.response === 'string' ? res.response : 'Failed to cancel add-on');
+      return res.response;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['my-addons'] });
+      qc.invalidateQueries({ queryKey: ['subscription'] });
+    },
+  });
+}
