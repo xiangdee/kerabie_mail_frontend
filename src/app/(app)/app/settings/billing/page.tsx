@@ -15,6 +15,7 @@ import {
 } from '@/lib/hooks/useBilling';
 import { useAppToast } from '@/components/ui/app-toast';
 import { ConfirmDialog } from '@/components/ui/app-toast';
+import { siteUrl } from '@/lib/constants/links';
 import { BillingView } from '@/components/app/settings/BillingView';
 import UsageSummaryView from '@/components/app/settings/UsageSummaryView';
 import { useUsage } from '@/lib/hooks/useUsage';
@@ -185,7 +186,7 @@ function BillingPageInner() {
         plan: upgradePlan,
         billing_cycle: upgradeCycle,
         currency: upgradeCurrency,
-        return_url: `${window.location.origin}/app/settings/billing`,
+        return_url: `${siteUrl}/app/settings/billing`,
         country_code: upgradeCurrency === 'ngn' ? 'NG' : 'US',
         addons,
       };
