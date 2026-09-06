@@ -93,13 +93,13 @@ export function BillingView({
                 )}
               </div>
             </div>
-            {subscription && (() => {
+            {subscription && plan !== 'free' && (() => {
               const price = subscription.amount ?? subscription.total_price ?? 0;
               // price=0 on a paid plan_type with auto_renew off means this
               // was admin-comped (see PATCH /admin/users/{id}/subscription),
               // not a real $0 charge — label it as such instead of showing
               // a price that looks like a data error.
-              const isComped = plan !== 'free' && price === 0 && subscription.auto_renew === false;
+              const isComped = price === 0 && subscription.auto_renew === false;
               const cyclePrice = plans?.find((p) => p.id === plan)?.billing_cycles?.[subscription.billing_cycle];
 
               if (!isComped) {
