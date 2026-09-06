@@ -2,6 +2,11 @@
 import { useState, useEffect } from "react";
 
 const CURRENCY_STORAGE_KEY = "preferred_currency";
+// One-time cleanup for visitors who got auto-set to NGN by the backend's
+// ENVIRONMENT=="development" IP-detection bug (fixed server-side) before
+// they ever picked a currency themselves. Clearing lets them re-detect
+// correctly; guarded so it only ever runs once per browser.
+const MIGRATION_FLAG_KEY = "currency_stale_ngn_migration_v1";
 export const AVAILABLE_CURRENCIES = ["usd", "ngn"] as const;
 type Currency = typeof AVAILABLE_CURRENCIES[number];
 
@@ -34,6 +39,25 @@ export const useCurrency = ({
         getInitialCurrency(defaultCurrency)
     );
     const [hasSetFromIp, setHasSetFromIp] = useState(false);
+
+    // Run once per browser: clear a stale NGN value left over from the
+    // detection bug so affected visitors get re-detected instead of staying
+    // stuck on NGN forever.
+    useEffect(() => {
+        try {
+            if (localStorage.getItem(MIGRATION_FLAG_KEY)) return;
+
+            if (localStorage.getItem(CURRENCY_STORAGE_KEY) === "ngn") {
+                localStorage.removeItem(CURRENCY_STORAGE_KEY);
+                setCurrencyState(defaultCurrency);
+                setHasSetFromIp(false);
+            }
+            localStorage.setItem(MIGRATION_FLAG_KEY, "1");
+        } catch (error) {
+            console.error("Error running stale currency migration:", error);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Update currency from IP data if available and not already set by user
     useEffect(() => {

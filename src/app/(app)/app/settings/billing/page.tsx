@@ -81,14 +81,20 @@ function BillingPageInner() {
   const [upgradePlan, setUpgradePlan] = useState<'pro' | 'premium'>('pro');
   const [upgradeCycle, setUpgradeCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [extraMailboxes, setExtraMailboxes] = useState(0);
-  const defaultCurrency = (user as any)?.currency === 'usd' ? 'usd' : 'ngn';
-  const [upgradeCurrency] = useState<'ngn' | 'usd'>(defaultCurrency);
-
-  const { data: plansData, isLoading: plansLoading } = usePlans(defaultCurrency.toUpperCase());
 
   const { data: subscription, isLoading } = useSubscription(token);
   const { data: usage, isLoading: usageLoading } = useUsage(token);
   const { data: refunds, isLoading: refundsLoading } = useMyRefunds(token);
+
+  // `User` has no `currency` field (see api.types.ts) — this used to read
+  // `user.currency`, which was always undefined, so every upgrade
+  // unconditionally defaulted to NGN regardless of the visitor. An existing
+  // subscriber upgrades in the currency they're already billed in; anyone
+  // without a subscription yet (free/no-sub) defaults to USD.
+  const defaultCurrency: 'ngn' | 'usd' = subscription?.currency?.toLowerCase() === 'ngn' ? 'ngn' : 'usd';
+  const upgradeCurrency = defaultCurrency;
+
+  const { data: plansData, isLoading: plansLoading } = usePlans(defaultCurrency.toUpperCase());
 
   const cancelMutation = useCancelSubscription(token);
   const reactivateMutation = useReactivateSubscription(token);
