@@ -283,7 +283,13 @@ export function useMyAddons(token: string | null) {
       const res = await customAxiosGet(`${base}/subscriptions/addons`, undefined, token ?? undefined);
       return res.status === true ? (res.response as MyAddonsResult) : null;
     },
-    enabled: !!token,
+    // Auth here is httpOnly-cookie based — useAuth().token is always
+    // literally null (see auth.context.tsx), never a real signal of
+    // whether the user is logged in. Gating on it meant this query never
+    // ran at all. Every other query in this file (useSubscription,
+    // useMyRefunds) already correctly uses enabled: true for the same
+    // reason — this one just missed it.
+    enabled: true,
   });
 }
 
