@@ -10,6 +10,7 @@ import {
   useMyRefunds,
   useCreateSubscription,
   useUpgradeFromTrial,
+  useUpgradeExistingSubscription,
   type RefundReason,
 } from '@/lib/hooks/useBilling';
 import { useAppToast } from '@/components/ui/app-toast';
@@ -93,7 +94,8 @@ function BillingPageInner() {
   const refundMutation = useRequestRefund(token);
   const createMutation = useCreateSubscription(token);
   const upgradeFromTrialMutation = useUpgradeFromTrial(token);
-  const isUpgradeSubmitting = createMutation.isPending || upgradeFromTrialMutation.isPending;
+  const upgradeExistingMutation = useUpgradeExistingSubscription(token);
+  const isUpgradeSubmitting = createMutation.isPending || upgradeFromTrialMutation.isPending || upgradeExistingMutation.isPending;
 
   // Arriving from a pricing-card CTA (?upgrade=pro&cycle=yearly&mailboxes=1)
   // — either directly (already signed in) or via /auth/register's existing
@@ -156,13 +158,36 @@ function BillingPageInner() {
 
   const handleUpgradeSubmit = async () => {
     try {
+      const addons = extraMailboxes > 0 ? [{ type: 'extra_mailbox' as const, quantity: extraMailboxes }] : undefined;
+
+      // Already on an active paid plan -> move to a higher tier via the
+      // dedicated upgrade endpoint. /subscriptions/create 400s outright for
+      // anyone in this state ("User already has an active subscription"),
+      // it's only for a free/expired/no-subscription account.
+      if (subscription?.status === 'active') {
+        const result = await upgradeExistingMutation.mutateAsync({
+          new_plan: upgradePlan,
+          new_billing_cycle: upgradeCycle,
+          addons,
+        });
+        // Paddle/Bachs upgrade the existing subscription in place and return
+        // no redirect at all — only Flutterwave needs re-authorization.
+        if (result.authorization_url) {
+          window.location.href = result.authorization_url;
+        } else {
+          success('Plan upgraded');
+          setShowUpgrade(false);
+        }
+        return;
+      }
+
       const payload = {
         plan: upgradePlan,
         billing_cycle: upgradeCycle,
         currency: upgradeCurrency,
         return_url: `${window.location.origin}/app/settings/billing`,
         country_code: upgradeCurrency === 'ngn' ? 'NG' : 'US',
-        addons: extraMailboxes > 0 ? [{ type: 'extra_mailbox' as const, quantity: extraMailboxes }] : undefined,
+        addons,
       };
       // Every signup starts a 3-day Pro trial automatically — /subscriptions/create
       // rejects outright while that trial is still active, so a trial user has

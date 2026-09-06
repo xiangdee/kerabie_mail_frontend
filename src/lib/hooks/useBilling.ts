@@ -171,6 +171,47 @@ export function useCreateSubscription(token: string | null) {
   });
 }
 
+export interface UpgradeSubscriptionPayload {
+  new_plan: 'pro' | 'premium';
+  new_billing_cycle: 'monthly' | 'yearly';
+  prorate?: boolean;
+  addons?: { type: 'extra_storage' | 'extra_mailbox'; quantity: number }[];
+}
+
+export interface UpgradeSubscriptionResult {
+  subscription_id?: number;
+  /** Only present for providers that need re-authorization (Flutterwave) —
+   * Paddle/Bachs upgrade in place and return no redirect at all, since the
+   * change already took effect. */
+  authorization_url?: string | null;
+  status?: string;
+}
+
+/**
+ * POST /subscriptions/upgrade — for an ALREADY-ACTIVE paid subscriber
+ * moving to a higher tier. Distinct from useCreateSubscription (no
+ * existing subscription, or one that's expired/free) and
+ * useUpgradeFromTrial (still on the auto-started trial) — /subscriptions/
+ * create 400s as "User already has an active subscription" for anyone
+ * who should actually be hitting this endpoint instead.
+ */
+export function useUpgradeExistingSubscription(token: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: UpgradeSubscriptionPayload) => {
+      const res = await customAxiosPost(
+        `${base}/subscriptions/upgrade`,
+        { prorate: true, ...payload },
+        '',
+        token ?? '',
+      );
+      if (res.status !== true) throw new Error(typeof res.response === 'string' ? res.response : 'Failed to upgrade subscription');
+      return res.response as UpgradeSubscriptionResult;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['subscription'] }),
+  });
+}
+
 /**
  * Every signup starts a 3-day Pro trial automatically, and /subscriptions/create
  * rejects outright while a TRIAL/ACTIVE/PENDING_PAYMENT subscription already
