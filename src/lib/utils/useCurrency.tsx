@@ -2,11 +2,13 @@
 import { useState, useEffect } from "react";
 
 const CURRENCY_STORAGE_KEY = "preferred_currency";
-// One-time cleanup for visitors who got auto-set to NGN by the backend's
-// ENVIRONMENT=="development" IP-detection bug (fixed server-side) before
-// they ever picked a currency themselves. Clearing lets them re-detect
-// correctly; guarded so it only ever runs once per browser.
-const MIGRATION_FLAG_KEY = "currency_stale_ngn_migration_v1";
+// One-time cleanup for visitors who got auto-set to NGN before this file's
+// hasRealIpData fix (previously the auto-set effect could fire on
+// useGetUserIpDetails's initial NGN placeholder before the real IP ever
+// resolved) or by the backend's ENVIRONMENT=="development" IP-detection bug
+// (fixed server-side). Clearing lets them re-detect correctly; guarded so it
+// only ever runs once per browser.
+const MIGRATION_FLAG_KEY = "currency_stale_ngn_migration_v2";
 export const AVAILABLE_CURRENCIES = ["usd", "ngn"] as const;
 type Currency = typeof AVAILABLE_CURRENCIES[number];
 
@@ -28,12 +30,20 @@ interface UseCurrencyOptions {
     defaultCurrency?: Currency;
     userIpDetails?: any;
     isFetchingUserIp?: boolean;
+    // Whether `userIpDetails` is a genuine fetched/cached result rather than
+    // useGetUserIpDetails's initial NGN placeholder (CustomIpData), which is
+    // truthy from the very first render. Without this, the effect below used
+    // to fire on that placeholder and permanently lock in NGN before the
+    // real IP was ever known — the actual root cause of currency detection
+    // getting stuck on NGN, independent of any backend fix.
+    hasRealIpData?: boolean;
 }
 
-export const useCurrency = ({ 
-    defaultCurrency = "usd", 
-    userIpDetails, 
-    isFetchingUserIp = false 
+export const useCurrency = ({
+    defaultCurrency = "usd",
+    userIpDetails,
+    isFetchingUserIp = false,
+    hasRealIpData = false,
 }: UseCurrencyOptions = {}) => {
     const [currency, setCurrencyState] = useState<Currency>(() => 
         getInitialCurrency(defaultCurrency)
@@ -61,10 +71,10 @@ export const useCurrency = ({
 
     // Update currency from IP data if available and not already set by user
     useEffect(() => {
-        if (hasSetFromIp || isFetchingUserIp || !userIpDetails) return;
+        if (hasSetFromIp || isFetchingUserIp || !hasRealIpData || !userIpDetails) return;
 
         const storedCurrency = localStorage.getItem(CURRENCY_STORAGE_KEY);
-        
+
         // Only auto-set from IP if user hasn't manually chosen a currency
         if (!storedCurrency && userIpDetails?.currency?.code) {
             const detectedCurrency = userIpDetails.currency.code.toLowerCase();
@@ -81,7 +91,7 @@ export const useCurrency = ({
             
             setHasSetFromIp(true);
         }
-    }, [userIpDetails, isFetchingUserIp, hasSetFromIp]);
+    }, [userIpDetails, isFetchingUserIp, hasSetFromIp, hasRealIpData]);
 
     const setCurrency = (newCurrency: Currency) => {
         if (AVAILABLE_CURRENCIES.includes(newCurrency)) {

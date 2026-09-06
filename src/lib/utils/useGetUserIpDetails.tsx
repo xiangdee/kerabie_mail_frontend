@@ -11,7 +11,14 @@ const RETRY_INTERVAL = 5 * 60 * 1000; // Retry every 5 minutes if failed
 export const useGetUserIpDetails = () => {
     const [isFetchingUserIp, setIsFetchingUserIp] = useState(false);
     const [userIpDetails, setUserIpDetails] = useState<CustomIpDataType>(CustomIpData); // Start with custom data
-    
+    // CustomIpData is a hardcoded NGN/Nigeria placeholder, truthy from the
+    // very first render, well before any real fetch resolves. Consumers
+    // that gate a one-time action on "userIpDetails is present" (like
+    // useCurrency's auto-set-from-IP effect) would otherwise fire on this
+    // placeholder and permanently lock in NGN before the real IP is ever
+    // known — this flag lets them wait for genuine data instead.
+    const [hasRealIpData, setHasRealIpData] = useState(false);
+
     useEffect(() => {
         const loadCachedData = () => {
             try {
@@ -26,6 +33,7 @@ export const useGetUserIpDetails = () => {
                     if (now - timestamp < CACHE_DURATION) {
                         const parsedData = JSON.parse(cachedData);
                         setUserIpDetails(parsedData);
+                        setHasRealIpData(true);
                         return true; // Real data loaded from cache
                     }
                 }
@@ -54,6 +62,7 @@ export const useGetUserIpDetails = () => {
 
                 if (status === true && response?.currency?.code) {
                     setUserIpDetails(response);
+                    setHasRealIpData(true);
 
                     // Store in localStorage with timestamp
                     try {
@@ -112,6 +121,7 @@ export const useGetUserIpDetails = () => {
 
             if (status === true && response?.currency?.code) {
                 setUserIpDetails(response);
+                setHasRealIpData(true);
                 localStorage.setItem(IP_STORAGE_KEY, JSON.stringify(response));
                 localStorage.setItem(IP_TIMESTAMP_KEY, Date.now().toString());
             }
@@ -123,9 +133,10 @@ export const useGetUserIpDetails = () => {
         }
     };
     
-    return { 
-        userIpDetails, 
+    return {
+        userIpDetails,
         isFetchingUserIp,
-        refreshData 
+        hasRealIpData,
+        refreshData
     };
 };

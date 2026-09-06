@@ -94,10 +94,10 @@ function buildFallbackPlans(currency: 'usd' | 'ngn'): Plan[] {
       name: 'Premium',
       description: 'For businesses that need full control',
       billing_cycles: {
-        monthly: cycle(8, 7500),
-        yearly: cycle(76.8, 96000),
-        biennial: cycle(134.4, 126000),
-        triennial: cycle(172.8, 162000),
+        monthly: cycle(7.5, 7500),
+        yearly: cycle(72, 96000),
+        biennial: cycle(126, 126000),
+        triennial: cycle(162, 162000),
       },
       features: [
         '10 mailboxes', '50 GB per mailbox', 'Everything in Pro', 'Shared inboxes',
@@ -113,8 +113,8 @@ export type BillingCycle = 'monthly' | 'yearly' | 'biennial' | 'triennial';
 
 export function usePricingDisplay() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
-  const { userIpDetails, isFetchingUserIp } = useGetUserIpDetails();
-  const { currency, setCurrency } = useCurrency({ userIpDetails, isFetchingUserIp });
+  const { userIpDetails, isFetchingUserIp, hasRealIpData } = useGetUserIpDetails();
+  const { currency, setCurrency } = useCurrency({ userIpDetails, isFetchingUserIp, hasRealIpData });
 
   const plansQuery = usePlans(currency.toUpperCase());
   const [cachedPlans, setCachedPlans] = useState<Plan[] | null>(null);
