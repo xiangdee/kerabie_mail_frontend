@@ -38,40 +38,32 @@ export const useGetUserIpDetails = () => {
         const fetchData = async () => {
             setIsFetchingUserIp(true);
             try {
-                // GET /ip never existed on the backend (always 404'd) — every
-                // visitor silently fell back to the hardcoded CustomIpData
-                // mock (Nigeria/NGN) below and had it persisted to
-                // localStorage as their "detected" currency, regardless of
-                // where they actually were. The real endpoint is
-                // /pricing/currency, which returns {currency, country_code,
-                // country, ...} rather than the fuller ip-api-style shape
-                // this hook's type expects — adapted into that shape here
-                // rather than changing the type everywhere it's used
-                // (currency.code is the only field anything actually reads).
-                const { response, status } = await customAxiosGet(`${apiLink}/pricing/currency`);
+                // GET /ip does exist (defined directly in app/main.py, not
+                // under any router — easy to miss searching app/routes/
+                // only) and returns exactly this hook's CustomIpDataType
+                // shape natively. The real bug wasn't a missing endpoint:
+                // it was that /pricing/currency's _get_real_ip (a different
+                // endpoint some other testing briefly redirected this hook
+                // to) unconditionally returned a hardcoded Nigerian test IP
+                // whenever ENVIRONMENT=="development" — which production's
+                // own .env is (mis)set to. /ip's own dev-fallback is
+                // correctly guarded (only when the real IP truly can't be
+                // determined), confirmed live returning correct geo data
+                // for a real public IP even with that misconfigured flag.
+                const { response, status } = await customAxiosGet(`${apiLink}/ip`);
 
-                if (status === true && response?.currency) {
-                    const adapted = {
-                        ...CustomIpData,
-                        country_code2: response.country_code ?? null,
-                        country_name: response.country ?? null,
-                        currency: {
-                            code: response.currency,
-                            name: response.currency === 'NGN' ? 'Nigerian Naira' : 'US Dollar',
-                            symbol: response.currency === 'NGN' ? '₦' : '$',
-                        },
-                    };
-                    setUserIpDetails(adapted);
+                if (status === true && response?.currency?.code) {
+                    setUserIpDetails(response);
 
                     // Store in localStorage with timestamp
                     try {
-                        localStorage.setItem(IP_STORAGE_KEY, JSON.stringify(adapted));
+                        localStorage.setItem(IP_STORAGE_KEY, JSON.stringify(response));
                         localStorage.setItem(IP_TIMESTAMP_KEY, Date.now().toString());
                     } catch (error) {
                         console.error("Error storing IP data in localStorage:", error);
                     }
 
-                    return true; // Success - got real currency detection
+                    return true; // Success - got real IP
                 } else {
                     // Failed, keep CustomIpData and retry
                     return false;
@@ -116,21 +108,11 @@ export const useGetUserIpDetails = () => {
 
         setIsFetchingUserIp(true);
         try {
-            const { response, status } = await customAxiosGet(`${apiLink}/pricing/currency`);
+            const { response, status } = await customAxiosGet(`${apiLink}/ip`);
 
-            if (status === true && response?.currency) {
-                const adapted = {
-                    ...CustomIpData,
-                    country_code2: response.country_code ?? null,
-                    country_name: response.country ?? null,
-                    currency: {
-                        code: response.currency,
-                        name: response.currency === 'NGN' ? 'Nigerian Naira' : 'US Dollar',
-                        symbol: response.currency === 'NGN' ? '₦' : '$',
-                    },
-                };
-                setUserIpDetails(adapted);
-                localStorage.setItem(IP_STORAGE_KEY, JSON.stringify(adapted));
+            if (status === true && response?.currency?.code) {
+                setUserIpDetails(response);
+                localStorage.setItem(IP_STORAGE_KEY, JSON.stringify(response));
                 localStorage.setItem(IP_TIMESTAMP_KEY, Date.now().toString());
             }
         } catch (error) {
