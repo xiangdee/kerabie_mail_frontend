@@ -176,7 +176,7 @@ export function BillingView({
             </div>
           ) : (
             <div className="flex flex-wrap gap-3 pt-1">
-              {plan === 'free' && (
+              {(plan === 'free' || subscription?.status === 'trial') && (
                 <Button size="sm" onClick={onUpgrade}>
                   <Crown className="mr-1.5 h-3.5 w-3.5" />
                   Upgrade plan
