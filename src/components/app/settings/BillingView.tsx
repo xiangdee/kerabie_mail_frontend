@@ -206,7 +206,7 @@ export function BillingView({
                   Cancel plan
                 </Button>
               )}
-              {plan !== 'free' && (
+              {plan !== 'free' && subscription?.status !== 'trial' && (
                 <Button
                   size="sm"
                   variant="outline"
