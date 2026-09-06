@@ -41,7 +41,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Crown, Building2, Loader2, Check, Minus, Plus, X, Mailbox, HardDrive } from 'lucide-react';
+import { Crown, Building2, Loader2, Check, Minus, Plus } from 'lucide-react';
 import {
   usePlans,
   type Plan,
@@ -92,6 +92,7 @@ function BillingPageInner() {
   const [showAddons, setShowAddons] = useState(false);
   const [buyMailboxQty, setBuyMailboxQty] = useState(1);
   const [buyStorageQty, setBuyStorageQty] = useState(1);
+  const [confirmCancelAddon, setConfirmCancelAddon] = useState<number | null>(null);
 
   const { data: subscription, isLoading } = useSubscription(token);
   const { data: usage, isLoading: usageLoading } = useUsage(token);
@@ -246,13 +247,16 @@ function BillingPageInner() {
     }
   };
 
-  const handleCancelAddon = async (paymentMethodId: number) => {
+  const handleCancelAddon = async () => {
+    if (confirmCancelAddon == null) return;
     try {
-      await cancelAddonMutation.mutateAsync(paymentMethodId);
+      await cancelAddonMutation.mutateAsync(confirmCancelAddon);
       success('Add-on cancelled');
     } catch (err: unknown) {
       const msg = (err as Error)?.message;
       toastError(msg || 'Could not cancel add-on. Please try again.');
+    } finally {
+      setConfirmCancelAddon(null);
     }
   };
 
@@ -293,6 +297,10 @@ function BillingPageInner() {
             setShowUpgrade(true);
           }}
           onManageAddons={() => setShowAddons(true)}
+          addons={addonsData?.addons}
+          addonsLoading={addonsLoading}
+          isCancellingAddon={cancelAddonMutation.isPending}
+          onCancelAddon={(paymentMethodId) => setConfirmCancelAddon(paymentMethodId)}
         />
         <UsageSummaryView usage={usage} isLoading={usageLoading} />
       </div>
@@ -538,53 +546,6 @@ function BillingPageInner() {
                     </div>
                   </div>
                 )}
-
-                {/* Current add-on purchases (Bachs only — Paddle merges add-ons
-                    into a single quantity with no per-purchase breakdown) */}
-                {addonsData && addonsData.addons.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>Your add-ons</Label>
-                    {addonsData.addons.map((a) => (
-                      <div key={a.payment_method_id ?? `bundled-${a.addon_type}`} className="flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm">
-                        <div className="flex items-center gap-2">
-                          {a.addon_type === 'extra_mailbox' ? (
-                            <Mailbox className="h-3.5 w-3.5 text-muted-foreground" />
-                          ) : (
-                            <HardDrive className="h-3.5 w-3.5 text-muted-foreground" />
-                          )}
-                          <span>
-                            {a.quantity}x {a.addon_type === 'extra_mailbox' ? 'mailbox' : 'storage'}
-                            {a.quantity > 1 ? 'es' : ''}
-                          </span>
-                          <span className={cn(
-                            'inline-flex items-center px-2 py-0.5 rounded-full text-xs border font-medium',
-                            a.status === 'active' ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-                              : a.status === 'cancelled' ? 'bg-gray-100 text-gray-600 border-gray-200'
-                              : a.status === 'bundled' ? 'bg-blue-100 text-blue-700 border-blue-200'
-                              : 'bg-amber-100 text-amber-700 border-amber-200',
-                          )}>
-                            {a.status === 'pending_payment' ? 'pending' : a.status === 'bundled' ? 'in original plan' : a.status}
-                          </span>
-                        </div>
-                        {a.status !== 'cancelled' && a.status !== 'bundled' && a.payment_method_id != null && (
-                          <Button
-                            variant="ghost" size="icon" className="h-6 w-6"
-                            disabled={cancelAddonMutation.isPending}
-                            onClick={() => handleCancelAddon(a.payment_method_id as number)}
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                    {addonsData.addons.some(a => a.status === 'bundled') && (
-                      <p className="text-xs text-muted-foreground">
-                        &ldquo;In original plan&rdquo; add-ons were chosen at checkout and can&apos;t be
-                        removed individually — cancelling your plan removes them too.
-                      </p>
-                    )}
-                  </div>
-                )}
               </>
             )}
           </div>
@@ -605,6 +566,18 @@ function BillingPageInner() {
         variant="warning"
         onConfirm={handleCancel}
         onCancel={() => setConfirmCancel(false)}
+      />
+
+      {/* Cancel add-on confirmation */}
+      <ConfirmDialog
+        open={confirmCancelAddon != null}
+        title="Cancel this add-on?"
+        description="This stops the recurring charge for it right away."
+        confirmLabel="Cancel add-on"
+        cancelLabel="Keep it"
+        variant="warning"
+        onConfirm={handleCancelAddon}
+        onCancel={() => setConfirmCancelAddon(null)}
       />
 
       {/* Refund request dialog */}

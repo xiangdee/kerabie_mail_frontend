@@ -1,12 +1,12 @@
 'use client';
 import { format, parseISO } from 'date-fns';
-import { Zap, Crown, Building2, AlertTriangle, CheckCircle2, Loader2, RotateCcw, Clock, CheckCheck, XCircle, Paperclip, MousePointerClick, BarChart3, Plus, Mailbox, HardDrive } from 'lucide-react';
+import { Zap, Crown, Building2, AlertTriangle, CheckCircle2, Loader2, RotateCcw, Clock, CheckCheck, XCircle, Paperclip, MousePointerClick, BarChart3, Plus, Mailbox, HardDrive, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import type { Subscription } from '@/lib/types/api.types';
-import type { RefundRequest, Plan } from '@/lib/hooks/useBilling';
+import type { RefundRequest, Plan, AddonSummary } from '@/lib/hooks/useBilling';
 
 const PLAN_ICONS = {
   free: Zap,
@@ -39,21 +39,25 @@ interface BillingViewProps {
   refunds?: RefundRequest[];
   refundsLoading?: boolean;
   /** extra_mailboxes/extra_storage_gb currently on the subscription — shown
-   * as a quick summary; the full per-purchase breakdown lives in the
-   * add-ons dialog itself (opened via onManageAddons). */
+   * as a quick summary next to the plan card itself. */
   extraMailboxes?: number;
   extraStorageGb?: number;
+  addons?: AddonSummary[];
+  addonsLoading?: boolean;
+  isCancellingAddon?: boolean;
   onCancel: () => void;
   onReactivate: () => void;
   onRequestRefund: () => void;
   onUpgrade: () => void;
   onManageAddons: () => void;
+  onCancelAddon: (paymentMethodId: number) => void;
 }
 
 export function BillingView({
   subscription, isLoading, isCancelling, isReactivating,
   planType, plans, refunds, refundsLoading, extraMailboxes, extraStorageGb,
-  onCancel, onReactivate, onRequestRefund, onUpgrade, onManageAddons,
+  addons, addonsLoading, isCancellingAddon,
+  onCancel, onReactivate, onRequestRefund, onUpgrade, onManageAddons, onCancelAddon,
 }: BillingViewProps) {
   const plan = (planType ?? 'free') as keyof typeof PLAN_ICONS;
   const PlanIcon = PLAN_ICONS[plan] ?? Zap;
@@ -277,6 +281,75 @@ export function BillingView({
               </span>
             </div>
           </div>
+        </Card>
+      )}
+
+      {/* Active add-ons */}
+      {subscription && plan !== 'free' && (addonsLoading || (addons && addons.length > 0)) && (
+        <Card className="p-5">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-medium">Active add-ons</p>
+            {subscription.status === 'active' && (
+              <Button size="sm" variant="outline" onClick={onManageAddons} className="gap-1.5">
+                <Plus className="h-3.5 w-3.5" />
+                Add more
+              </Button>
+            )}
+          </div>
+          <div className="space-y-2">
+            {addonsLoading ? (
+              <Skeleton className="h-12 w-full rounded-lg" />
+            ) : (
+              addons!.map((a) => (
+                <div key={a.payment_method_id ?? `bundled-${a.addon_type}`} className="flex items-center justify-between rounded-lg border px-4 py-3 text-sm">
+                  <div className="flex items-center gap-3">
+                    {a.addon_type === 'extra_mailbox' ? (
+                      <Mailbox className="h-4 w-4 text-muted-foreground shrink-0" />
+                    ) : (
+                      <HardDrive className="h-4 w-4 text-muted-foreground shrink-0" />
+                    )}
+                    <div>
+                      <p className="font-medium">
+                        {a.quantity}x {a.addon_type === 'extra_mailbox' ? 'Extra mailbox' : 'Extra storage'}
+                        {a.quantity > 1 ? 'es' : ''}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {subscription.currency?.toLowerCase() === 'ngn' ? '₦' : '$'}{a.price.toLocaleString()}/mo
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={cn(
+                      'inline-flex items-center px-2 py-0.5 rounded-full text-xs border font-medium',
+                      a.status === 'active' ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                        : a.status === 'cancelled' ? 'bg-gray-100 text-gray-600 border-gray-200'
+                        : a.status === 'bundled' ? 'bg-blue-100 text-blue-700 border-blue-200'
+                        : 'bg-amber-100 text-amber-700 border-amber-200',
+                    )}>
+                      {a.status === 'pending_payment' ? 'Pending' : a.status === 'bundled' ? 'In original plan' : a.status === 'active' ? 'Active' : 'Cancelled'}
+                    </span>
+                    {a.status !== 'cancelled' && a.status !== 'bundled' && a.payment_method_id != null && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        disabled={isCancellingAddon}
+                        onClick={() => onCancelAddon(a.payment_method_id as number)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          {!addonsLoading && addons?.some(a => a.status === 'bundled') && (
+            <p className="text-xs text-muted-foreground mt-3">
+              &ldquo;In original plan&rdquo; add-ons were chosen at checkout and can&apos;t be removed
+              individually — cancelling your plan removes them too.
+            </p>
+          )}
         </Card>
       )}
 
