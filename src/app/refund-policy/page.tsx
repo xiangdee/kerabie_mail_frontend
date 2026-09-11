@@ -183,13 +183,13 @@ const RefundPolicy = () => {
                   <h3 className="text-lg font-semibold mb-3">Premium Plan Example:</h3>
                   <div className="bg-amber-50 dark:bg-amber-950/20 p-4 rounded-lg">
                     <p className="text-sm text-muted-foreground mb-2">
-                      Annual Premium plan: <span className="font-semibold text-foreground">$76.80/year</span> ($6.40/month × 12 months)
+                      Annual Premium plan: <span className="font-semibold text-foreground">$72.00/year</span> ($6.00/month × 12 months)
                     </p>
                     <p className="text-sm text-muted-foreground mb-3">
                       If you cancel after 6 months with 6 months remaining:
                     </p>
                     <p className="text-sm font-semibold text-foreground">
-                      Refund: $38.40 (6 months × $6.40 per month)
+                      Refund: $36.00 (6 months × $6.00 per month)
                     </p>
                   </div>
                 </div>
@@ -229,7 +229,7 @@ const RefundPolicy = () => {
                     </div>
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-2">Premium Monthly: $8.00/month</h3>
+                    <h3 className="font-semibold mb-2">Premium Monthly: $7.50/month</h3>
                     <p className="text-sm text-muted-foreground">
                       Cancel anytime. Continue using until your billing date. No mid-month refunds after 14 days.
                     </p>

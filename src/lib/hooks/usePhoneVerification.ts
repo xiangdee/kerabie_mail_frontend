@@ -5,6 +5,8 @@ import type { PhoneStatus } from '@/lib/types/api.types';
 
 const base = apiLink;
 
+export type PhoneChannel = 'sms' | 'whatsapp' | 'telegram';
+
 export function usePhoneStatus(token: string | null) {
   return useQuery({
     queryKey: ['phone-status', token],
@@ -18,8 +20,8 @@ export function usePhoneStatus(token: string | null) {
 
 export function useSendOtp(token: string | null) {
   return useMutation({
-    mutationFn: (phone: string) =>
-      customAxiosPost(`${base}/phone/send-otp`, { phone }, '', token ?? ''),
+    mutationFn: ({ phone, channel }: { phone: string; channel?: PhoneChannel }) =>
+      customAxiosPost(`${base}/phone/send-otp`, { phone, channel }, '', token ?? ''),
   });
 }
 

@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   Dialog,
   DialogContent,
@@ -11,10 +12,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, Phone, ShieldCheck } from 'lucide-react';
-import { useSendOtp, useVerifyOtp } from '@/lib/hooks/usePhoneVerification';
+import { useSendOtp, useVerifyOtp, type PhoneChannel } from '@/lib/hooks/usePhoneVerification';
 import { useAppToast } from '@/components/ui/app-toast';
 import { CountrySelect } from '@/components/ui/country-select';
 import { useDetectCountry, type Country } from '@/lib/hooks/useCountries';
+
+// SMS delivery only reaches Nigerian numbers today (Termii) — everyone else
+// picks WhatsApp or Telegram (VerifyWay) instead of hitting a silent failure.
+const CHANNEL_LABEL: Record<PhoneChannel, string> = {
+  sms: 'SMS',
+  whatsapp: 'WhatsApp',
+  telegram: 'Telegram',
+};
 
 interface Props {
   open: boolean;
@@ -28,6 +37,8 @@ export default function PhoneVerificationModal({ open, token, onVerified }: Prop
   const [localNumber, setLocalNumber] = useState('');
   const phone = `${country?.phonecode ?? ''}${localNumber.replace(/^0+/, '')}`;
   const [code, setCode] = useState('');
+  const [channel, setChannel] = useState<'whatsapp' | 'telegram'>('whatsapp');
+  const [channelUsed, setChannelUsed] = useState<PhoneChannel | null>(null);
   const { success, error: toastError } = useAppToast();
 
   const { data: detected } = useDetectCountry();
@@ -35,17 +46,21 @@ export default function PhoneVerificationModal({ open, token, onVerified }: Prop
     if (detected && !country) setCountry(detected);
   }, [detected, country]);
 
+  const isNigeria = country?.iso2 === 'NG';
+
   const sendOtp = useSendOtp(token);
   const verifyOtp = useVerifyOtp(token);
 
-  const handleSend = async () => {
+  const handleSend = async (explicitChannel?: PhoneChannel) => {
     if (!country || !localNumber.trim()) return;
-    const res = await sendOtp.mutateAsync(phone);
+    const res = await sendOtp.mutateAsync({ phone, channel: explicitChannel });
     if (res.status === true) {
-      success('OTP sent to your phone');
+      const used = res.response.channel_used as PhoneChannel;
+      setChannelUsed(used);
+      success(`Code sent via ${CHANNEL_LABEL[used]}`);
       setStep('otp');
     } else {
-      toastError('Failed to send OTP', { description: res.response?.detail });
+      toastError('Failed to send code', { description: res.response?.detail });
     }
   };
 
@@ -92,25 +107,56 @@ export default function PhoneVerificationModal({ open, token, onVerified }: Prop
                     placeholder="555 000 0000"
                     value={localNumber}
                     onChange={(e) => setLocalNumber(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                    onKeyDown={(e) => e.key === 'Enter' && isNigeria && handleSend('sms')}
                   />
                 </div>
               </div>
-              <Button
-                className="w-full"
-                onClick={handleSend}
-                disabled={sendOtp.isPending || !country || !localNumber.trim()}
-              >
-                {sendOtp.isPending
-                  ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  : <Phone className="mr-2 h-4 w-4" />}
-                Send verification code
-              </Button>
+
+              {isNigeria ? (
+                <Button
+                  className="w-full"
+                  onClick={() => handleSend('sms')}
+                  disabled={sendOtp.isPending || !country || !localNumber.trim()}
+                >
+                  {sendOtp.isPending
+                    ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    : <Phone className="mr-2 h-4 w-4" />}
+                  Send verification code
+                </Button>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    SMS isn't available for this number. Choose WhatsApp or Telegram instead.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant={channel === 'whatsapp' ? 'default' : 'outline'}
+                      className="w-full justify-center gap-2"
+                      onClick={() => { setChannel('whatsapp'); handleSend('whatsapp'); }}
+                      disabled={sendOtp.isPending || !country || !localNumber.trim()}
+                    >
+                      <img src="/whatsapp.png" alt="" className="h-4 w-4" />
+                      WhatsApp
+                    </Button>
+                    <Button
+                      variant={channel === 'telegram' ? 'default' : 'outline'}
+                      className="w-full justify-center gap-2"
+                      onClick={() => { setChannel('telegram'); handleSend('telegram'); }}
+                      disabled={sendOtp.isPending || !country || !localNumber.trim()}
+                    >
+                      <img src="/telegram.png" alt="" className="h-4 w-4" />
+                      Telegram
+                    </Button>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <>
               <div className="space-y-1.5">
-                <Label htmlFor="otp">Enter the 6-digit code sent to {phone}</Label>
+                <Label htmlFor="otp">
+                  Enter the 6-digit code sent to {phone}{channelUsed ? ` via ${CHANNEL_LABEL[channelUsed]}` : ''}
+                </Label>
                 <Input
                   id="otp"
                   type="text"
@@ -140,6 +186,13 @@ export default function PhoneVerificationModal({ open, token, onVerified }: Prop
               </button>
             </>
           )}
+
+          <Link
+            href="/app/settings/billing"
+            className="block w-full text-center text-xs text-muted-foreground hover:underline pt-1 border-t border-border"
+          >
+            Upgrade to skip phone verification
+          </Link>
         </div>
       </DialogContent>
     </Dialog>

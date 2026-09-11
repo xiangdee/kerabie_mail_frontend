@@ -61,10 +61,18 @@ function ownsAPaidPlan(user: { plan_status?: string; is_trial?: boolean } | null
 function PhoneVerificationGate({ children }: { children: React.ReactNode }) {
   const { user, token } = useAuth();
   const { data: phoneStatus, refetch } = usePhoneStatus(token);
+  const { data: mailboxes } = useMailboxes(token);
   const [dismissed, setDismissed] = useState(false);
+
+  // Mailboxes supplied by an outside hosting provider (IMAP-connected, not
+  // Kerabie-hosted DNS) don't get free mailboxes handed out for the taking,
+  // so the abuse case this gate exists for doesn't apply there.
+  const activeMailbox = mailboxes?.find((m) => m.email_address === user?.email);
+  const isImapMailbox = activeMailbox?.connection_type === 'imap';
 
   const needsVerification =
     !ownsAPaidPlan(user) &&
+    !isImapMailbox &&
     phoneStatus !== undefined &&
     phoneStatus !== null &&
     !phoneStatus.is_verified &&

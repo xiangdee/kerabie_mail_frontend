@@ -357,20 +357,41 @@ export interface ApiKey {
   name: string;
   key_prefix: string;
   scopes: string[];
+  is_active: boolean;
   allowed_ips: string[] | null;
+  blocked_ips: string[] | null;
   expires_at?: string;
   last_used_at?: string;
   created_at: string;
+}
+
+export interface ApiKeyUsage {
+  today: number;
+  last_7_days: number;
+  last_30_days: number;
+  daily: { date: string; count: number }[];
 }
 
 // ── Webhook ───────────────────────────────────────────────────────────────────
 export interface WebhookEndpoint {
   id: number;
   url: string;
-  secret: string;
+  // Only present in the one-time create/rotate-secret responses — GET
+  // /webhooks (list) never returns it.
+  secret?: string;
   events: string[];
   is_active: boolean;
   allowed_ips: string[] | null;
+  created_at: string;
+}
+
+export interface WebhookDelivery {
+  id: number;
+  event: string;
+  status: 'pending' | 'delivered' | 'failed' | 'dead';
+  attempts: number;
+  last_attempt_at?: string | null;
+  response_status: number | null;
   created_at: string;
 }
 

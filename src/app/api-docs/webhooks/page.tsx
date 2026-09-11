@@ -30,7 +30,7 @@ export default function WebhooksDocsPage() {
         <aside className="hidden lg:block w-56 shrink-0">
           <div className="sticky top-8 space-y-1 text-sm">
             {[
-              ['Overview','overview'],['Events','events'],['Payload','payload'],
+              ['Overview','overview'],['Managing endpoints','managing'],['Events','events'],['Payload','payload'],
               ['Threading','threading'],['Signature','signature'],['Retries','retries'],
               ['Use cases','usecases'],
             ].map(([l,id]) => (
@@ -73,6 +73,105 @@ export default function WebhooksDocsPage() {
                   <p className="text-muted-foreground">{desc}</p>
                 </div>
               ))}
+            </div>
+          </section>
+
+          {/* Managing endpoints */}
+          <section id="managing" className="scroll-mt-8">
+            <h2 className="text-2xl font-bold mb-4 pb-3 border-b">Managing endpoints</h2>
+            <p className="text-muted-foreground mb-4">
+              Register and manage endpoints from <strong>Webhooks</strong> in the sidebar, or programmatically —
+              these management calls use your browser/mobile session, not an API key (an API key with the{' '}
+              <code className="bg-muted px-1 rounded text-xs">webhooks</code> scope can still be used for send/mailbox
+              calls elsewhere, but managing webhook endpoints themselves isn&apos;t exposed to API keys today).
+            </p>
+
+            <div className="space-y-3">
+              <div className="border rounded-xl overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3 bg-muted/50 border-b">
+                  <span className="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-700">POST</span>
+                  <code className="text-sm font-mono">/webhooks</code>
+                </div>
+                <div className="px-4 py-3 text-sm text-muted-foreground">
+                  Register an endpoint (Premium plan). Returns the signing <code className="bg-muted px-1 rounded text-xs">secret</code> exactly
+                  once — <code className="bg-muted px-1 rounded text-xs">GET /webhooks</code> never returns it again.
+                </div>
+                <pre className="bg-muted text-sm font-mono p-4 overflow-x-auto border-t">{`{
+  "url": "https://your-app.com/webhooks/kerabie",
+  "events": ["email.received", "email.bounced"],
+  "allowed_ips": null  // optional — restricts which destination IP this URL may resolve to
+}`}</pre>
+              </div>
+
+              <div className="border rounded-xl overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3 bg-muted/50 border-b">
+                  <span className="text-xs font-bold px-2 py-1 rounded bg-blue-100 text-blue-700">GET</span>
+                  <code className="text-sm font-mono">/webhooks</code>
+                </div>
+                <div className="px-4 py-3 text-sm text-muted-foreground">List your endpoints.</div>
+              </div>
+
+              <div className="border rounded-xl overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3 bg-muted/50 border-b">
+                  <span className="text-xs font-bold px-2 py-1 rounded bg-yellow-100 text-yellow-700">PATCH</span>
+                  <code className="text-sm font-mono">/webhooks/{'{id}'}</code>
+                </div>
+                <div className="px-4 py-3 text-sm text-muted-foreground">
+                  Toggle <code className="bg-muted px-1 rounded text-xs">is_active</code> (pauses delivery without deleting) or replace{' '}
+                  <code className="bg-muted px-1 rounded text-xs">allowed_ips</code>. <code className="bg-muted px-1 rounded text-xs">url</code>/
+                  <code className="bg-muted px-1 rounded text-xs">events</code> can&apos;t be changed — delete and re-create instead.
+                </div>
+              </div>
+
+              <div className="border rounded-xl overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3 bg-muted/50 border-b">
+                  <span className="text-xs font-bold px-2 py-1 rounded bg-red-100 text-red-700">DELETE</span>
+                  <code className="text-sm font-mono">/webhooks/{'{id}'}</code>
+                </div>
+                <div className="px-4 py-3 text-sm text-muted-foreground">Permanently delete an endpoint (hard delete, unlike API keys).</div>
+              </div>
+
+              <div className="border rounded-xl overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3 bg-muted/50 border-b">
+                  <span className="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-700">POST</span>
+                  <code className="text-sm font-mono">/webhooks/{'{id}'}/rotate-secret</code>
+                </div>
+                <div className="px-4 py-3 text-sm text-muted-foreground">
+                  Issue a new signing secret, returned once. The old secret stops verifying immediately — any deliveries
+                  already in flight, signed with it, will fail your signature check.
+                </div>
+              </div>
+
+              <div className="border rounded-xl overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3 bg-muted/50 border-b">
+                  <span className="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-700">POST</span>
+                  <code className="text-sm font-mono">/webhooks/{'{id}'}/test</code>
+                </div>
+                <div className="px-4 py-3 text-sm text-muted-foreground">Sends a sample <code className="bg-muted px-1 rounded text-xs">email.received</code> payload immediately, bypassing the queue.</div>
+              </div>
+
+              <div className="border rounded-xl overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3 bg-muted/50 border-b">
+                  <span className="text-xs font-bold px-2 py-1 rounded bg-blue-100 text-blue-700">GET</span>
+                  <code className="text-sm font-mono">/webhooks/{'{id}'}/deliveries?limit=50</code>
+                </div>
+                <div className="px-4 py-3 text-sm text-muted-foreground">
+                  Recent delivery attempts — id, event, status (<code className="bg-muted px-1 rounded text-xs">pending</code>/
+                  <code className="bg-muted px-1 rounded text-xs">delivered</code>/<code className="bg-muted px-1 rounded text-xs">dead</code>),
+                  attempts, response_status, created_at. Also shown under <strong>Webhooks → Deliveries</strong> in the dashboard.
+                </div>
+              </div>
+
+              <div className="border rounded-xl overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3 bg-muted/50 border-b">
+                  <span className="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-700">POST</span>
+                  <code className="text-sm font-mono">/webhooks/{'{id}'}/deliveries/{'{delivery_id}'}/retry</code>
+                </div>
+                <div className="px-4 py-3 text-sm text-muted-foreground">
+                  Re-queues a <code className="bg-muted px-1 rounded text-xs">dead</code> or <code className="bg-muted px-1 rounded text-xs">failed</code> delivery
+                  for one fresh attempt — resets its attempt count. 400 if the delivery isn&apos;t currently dead/failed.
+                </div>
+              </div>
             </div>
           </section>
 

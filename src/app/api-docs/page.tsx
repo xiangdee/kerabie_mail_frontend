@@ -27,6 +27,7 @@ export default function ApiDocsPage() {
             <div className="pt-4 space-y-1 border-t">
               <Link href="/api-docs/webhooks" className="block px-3 py-1.5 rounded-lg text-primary hover:underline text-sm">Webhooks →</Link>
               <Link href="/api-docs/partner" className="block px-3 py-1.5 rounded-lg text-primary hover:underline text-sm">Partner API →</Link>
+              <a href="/llms.txt" className="block px-3 py-1.5 rounded-lg text-primary hover:underline text-sm">llms.txt →</a>
             </div>
           </div>
         </aside>
@@ -43,10 +44,12 @@ export default function ApiDocsPage() {
             <div className="flex flex-wrap gap-3 mt-4">
               <Link href="/api-docs/webhooks" className="text-sm text-primary hover:underline">Webhooks docs →</Link>
               <Link href="/api-docs/partner" className="text-sm text-primary hover:underline">Partner API →</Link>
+              <a href="/llms.txt" className="text-sm text-primary hover:underline">llms.txt (for AI agents) →</a>
             </div>
           </div>
 
           <AuthSection />
+          <ApiKeysSection />
           <ErrorsSection />
           <SendSection />
           <TemplatesSection />
@@ -65,6 +68,7 @@ export default function ApiDocsPage() {
 
 const NAV = [
   { label: 'Authentication', id: 'auth' },
+  { label: 'API keys', id: 'api-keys' },
   { label: 'Errors', id: 'errors' },
   { label: 'Send email', id: 'send' },
   { label: 'Templates', id: 'templates' },
@@ -155,6 +159,76 @@ function AuthSection() {
         Exceeding it returns <code className="bg-muted px-1 rounded text-sm">429</code>. Mailboxes connected over plain IMAP relay
         through your own external provider and aren&apos;t subject to this quota at all.
       </p>
+    </Section>
+  );
+}
+
+function ApiKeysSection() {
+  return (
+    <Section id="api-keys" title="API keys">
+      <p className="text-muted-foreground">
+        Manage keys programmatically, or from <strong>API Keys</strong> in the sidebar. These management endpoints
+        themselves are authenticated with your browser/mobile session, not an API key.
+      </p>
+
+      <Endpoint method="GET" path="/api-keys" desc="List your API keys. Never returns the raw key — only key_prefix, which is shown once at creation." />
+
+      <Endpoint method="POST" path="/api-keys" desc="Create a key. Returns the full raw key exactly once — store it now, it can't be retrieved again.">
+        <ParamTable rows={[
+          ['name', 'string', 'yes', 'A label for you — not sent anywhere'],
+          ['scopes', 'string[]', 'no', 'Defaults to ["send"]. See scopes below'],
+          ['expires_at', 'string', 'no', 'ISO 8601 datetime — the key stops working after this'],
+          ['allowed_ips', 'string[]', 'no', 'IPs/CIDRs allowed to use this key (e.g. "203.0.113.0/24"). Omit to allow all'],
+          ['blocked_ips', 'string[]', 'no', 'IPs/CIDRs denied even if also in allowed_ips — checked first'],
+        ]} />
+        <div className="border-t px-4 pt-3 pb-1">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Scopes</p>
+          <p className="text-sm text-muted-foreground mb-2">
+            <code className="bg-muted px-1 rounded text-xs">send</code>, <code className="bg-muted px-1 rounded text-xs">mailboxes:read</code>,{' '}
+            <code className="bg-muted px-1 rounded text-xs">mailboxes:write</code>, <code className="bg-muted px-1 rounded text-xs">domains:read</code>,{' '}
+            <code className="bg-muted px-1 rounded text-xs">domains:write</code>, <code className="bg-muted px-1 rounded text-xs">webhooks</code>,{' '}
+            <code className="bg-muted px-1 rounded text-xs">contacts:read</code>, <code className="bg-muted px-1 rounded text-xs">contacts:write</code>.
+            Hosting partners also have <code className="bg-muted px-1 rounded text-xs">partner:*</code> scopes — see the{' '}
+            <Link href="/api-docs/partner" className="text-primary hover:underline">Partner API docs</Link>.
+          </p>
+        </div>
+        <div className="border-t px-4 pt-3 pb-1">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Response 201</p>
+          <CodeBlock lang="json">{`{
+  "id": 42,
+  "name": "Production",
+  "key": "ker_9f8a...",
+  "key_prefix": "ker_9f8a",
+  "scopes": ["send", "mailboxes:read"],
+  "allowed_ips": null,
+  "blocked_ips": null,
+  "expires_at": null,
+  "created_at": "2026-05-17T10:00:00Z"
+}`}</CodeBlock>
+        </div>
+      </Endpoint>
+
+      <Endpoint method="PATCH" path="/api-keys/{id}" desc="Update IP restrictions or revoke. name/scopes/expires_at can't be changed after creation — create a new key instead.">
+        <ParamTable rows={[
+          ['allowed_ips', 'string[]', 'no', 'Replaces the allowlist — pass [] to clear it'],
+          ['blocked_ips', 'string[]', 'no', 'Replaces the blocklist — pass [] to clear it'],
+          ['is_active', 'boolean', 'no', 'Set false to revoke without deleting the record'],
+        ]} />
+      </Endpoint>
+
+      <Endpoint method="DELETE" path="/api-keys/{id}" desc="Revoke a key (soft delete — sets is_active=false)." />
+
+      <Endpoint method="GET" path="/api-keys/{id}/usage" desc="Request counts for this key — informational, not billing.">
+        <div className="border-t px-4 pt-3 pb-1">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Response 200</p>
+          <CodeBlock lang="json">{`{
+  "today": 12,
+  "last_7_days": 340,
+  "last_30_days": 1204,
+  "daily": [{ "date": "2026-05-17", "count": 12 }, ...]
+}`}</CodeBlock>
+        </div>
+      </Endpoint>
     </Section>
   );
 }

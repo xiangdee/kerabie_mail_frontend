@@ -209,10 +209,10 @@ function T4() {
               </tr>
             </thead>
             <tbody className="divide-y text-muted-foreground">
-              <tr><td className="p-3">Monthly</td><td className="p-3">$8.00</td><td className="p-3">$8.00</td><td className="p-3">₦7,500</td><td className="p-3">₦7,500</td><td className="p-3">—</td></tr>
-              <tr><td className="p-3">Annual</td><td className="p-3">$6.40</td><td className="p-3">$76.80</td><td className="p-3">₦6,000</td><td className="p-3">₦72,000</td><td className="p-3 text-green-600 font-medium">20% off</td></tr>
-              <tr><td className="p-3">2-year</td><td className="p-3">$5.60</td><td className="p-3">$134.40</td><td className="p-3">₦5,250</td><td className="p-3">₦126,000</td><td className="p-3 text-green-600 font-medium">30% off</td></tr>
-              <tr><td className="p-3">3-year</td><td className="p-3">$4.80</td><td className="p-3">$172.80</td><td className="p-3">₦4,500</td><td className="p-3">₦162,000</td><td className="p-3 text-green-600 font-medium">40% off</td></tr>
+              <tr><td className="p-3">Monthly</td><td className="p-3">$7.50</td><td className="p-3">$7.50</td><td className="p-3">₦7,500</td><td className="p-3">₦7,500</td><td className="p-3">—</td></tr>
+              <tr><td className="p-3">Annual</td><td className="p-3">$6.00</td><td className="p-3">$72.00</td><td className="p-3">₦6,000</td><td className="p-3">₦72,000</td><td className="p-3 text-green-600 font-medium">20% off</td></tr>
+              <tr><td className="p-3">2-year</td><td className="p-3">$5.25</td><td className="p-3">$126.00</td><td className="p-3">₦5,250</td><td className="p-3">₦126,000</td><td className="p-3 text-green-600 font-medium">30% off</td></tr>
+              <tr><td className="p-3">3-year</td><td className="p-3">$4.50</td><td className="p-3">$162.00</td><td className="p-3">₦4,500</td><td className="p-3">₦162,000</td><td className="p-3 text-green-600 font-medium">40% off</td></tr>
             </tbody>
           </table>
         </div>

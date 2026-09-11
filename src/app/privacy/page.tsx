@@ -226,8 +226,8 @@ function Section2() {
             </tr>
             <tr>
               <td className="p-3 font-medium text-foreground">Premium</td>
-              <td className="p-3">$8.00</td>
-              <td className="p-3">$76.80 <span className="text-xs text-green-600">($6.40/mo)</span></td>
+              <td className="p-3">$7.50</td>
+              <td className="p-3">$72.00 <span className="text-xs text-green-600">($6.00/mo)</span></td>
               <td className="p-3">₦7,500</td>
               <td className="p-3">₦72,000 <span className="text-xs text-green-600">(₦6,000/mo)</span></td>
             </tr>

@@ -1,0 +1,24 @@
+# Kerabie Mail
+
+> Kerabie Mail is an email hosting and mailbox API platform: connect a domain, a standard IMAP account, or a free @kerabie.email address, then send, receive, and manage mail through a REST API. Built for both human developers and AI coding agents to integrate quickly — one send endpoint, typed errors, per-plan rate limits, and webhooks for delivery events.
+
+## API documentation
+
+- [API reference](https://kerabie.email/api-docs): authentication (API keys, every plan tier including Free), sending email, templates, inbox, contacts, calendar, labels, and usage endpoints.
+- [Webhooks](https://kerabie.email/api-docs/webhooks): subscribe to delivery, bounce, and inbound-mail events.
+- [Partner API](https://kerabie.email/api-docs/partner): for platforms provisioning mailboxes on behalf of their own users.
+
+## Sending mail
+
+- `POST /mail/send` accepts a single API request with `to`/`cc`/`bcc`, inline HTML/text or a saved template with variables, attachments, and optional scheduled send.
+- Rate limits are per mailbox, not per API key: a daily send quota (with an hourly sub-limit to catch bursts) that scales with the mailbox owner's plan. Current tiers — Free: 50/day, Pro: 500/day, Premium: 2,000/day. A mailbox connected over external IMAP relay is not subject to this quota. Exceeding the quota returns HTTP 429. Current limits for an authenticated mailbox are always available live via `GET /subscriptions/me`, which is the source of truth over any number mentioned here.
+
+## Plans and pricing
+
+- [Pricing](https://kerabie.email/pricing): plan tiers, mailbox limits, and AI-assist quotas.
+- [Features](https://kerabie.email/features): product overview.
+
+## Other
+
+- [Help center](https://kerabie.email/help)
+- [Blog](https://kerabie.email/blog)

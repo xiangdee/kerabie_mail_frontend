@@ -1,312 +1,256 @@
 'use client';
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Trash2, Webhook, Loader2, Copy, Shield, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Trash2, Webhook, Loader2, Shield, Activity, RefreshCw, Send, RotateCw } from 'lucide-react';
 import { format } from 'date-fns';
-import type { WebhookEndpoint } from '@/lib/types/api.types';
+import { cn } from '@/lib/utils';
+import { PlusCorners } from '@/components/app/console/PlusCorners';
+import { useAuth } from '@/lib/context/auth.context';
+import { useAppToast } from '@/components/ui/app-toast';
+import { useWebhookDeliveries, useRetryWebhookDelivery, useRotateWebhookSecret, useTestWebhook } from '@/lib/hooks/useWebhooks';
+import { RevealSecretBanner, IpListEditor } from './ApiKeysView';
+import type { WebhookEndpoint, WebhookDelivery } from '@/lib/types/api.types';
 
-// These match WEBHOOK_EVENTS in app/models/webhook.py exactly
-const ALL_EVENTS = [
-  { id: 'email.received',       label: 'Email received' },
-  { id: 'email.sent',           label: 'Email sent' },
-  { id: 'email.failed',         label: 'Email failed' },
-  { id: 'email.opened',         label: 'Email opened' },
-  { id: 'email.bounced',        label: 'Email bounced' },
-  { id: 'email.spam_reported',  label: 'Spam reported' },
-  { id: 'email.forwarded',      label: 'Email forwarded' },
-  { id: 'mailbox.created',      label: 'Mailbox created' },
-  { id: 'mailbox.deleted',      label: 'Mailbox deleted' },
-  { id: 'mailbox.quota_reached',label: 'Quota reached' },
-  { id: 'domain.verified',      label: 'Domain verified' },
-  { id: 'domain.verification_failed', label: 'Domain verification failed' },
-];
+const MONO = "font-[family-name:var(--font-plex-mono)]";
+const DISPLAY = "font-[family-name:var(--font-barlow-condensed)]";
 
 interface Props {
   webhooks: WebhookEndpoint[];
   isLoading: boolean;
-  isCreating: boolean;
   isDeleting: boolean;
   isUpdating: boolean;
-  onCreate: (data: { url: string; events: string[]; allowed_ips: string[] | null }) => void;
   onDelete: (id: number) => void;
   onToggle: (id: number, is_active: boolean) => void;
   onUpdateIps: (id: number, allowed_ips: string[] | null) => void;
 }
 
 export default function WebhooksView({
-  webhooks, isLoading, isCreating, isDeleting, isUpdating,
-  onCreate, onDelete, onToggle, onUpdateIps,
+  webhooks, isLoading, isDeleting, isUpdating,
+  onDelete, onToggle, onUpdateIps,
 }: Props) {
-  const [url, setUrl] = useState('');
-  const [events, setEvents] = useState<string[]>(['email.received']);
-  const [newIp, setNewIp] = useState('');
-  const [allowedIps, setAllowedIps] = useState<string[]>([]);
+  const [accessTarget, setAccessTarget] = useState<WebhookEndpoint | null>(null);
+  const [deliveriesTarget, setDeliveriesTarget] = useState<WebhookEndpoint | null>(null);
+  const [newSecret, setNewSecret] = useState<string | null>(null);
 
-  // Per-webhook IP editing state
-  const [editingIpsFor, setEditingIpsFor] = useState<number | null>(null);
-  const [editIpInput, setEditIpInput] = useState('');
-  const [editIpList, setEditIpList] = useState<string[]>([]);
-
-  const toggleEvent = (e: string) =>
-    setEvents((prev) => prev.includes(e) ? prev.filter((x) => x !== e) : [...prev, e]);
-
-  const addNewIp = () => {
-    const trimmed = newIp.trim();
-    if (trimmed && !allowedIps.includes(trimmed)) {
-      setAllowedIps((prev) => [...prev, trimmed]);
-    }
-    setNewIp('');
-  };
-
-  const handleCreate = () => {
-    if (!url.trim() || events.length === 0) return;
-    onCreate({
-      url: url.trim(),
-      events,
-      allowed_ips: allowedIps.length > 0 ? allowedIps : null,
-    });
-    setUrl('');
-    setEvents(['email.received']);
-    setAllowedIps([]);
-  };
-
-  const startEditIps = (wh: WebhookEndpoint) => {
-    setEditingIpsFor(wh.id);
-    setEditIpList(wh.allowed_ips ?? []);
-    setEditIpInput('');
-  };
-
-  const addEditIp = () => {
-    const trimmed = editIpInput.trim();
-    if (trimmed && !editIpList.includes(trimmed)) {
-      setEditIpList((prev) => [...prev, trimmed]);
-    }
-    setEditIpInput('');
-  };
-
-  const saveEditIps = (id: number) => {
-    onUpdateIps(id, editIpList.length > 0 ? editIpList : null);
-    setEditingIpsFor(null);
-  };
-
-  const copySecret = (secret: string) => navigator.clipboard.writeText(secret);
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-64 rounded-none" />
+        <Skeleton className="h-40 rounded-none" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Webhooks</h1>
-        <p className="text-muted-foreground mt-1">
-          Receive real-time HTTP POST notifications when events occur.
-        </p>
+    <div className="space-y-5 sm:space-y-6">
+      <div className="flex items-end gap-4 flex-wrap">
+        <div>
+          <h1 className={cn(DISPLAY, 'font-semibold text-3xl sm:text-4xl leading-none')}>Webhooks</h1>
+          <div className="text-console-muted mt-1.5 max-w-[70ch]">
+            Receive real-time HTTP POST notifications when events occur.
+          </div>
+        </div>
+        <div className="flex-1" />
+        <Link
+          href="/app/settings/webhooks/new"
+          className={cn('relative inline-block bg-console-accent text-white border-0 h-9 px-5 leading-9 hover:bg-console-accent-dark transition-colors', DISPLAY, 'font-semibold text-[15px] tracking-[0.04em]')}
+        >
+          + ADD WEBHOOK
+          <PlusCorners variant="all" />
+        </Link>
       </div>
 
-      {/* Create */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Add Webhook</CardTitle>
-          <CardDescription>We'll POST a signed JSON payload to your endpoint.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Endpoint URL</Label>
-            <Input
-              placeholder="https://your-app.com/webhooks/kerabie"
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-            />
-          </div>
+      {newSecret && <RevealSecretBanner label="New signing secret" secret={newSecret} onDismiss={() => setNewSecret(null)} />}
 
-          <div className="space-y-2">
-            <Label>Events to listen for</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {ALL_EVENTS.map(({ id, label }) => (
-                <label key={id} className="flex items-center gap-2 cursor-pointer">
-                  <Checkbox
-                    checked={events.includes(id)}
-                    onCheckedChange={() => toggleEvent(id)}
-                  />
-                  <span className="text-sm">{label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* IP allowlist for new webhook */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-1.5">
-              <Shield className="h-3.5 w-3.5" />
-              IP Allowlist <span className="text-xs text-muted-foreground font-normal">(optional — IPs or CIDRs, e.g. 1.2.3.4 or 10.0.0.0/8)</span>
-            </Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="203.0.113.0/24"
-                value={newIp}
-                onChange={(e) => setNewIp(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addNewIp())}
-                className="flex-1"
-              />
-              <Button variant="outline" size="sm" onClick={addNewIp} disabled={!newIp.trim()}>
-                Add
-              </Button>
-            </div>
-            {allowedIps.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {allowedIps.map((ip) => (
-                  <Badge key={ip} variant="secondary" className="gap-1 font-mono text-xs">
-                    {ip}
-                    <button onClick={() => setAllowedIps((p) => p.filter((x) => x !== ip))}>
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            )}
-            {allowedIps.length === 0 && (
-              <p className="text-xs text-muted-foreground">No restrictions — all IPs accepted.</p>
-            )}
-          </div>
-
-          <Button
-            onClick={handleCreate}
-            disabled={isCreating || !url.trim() || events.length === 0}
-          >
-            {isCreating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-            Add Webhook
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Registered Endpoints</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2].map((i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
-            </div>
-          ) : webhooks.length === 0 ? (
-            <div className="py-10 text-center text-muted-foreground">
-              <Webhook className="h-10 w-10 mx-auto mb-3 opacity-20" />
-              <p className="text-sm">No webhooks registered</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {webhooks.map((wh) => (
-                <div key={wh.id} className="p-3 border border-border rounded-xl space-y-2">
-                  <div className="flex items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium font-mono truncate">{wh.url}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Created {format(new Date(wh.created_at), 'PP')}
-                      </p>
-                    </div>
-                    <Switch
-                      checked={wh.is_active}
-                      onCheckedChange={(v) => onToggle(wh.id, v)}
-                      disabled={isUpdating}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive h-8 w-8 shrink-0"
-                      onClick={() => onDelete(wh.id)}
-                      disabled={isDeleting}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1">
-                    {wh.events.map((e) => (
-                      <Badge key={e} variant="secondary" className="text-xs">{e}</Badge>
-                    ))}
-                  </div>
-
-                  {wh.secret && (
-                    <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-2 py-1.5">
-                      <span className="text-xs text-muted-foreground flex-1">
-                        Signing secret: <span className="font-mono">{wh.secret.slice(0, 8)}…</span>
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => copySecret(wh.secret)}
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* IP Allowlist display / edit */}
-                  {editingIpsFor === wh.id ? (
-                    <div className="border border-border rounded-lg p-3 space-y-2 bg-muted/20">
-                      <p className="text-xs font-medium flex items-center gap-1">
-                        <Shield className="h-3 w-3" /> Edit IP Allowlist
-                      </p>
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="203.0.113.0/24"
-                          value={editIpInput}
-                          onChange={(e) => setEditIpInput(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addEditIp())}
-                          className="flex-1 h-8 text-xs"
-                        />
-                        <Button variant="outline" size="sm" onClick={addEditIp} disabled={!editIpInput.trim()}>
-                          Add
-                        </Button>
-                      </div>
-                      {editIpList.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {editIpList.map((ip) => (
-                            <Badge key={ip} variant="secondary" className="gap-1 font-mono text-xs">
-                              {ip}
-                              <button onClick={() => setEditIpList((p) => p.filter((x) => x !== ip))}>
-                                <X className="h-3 w-3" />
-                              </button>
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">Empty — all IPs will be allowed.</p>
-                      )}
-                      <div className="flex gap-2 pt-1">
-                        <Button size="sm" onClick={() => saveEditIps(wh.id)} disabled={isUpdating}>
-                          {isUpdating && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
-                          Save
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setEditingIpsFor(null)}>
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                      onClick={() => startEditIps(wh)}
-                    >
-                      <Shield className="h-3 w-3" />
-                      {wh.allowed_ips && wh.allowed_ips.length > 0
-                        ? `IP allowlist: ${wh.allowed_ips.join(', ')}`
-                        : 'No IP restrictions — click to add'}
-                    </button>
-                  )}
+      {webhooks.length === 0 ? (
+        <div className="border border-console-border bg-white p-12 text-center">
+          <Webhook className="h-10 w-10 mx-auto mb-3 text-console-muted2" />
+          <p className="text-sm text-console-muted">No webhooks registered.</p>
+        </div>
+      ) : (
+        <div className="border border-console-border bg-white divide-y divide-console-border-soft">
+          {webhooks.map((wh) => (
+            <div key={wh.id} className="p-4 space-y-2">
+              <div className="flex items-start gap-3">
+                <Webhook className="h-4 w-4 mt-1 text-console-muted2 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className={cn(MONO, 'text-sm font-medium truncate')}>{wh.url}</p>
+                  <p className={cn(MONO, 'text-[10.5px] text-console-muted2 mt-1 tracking-[0.02em]')}>
+                    CREATED {format(new Date(wh.created_at), 'PP').toUpperCase()}
+                  </p>
                 </div>
-              ))}
+                <Switch checked={wh.is_active} onCheckedChange={(v) => onToggle(wh.id, v)} disabled={isUpdating} />
+                <Button variant="ghost" size="icon" className="text-destructive h-8 w-8 shrink-0" onClick={() => onDelete(wh.id)} disabled={isDeleting}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-1 pl-7">
+                {wh.events.map((e) => <Badge key={e} variant="secondary" className="text-xs">{e}</Badge>)}
+              </div>
+              <div className="flex items-center gap-3 pl-7 flex-wrap">
+                <button onClick={() => setAccessTarget(wh)} className="flex items-center gap-1.5 text-xs text-console-muted hover:text-console-accent transition-colors">
+                  <Shield className="h-3 w-3" />
+                  {wh.allowed_ips?.length ? 'Access rules set' : 'No IP restrictions'}
+                </button>
+                <button onClick={() => setDeliveriesTarget(wh)} className="flex items-center gap-1.5 text-xs text-console-muted hover:text-console-accent transition-colors">
+                  <Activity className="h-3 w-3" /> Deliveries
+                </button>
+                <RegenerateSecretButton webhook={wh} onRegenerated={setNewSecret} />
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          ))}
+        </div>
+      )}
+
+      {accessTarget && (
+        <ManageWebhookAccessDialog
+          webhook={accessTarget} isUpdating={isUpdating}
+          onClose={() => setAccessTarget(null)}
+          onSave={(allowed) => { onUpdateIps(accessTarget.id, allowed); setAccessTarget(null); }}
+        />
+      )}
+      {deliveriesTarget && <DeliveriesDialog webhook={deliveriesTarget} onClose={() => setDeliveriesTarget(null)} />}
     </div>
+  );
+}
+
+// ── Manage access dialog (allowlist only — see plan notes on why no blocklist) ─
+function ManageWebhookAccessDialog({
+  webhook, isUpdating, onClose, onSave,
+}: {
+  webhook: WebhookEndpoint; isUpdating: boolean; onClose: () => void;
+  onSave: (allowed: string[] | null) => void;
+}) {
+  const [allowedIps, setAllowedIps] = useState<string[]>(webhook.allowed_ips ?? []);
+  return (
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Manage access</DialogTitle>
+          <DialogDescription className="font-mono text-xs">{webhook.url}</DialogDescription>
+        </DialogHeader>
+        <IpListEditor label="IP allowlist" hint="empty = deliver regardless of resolved destination IP" ips={allowedIps} onChange={setAllowedIps} />
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => onSave(allowedIps.length ? allowedIps : null)} disabled={isUpdating}>
+            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Regenerate secret ────────────────────────────────────────────────────────
+function RegenerateSecretButton({ webhook, onRegenerated }: { webhook: WebhookEndpoint; onRegenerated: (secret: string) => void }) {
+  const { token } = useAuth();
+  const { error: toastError } = useAppToast();
+  const rotate = useRotateWebhookSecret(token);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const handleConfirm = async () => {
+    const res = await rotate.mutateAsync(webhook.id);
+    setConfirmOpen(false);
+    if (res.status === true) onRegenerated(res.response.secret);
+    else toastError('Failed to regenerate secret');
+  };
+
+  return (
+    <>
+      <button onClick={() => setConfirmOpen(true)} className="flex items-center gap-1.5 text-xs text-console-muted hover:text-console-accent transition-colors">
+        <RotateCw className="h-3 w-3" /> Regenerate secret
+      </button>
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Regenerate signing secret?</DialogTitle>
+            <DialogDescription>
+              The old secret stops verifying immediately — any deliveries already in flight, signed with it, will fail signature checks on your end.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleConfirm} disabled={rotate.isPending}>
+              {rotate.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Regenerate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+// ── Deliveries dialog ────────────────────────────────────────────────────────
+const STATUS_COLOR: Record<string, string> = {
+  delivered: 'text-emerald-600', pending: 'text-console-muted', dead: 'text-destructive', failed: 'text-destructive',
+};
+
+function DeliveriesDialog({ webhook, onClose }: { webhook: WebhookEndpoint; onClose: () => void }) {
+  const { token } = useAuth();
+  const { success, error: toastError } = useAppToast();
+  const { data: deliveries = [], isLoading } = useWebhookDeliveries(token, webhook.id);
+  const retry = useRetryWebhookDelivery(token);
+  const test = useTestWebhook(token);
+
+  const handleRetry = async (d: WebhookDelivery) => {
+    const res = await retry.mutateAsync({ endpointId: webhook.id, deliveryId: d.id });
+    if (res.status === true) success('Delivery re-queued');
+    else toastError('Failed to retry delivery', { description: res.response?.detail });
+  };
+
+  const handleTest = async () => {
+    const res = await test.mutateAsync(webhook.id);
+    if (res.status === true) success('Test event dispatched');
+    else toastError('Failed to send test event');
+  };
+
+  return (
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Deliveries</DialogTitle>
+          <DialogDescription className="font-mono text-xs">{webhook.url}</DialogDescription>
+        </DialogHeader>
+        <Button variant="outline" size="sm" onClick={handleTest} disabled={test.isPending} className="w-fit">
+          {test.isPending ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Send className="mr-2 h-3.5 w-3.5" />}
+          Send test event
+        </Button>
+        {isLoading ? (
+          <Skeleton className="h-32 rounded-none" />
+        ) : deliveries.length === 0 ? (
+          <p className="text-sm text-console-muted py-6 text-center">No deliveries yet.</p>
+        ) : (
+          <div className="border border-console-border divide-y divide-console-border-soft">
+            {deliveries.map((d) => (
+              <div key={d.id} className="p-3 flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className={cn(MONO, 'text-xs')}>{d.event}</span>
+                    <span className={cn(MONO, 'text-[10px] uppercase tracking-[0.06em]', STATUS_COLOR[d.status] ?? 'text-console-muted')}>{d.status}</span>
+                  </div>
+                  <p className="text-xs text-console-muted2 mt-0.5">
+                    {d.attempts} attempt{d.attempts === 1 ? '' : 's'}
+                    {d.response_status != null && ` · HTTP ${d.response_status}`}
+                    {' · '}{format(new Date(d.created_at), 'PPp')}
+                  </p>
+                </div>
+                {(d.status === 'dead' || d.status === 'failed') && (
+                  <Button variant="outline" size="sm" onClick={() => handleRetry(d)} disabled={retry.isPending}>
+                    <RefreshCw className="h-3 w-3 mr-1.5" /> Retry
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
