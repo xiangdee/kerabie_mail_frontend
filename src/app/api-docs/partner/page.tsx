@@ -20,7 +20,9 @@ export default function PartnerApiPage() {
           <div className="sticky top-8 space-y-1 text-sm">
             {[
               ['Overview', 'overview'], ['Authentication', 'auth'], ['IP restrictions', 'ip'],
-              ['Mailboxes', 'mailboxes'], ['Domains', 'domains'], ['Add-ons', 'addons'],
+              ['Mailboxes', 'mailboxes'], ['Domains', 'domains'],
+              ['White-labeling', 'white-labeling'], ['Pay-as-you-go', 'pay-as-you-go'],
+              ['Add-ons', 'addons'],
               ['Stats', 'stats'], ['Webhooks', 'webhooks'], ['Errors', 'errors'],
             ].map(([l, id]) => (
               <a key={id} href={`#${id}`} className="block px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">{l}</a>
@@ -119,6 +121,8 @@ export default function PartnerApiPage() {
                 ['password', 'string', 'yes', 'Initial mailbox password (min 8 chars)'],
                 ['display_name', 'string', 'no', 'Friendly name shown in email clients'],
                 ['plan_id', 'string', 'yes', '"pro" (5GB) or "premium" (20GB) — drives the wholesale rate and storage tier'],
+                ['funding_mode', 'string', 'no', '"slot" (default, draws from your prepaid pool/trial) or "pay_as_you_go" — see the Pay-as-you-go section below'],
+                ['return_url', 'string', 'conditional', 'Required when funding_mode="pay_as_you_go" — where the client\'s Bachs checkout redirects after payment'],
               ]} />
               <div className="border-t px-4 pt-3 pb-4">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Request</p>
@@ -221,6 +225,139 @@ export default function PartnerApiPage() {
             <EndpointBlock method="DELETE" path="/v1/hosting/domains/{id}" desc="Remove a domain. Fails with 409 if any mailboxes still use it — delete those first." />
           </section>
 
+          {/* White-labeling */}
+          <section id="white-labeling" className="scroll-mt-8">
+            <h2 className="text-2xl font-bold mb-4 pb-3 border-b">White-labeling</h2>
+            <p className="text-muted-foreground mb-4">
+              An active or trial hosting account can replace Kerabie&apos;s own name, logo, and colors
+              with your own — shown on the sign-in page, the logged-in sidebar, and the browser tab
+              icon. It only ever appears on <strong>your own custom webmail domain</strong> (below);
+              logging in via the shared <code className="bg-muted px-1 rounded text-xs">webmail.kerabie.email</code>{' '}
+              always shows plain Kerabie branding, even for your own clients.
+            </p>
+            <p className="text-muted-foreground mb-6">
+              Both of these are managed from the dashboard (<strong>Settings → Branding</strong> and{' '}
+              <strong>Hosting → Webmail Domain</strong>) rather than the API-key surface documented
+              elsewhere on this page — they read from your logged-in session, not an{' '}
+              <code className="bg-muted px-1 rounded text-xs">X-API-Key</code>.
+            </p>
+
+            <h3 className="text-lg font-semibold mt-6 mb-3">Custom webmail domain</h3>
+            <p className="text-muted-foreground mb-4">
+              Pick a hostname you control — e.g. <code className="bg-muted px-1 rounded text-xs">webmail.yourbrand.com</code> —
+              and point it at Kerabie with a single CNAME record:
+            </p>
+            <pre className="bg-muted rounded-xl p-4 text-sm font-mono overflow-x-auto mb-4">{`CNAME  webmail.yourbrand.com  →  webmail.kerabie.email`}</pre>
+            <p className="text-muted-foreground mb-4">
+              Only one domain per account at a time — remove the existing one before adding a
+              replacement. Once DNS resolves correctly the domain flips to <code className="bg-muted px-1 rounded text-xs">verified</code> automatically
+              (checked on a short poll, or immediately via a manual re-check) and a TLS certificate
+              is issued the first time it's actually visited over HTTPS — nothing further to configure.
+            </p>
+
+            <h3 className="text-lg font-semibold mt-6 mb-3">Branding</h3>
+            <p className="text-muted-foreground mb-4">Four fields, all optional and independently settable:</p>
+            <ul className="list-disc list-inside text-muted-foreground space-y-1 mb-4">
+              <li><strong>Brand name</strong> — replaces &quot;Kerabie WebMail&quot; throughout.</li>
+              <li><strong>Logo</strong> — a public image URL (upload one from the dashboard and it fills this in for you).</li>
+              <li>
+                <strong>Primary / secondary color</strong> — a hex color (<code className="bg-muted px-1 rounded text-xs">#7c3aed</code>) or
+                a CSS gradient (<code className="bg-muted px-1 rounded text-xs">linear-gradient(90deg, #7c3aed, #db2777)</code>).
+                Primary drives buttons and accents; secondary is optional and used where a second tone is needed.
+              </li>
+            </ul>
+            <p className="text-muted-foreground">
+              Saving branding requires the custom domain condition above (an active/trial hosting
+              account) — attempting to save on a pending or expired account returns <code className="bg-muted px-1 rounded text-xs">403</code>.
+            </p>
+          </section>
+
+          {/* Pay-as-you-go */}
+          <section id="pay-as-you-go" className="scroll-mt-8">
+            <h2 className="text-2xl font-bold mb-4 pb-3 border-b">Pay-as-you-go mailboxes</h2>
+            <p className="text-muted-foreground mb-4">
+              An alternative to buying mailbox slots upfront: the <strong>client pays Kerabie
+              directly</strong>, on a recurring monthly basis, at a retail price <strong>you
+              set</strong> — you never pay anything upfront, and instead earn the markup over
+              Kerabie&apos;s wholesale rate as a revenue share, credited to your payout balance
+              (<code className="bg-muted px-1 rounded text-xs">GET/POST /partners/me/payouts</code>{' '}
+              — same balance and withdrawal flow referral commissions use).
+            </p>
+            <p className="text-muted-foreground mb-6">
+              Currently USD and NGN only (matching the rest of the platform&apos;s billing), and
+              monthly billing only — the multi-cycle terms (yearly/biennial/triennial) that the
+              prepaid slot pool supports don&apos;t apply here.
+            </p>
+
+            <h3 className="text-lg font-semibold mt-6 mb-3">1. Set your retail price</h3>
+            <EndpointBlock method="GET" path="/v1/hosting/retail-pricing" desc="Your current retail price per plan tier/currency, plus the wholesale floor (Kerabie's own cost) for each — retail_price is null until you've set one." />
+            <EndpointBlock method="PUT" path="/v1/hosting/retail-pricing" desc="Set (or change) your retail price for one plan tier/currency. Rejected with 400 if below the wholesale floor. Creates or updates a real recurring billing product behind the scenes — takes a moment the first time.">
+              <ParamTable rows={[
+                ['plan_type', 'string', 'yes', '"pro" or "premium"'],
+                ['currency', 'string', 'yes', '"usd" or "ngn"'],
+                ['retail_price', 'number', 'yes', 'Must be ≥ the wholesale rate for this tier/currency'],
+              ]} />
+              <div className="border-t px-4 pt-3 pb-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Request</p>
+                <pre className="bg-muted rounded-xl p-4 text-sm font-mono overflow-x-auto">{`{ "plan_type": "pro", "currency": "usd", "retail_price": 5.00 }`}</pre>
+              </div>
+            </EndpointBlock>
+
+            <h3 className="text-lg font-semibold mt-6 mb-3">2. Provision with funding_mode=&quot;pay_as_you_go&quot;</h3>
+            <p className="text-muted-foreground mb-4">
+              Same <code className="bg-muted px-1 rounded text-xs">POST /v1/hosting/mailboxes</code> call
+              as any mailbox (see Mailboxes above), with <code className="bg-muted px-1 rounded text-xs">funding_mode:
+              &quot;pay_as_you_go&quot;</code> and a <code className="bg-muted px-1 rounded text-xs">return_url</code>.
+              A retail price must already be set for that plan tier/currency (step 1) or this 400s.
+              The mailbox account is created immediately — the client can see it&apos;s ready — but
+              stays disabled and <code className="bg-muted px-1 rounded text-xs">status:
+              &quot;pending_payment&quot;</code> until payment clears. The response includes a{' '}
+              <code className="bg-muted px-1 rounded text-xs">checkout_url</code>: send this to your
+              client to complete.
+            </p>
+            <div className="border-t px-4 pt-3 pb-4 border rounded-xl">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Response 201</p>
+              <pre className="bg-muted rounded-xl p-4 text-sm font-mono overflow-x-auto">{`{
+  "id": 8,
+  "email_address": "client@yourclientdomain.com",
+  "status": "pending_payment",
+  "is_pay_as_you_go": true,
+  "checkout_url": "https://checkout.bachs.io/c/6a5wgGmDy7coMgg"
+}`}</pre>
+            </div>
+
+            <h3 className="text-lg font-semibold mt-6 mb-3">3. Get notified when payment clears</h3>
+            <p className="text-muted-foreground mb-4">
+              Kerabie handles all recurring billing and dunning — you never see a checkout flow or
+              a raw payment status. Instead, listen for these webhook events (see Webhooks below
+              for signature verification):
+            </p>
+            <div className="overflow-x-auto mb-4">
+              <table className="w-full border rounded-xl text-sm">
+                <thead className="bg-muted"><tr>
+                  <th className="text-left p-3 font-semibold">Event</th>
+                  <th className="text-left p-3 font-semibold">Fires when</th>
+                </tr></thead>
+                <tbody className="divide-y text-muted-foreground">
+                  {[
+                    ['partner_mailbox.payment_confirmed', 'The client\'s payment clears — the mailbox is (re-)enabled. Fires on the FIRST payment and on every monthly renewal, not just once.'],
+                    ['partner_mailbox.payment_failed', 'A renewal charge fails — the mailbox is disabled until it\'s paid (Kerabie runs the retry/dunning schedule).'],
+                    ['partner_mailbox.expired', 'The client cancels — the mailbox is disabled and marked expired.'],
+                  ].map(([e, d]) => (
+                    <tr key={e}><td className="p-3 font-mono text-xs text-foreground">{e}</td><td className="p-3">{d}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-muted-foreground">
+              Use <code className="bg-muted px-1 rounded text-xs">partner_mailbox.payment_confirmed</code> to
+              verify a client actually paid — don&apos;t rely on the browser reaching your{' '}
+              <code className="bg-muted px-1 rounded text-xs">return_url</code> alone, since a
+              client can close the tab before the redirect, or the checkout page can be revisited
+              without a real payment.
+            </p>
+          </section>
+
           {/* Add-ons */}
           <section id="addons" className="scroll-mt-8">
             <h2 className="text-2xl font-bold mb-4 pb-3 border-b">Add-ons</h2>
@@ -311,6 +448,9 @@ export default function PartnerApiPage() {
                     ['partner_pool.purchased', 'A mailbox-slot pool purchase completes'],
                     ['partner_addon.purchased', 'A domain-slot or storage add-on purchase completes'],
                     ['partner_trial.expiring_soon', "Your hosting trial ends in ~7 days"],
+                    ['partner_mailbox.payment_confirmed', "A pay-as-you-go client's payment clears (first payment or any renewal)"],
+                    ['partner_mailbox.payment_failed', "A pay-as-you-go client's renewal charge fails"],
+                    ['partner_mailbox.expired', "A pay-as-you-go client cancels"],
                   ].map(([e, d]) => (
                     <tr key={e}>
                       <td className="p-3 font-mono text-xs text-foreground">{e}</td>

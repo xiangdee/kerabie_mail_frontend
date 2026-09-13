@@ -48,6 +48,18 @@ export const Footer = () => {
         </div>
       </div>
 
+      <div className="container mx-auto flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-white/15 px-4 py-4">
+        <span className="text-[10.5px] font-mono tracking-wider text-white/50">ALSO FROM US</span>
+        <a href="https://kerabie.com" target="_blank" rel="noopener noreferrer"
+          className="text-[12.5px] text-white/70 transition-colors hover:text-white">
+          Kerabie — customer support &amp; live chat
+        </a>
+        <a href="https://rynote.co" target="_blank" rel="noopener noreferrer"
+          className="text-[12.5px] text-white/70 transition-colors hover:text-white">
+          Rynote — AI meeting notes
+        </a>
+      </div>
+
       <div className="container mx-auto flex flex-wrap items-center justify-between gap-4 border-t border-white/15 px-4 py-4">
         <span className="text-[12.5px] text-white/70">© 2025 Kerabie. All rights reserved.</span>
         <span className="flex gap-3.5">

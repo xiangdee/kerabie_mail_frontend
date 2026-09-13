@@ -112,7 +112,7 @@ export default function PartnerPage() {
           </div>
           <div className="flex flex-wrap justify-center gap-3">
             <NavLink
-              href="/contact"
+              href="https://partner.kerabie.email/apply"
               className="blueprint relative inline-flex items-center gap-2 border border-primary bg-primary px-[22px] py-3.5 text-[15px] font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-primary-hover"
             >
               <Corners className="text-white/50" />
@@ -288,7 +288,7 @@ export default function PartnerPage() {
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <NavLink
-                href="/contact"
+                href="https://partner.kerabie.email/apply"
                 className="inline-flex items-center gap-2 border border-primary bg-primary px-[22px] py-3.5 text-[15px] font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-primary-hover"
               >
                 Become a hosting partner

@@ -25,16 +25,16 @@ function PartnerSection() {
           </p>
           <div className="flex flex-wrap gap-2.5">
             <NavLink
-              href="/partner"
+              href="https://partner.kerabie.email/apply"
               className="inline-flex items-center gap-2 border border-primary bg-primary px-[18px] py-3 text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 hover:bg-primary-hover"
             >
               Become a hosting partner
             </NavLink>
             <NavLink
-              href="/contact"
+              href="/partner"
               className="inline-flex items-center gap-2 border border-border bg-white px-[18px] py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
             >
-              Talk to partnerships
+              Learn more
             </NavLink>
           </div>
         </div>

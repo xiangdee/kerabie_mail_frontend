@@ -51,6 +51,11 @@ const DEVELOPER_LINKS = [
   { label: 'Partner', href: 'https://partner.kerabie.email', external: true },
 ];
 
+const MORE_LINKS = [
+  { label: 'Kerabie — support & live chat', href: 'https://kerabie.com', external: true },
+  { label: 'Rynote — AI meeting notes', href: 'https://rynote.co', external: true },
+];
+
 const MONO = "font-[family-name:var(--font-plex-mono)]";
 const DISPLAY = "font-[family-name:var(--font-barlow-condensed)]";
 
@@ -152,6 +157,7 @@ export function AppSidebar() {
         <NavGroup label="Marketing" links={MARKETING_LINKS} isActive={isActive} startAt={1 + MAIL_LINKS.length} />
         <NavGroup label="Account" links={ACCOUNT_LINKS} isActive={isActive} startAt={1 + MAIL_LINKS.length + MARKETING_LINKS.length} />
         <NavGroup label="Developer" links={DEVELOPER_LINKS} isActive={isActive} startAt={1 + MAIL_LINKS.length + MARKETING_LINKS.length + ACCOUNT_LINKS.length} />
+        <NavGroup label="More from us" links={MORE_LINKS} isActive={isActive} startAt={1 + MAIL_LINKS.length + MARKETING_LINKS.length + ACCOUNT_LINKS.length + DEVELOPER_LINKS.length} />
       </SidebarContent>
 
       <SidebarFooter className="p-0 border-t border-console-sidebar-border">
