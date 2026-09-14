@@ -181,36 +181,71 @@ export default function PartnerApiPage() {
   "mailu_added": false,
   "dns_records": [
     { "type": "MX",  "host": "@", "value": "10 mail.kerabie.email",
-      "description": "Routes incoming mail for this domain to Kerabie's mail servers." },
+      "description": "Routes incoming mail for this domain to Kerabie's mail servers.",
+      "ok": null, "found_value": null, "reason": null },
     { "type": "TXT", "host": "@", "value": "kerabie-verify=5kMm7kfncTQfgIx7lSOuLBU9",
-      "description": "Proves you control this domain's DNS." },
-    { "type": "TXT", "host": "@", "value": "v=spf1 mx include:sendinblue.com ~all",
-      "description": "Authorizes Kerabie's mail servers (relayed via Brevo) to send email for this domain." },
-    { "type": "TXT", "host": "_dmarc", "value": "v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com",
-      "description": "Protects this domain from spoofing and improves deliverability." },
-    { "type": "CNAME", "host": "brevo1._domainkey", "value": "b1.yourclientdomain-com.dkim.brevo.com",
-      "description": "Enables cryptographic signing (DKIM) of outgoing messages to improve delivery." },
-    { "type": "CNAME", "host": "brevo2._domainkey", "value": "b2.yourclientdomain-com.dkim.brevo.com",
-      "description": "Enables cryptographic signing (DKIM) of outgoing messages to improve delivery." }
+      "description": "Proves you control this domain's DNS.",
+      "ok": null, "found_value": null, "reason": null },
+    { "type": "TXT", "host": "@", "value": "v=spf1 mx include:relay.kerabie.email ~all",
+      "description": "Authorizes Kerabie's mail servers to send email for this domain.",
+      "ok": null, "found_value": null, "reason": null },
+    { "type": "TXT", "host": "_dmarc", "value": "v=DMARC1; p=none; rua=mailto:dmarc@kerabie.email",
+      "description": "Protects this domain from spoofing and improves deliverability.",
+      "ok": null, "found_value": null, "reason": null },
+    { "type": "TXT", "host": "dkim._domainkey", "value": "v=DKIM1; k=rsa; p=MIIBIjANBgkq...",
+      "description": "Enables cryptographic signing (DKIM) of outgoing messages to improve delivery.",
+      "ok": null, "found_value": null, "reason": null }
   ]
 }`}</pre>
                 <p className="text-xs text-muted-foreground mt-3">
-                  The two DKIM CNAME records are fetched from Brevo (this platform's outbound relay) the first
-                  time the domain is added, and cached. If Brevo's API is briefly unreachable when you add a
-                  domain, they'll be missing at first — every <code className="bg-muted px-1 rounded text-xs">verify</code> call
-                  retries fetching them until they succeed, so re-checking verification will pick them up.
+                  The DKIM TXT record is generated natively by Mailu the first time the domain is added,
+                  and cached. <code className="bg-muted px-1 rounded text-xs">ok</code>/<code className="bg-muted px-1 rounded text-xs">found_value</code>/<code className="bg-muted px-1 rounded text-xs">reason</code> are
+                  always <code className="bg-muted px-1 rounded text-xs">null</code> here — nothing has been
+                  checked yet. They're populated by the <code className="bg-muted px-1 rounded text-xs">verify</code> call below.
                 </p>
               </div>
             </EndpointBlock>
 
-            <EndpointBlock method="GET" path="/v1/hosting/domains" desc="List all domains claimed under your account, with DNS records for any that aren't verified yet." />
+            <EndpointBlock method="GET" path="/v1/hosting/domains" desc="List all domains claimed under your account, with DNS records (and their last check result) for any that still need attention." />
 
             <EndpointBlock method="GET" path="/v1/hosting/domains/{id}" desc="Check a single domain's status — the intended target for polling while waiting on DNS propagation." />
 
-            <EndpointBlock method="POST" path="/v1/hosting/domains/{id}/verify" desc="Re-check DNS now. On success, the domain is registered in Mailu and ready for mailboxes. A partner_domain.verified or partner_domain.verification_failed webhook fires on the first state change.">
-              <div className="border-t px-4 pt-3 pb-4">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Response 200 (verified)</p>
-                <pre className="bg-muted rounded-xl p-4 text-sm font-mono overflow-x-auto">{`{
+            <EndpointBlock method="POST" path="/v1/hosting/domains/{id}/verify" desc="Re-check DNS now — every call, not just while still pending, since verifying only requires MX + the ownership TXT token but SPF/DMARC/DKIM are checked and reported too and can still be wrong on an already-verified domain. On success, the domain is registered in Mailu and ready for mailboxes. A partner_domain.verified or partner_domain.verification_failed webhook fires on the first state change.">
+              <div className="border-t px-4 pt-3 pb-4 space-y-4">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                    Response 200 — some records still wrong
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    A real example: 4 of 5 records were configured correctly, but the domain's registrar
+                    (Namecheap) had its own Email Forwarding feature still overriding the MX record.
+                    <code className="bg-muted px-1 rounded text-xs">reason</code> names the specific
+                    problem instead of a generic "not verified" — this is the whole reason these three
+                    fields exist.
+                  </p>
+                  <pre className="bg-muted rounded-xl p-4 text-sm font-mono overflow-x-auto">{`{
+  "id": 3,
+  "domain_name": "yourclientdomain.com",
+  "status": "failed",
+  "is_verified": false,
+  "dns_records": [
+    { "type": "MX", "host": "@", "value": "10 mail.kerabie.email",
+      "ok": false, "found_value": "10 eforward2.registrar-servers.com",
+      "reason": "Found eforward2.registrar-servers.com instead of mail.kerabie.email — looks like Namecheap Email Forwarding is still enabled for this domain. Disable it (or make sure Custom MX is the selected mail-handling mode) so this record actually takes effect." },
+    { "type": "TXT", "host": "@", "value": "kerabie-verify=...",
+      "ok": true, "found_value": "kerabie-verify=...", "reason": null },
+    { "type": "TXT", "host": "@", "value": "v=spf1 mx include:relay.kerabie.email ~all",
+      "ok": true, "found_value": "v=spf1 mx include:relay.kerabie.email ~all", "reason": null },
+    { "type": "TXT", "host": "_dmarc", "value": "v=DMARC1; p=none; ...",
+      "ok": true, "found_value": "v=DMARC1; p=none; ...", "reason": null },
+    { "type": "TXT", "host": "dkim._domainkey", "value": "v=DKIM1; k=rsa; p=...",
+      "ok": true, "found_value": "v=DKIM1; k=rsa; p=...", "reason": null }
+  ]
+}`}</pre>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Response 200 — verified</p>
+                  <pre className="bg-muted rounded-xl p-4 text-sm font-mono overflow-x-auto">{`{
   "id": 3,
   "domain_name": "yourclientdomain.com",
   "status": "verified",
@@ -219,6 +254,14 @@ export default function PartnerApiPage() {
   "verified_at": "2026-07-23T18:15:05Z",
   "dns_records": null
 }`}</pre>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    <code className="bg-muted px-1 rounded text-xs">dns_records</code> goes back to{' '}
+                    <code className="bg-muted px-1 rounded text-xs">null</code> once every record checks
+                    out — it's non-null whenever there's something worth showing: still pending, or
+                    verified but with an SPF/DMARC/DKIM record still wrong (verification itself only
+                    requires MX + the ownership token).
+                  </p>
+                </div>
               </div>
             </EndpointBlock>
 
@@ -343,6 +386,7 @@ export default function PartnerApiPage() {
                     ['partner_mailbox.payment_confirmed', 'The client\'s payment clears — the mailbox is (re-)enabled. Fires on the FIRST payment and on every monthly renewal, not just once.'],
                     ['partner_mailbox.payment_failed', 'A renewal charge fails — the mailbox is disabled until it\'s paid (Kerabie runs the retry/dunning schedule).'],
                     ['partner_mailbox.expired', 'The client cancels — the mailbox is disabled and marked expired.'],
+                    ['partner_mailbox.payment_abandoned', 'The client never completed the FIRST payment and the 7-day grace period (below) ran out — the mailbox and its account are gone, not just disabled.'],
                   ].map(([e, d]) => (
                     <tr key={e}><td className="p-3 font-mono text-xs text-foreground">{e}</td><td className="p-3">{d}</td></tr>
                   ))}
@@ -355,6 +399,38 @@ export default function PartnerApiPage() {
               <code className="bg-muted px-1 rounded text-xs">return_url</code> alone, since a
               client can close the tab before the redirect, or the checkout page can be revisited
               without a real payment.
+            </p>
+
+            <h3 className="text-lg font-semibold mt-6 mb-3">4. Polling, as an alternative to webhooks</h3>
+            <p className="text-muted-foreground mb-4">
+              If you&apos;d rather poll than expose a webhook receiver,{' '}
+              <code className="bg-muted px-1 rounded text-xs">GET /v1/hosting/mailboxes/{'{id}'}</code>{' '}
+              returns the same <code className="bg-muted px-1 rounded text-xs">status</code> a webhook would tell
+              you about, and — while <code className="bg-muted px-1 rounded text-xs">status</code> is still{' '}
+              <code className="bg-muted px-1 rounded text-xs">&quot;pending_payment&quot;</code> — re-returns the
+              same <code className="bg-muted px-1 rounded text-xs">checkout_url</code> from step 2, in case the
+              client lost the link before you had a chance to save it.
+            </p>
+            <EndpointBlock method="GET" path="/v1/hosting/mailboxes/{id}" desc="Current status of a single mailbox. checkout_url is only populated while status is pending_payment; null once paid." />
+
+            <h3 className="text-lg font-semibold mt-6 mb-3">5. Unpaid mailboxes expire automatically</h3>
+            <p className="text-muted-foreground mb-4">
+              A client who never completes the first payment isn&apos;t left provisioned forever: if{' '}
+              <code className="bg-muted px-1 rounded text-xs">status</code> is still{' '}
+              <code className="bg-muted px-1 rounded text-xs">&quot;pending_payment&quot;</code> 7 days after
+              creation, Kerabie deletes the mailbox <strong>and</strong> the account behind it
+              automatically and fires <code className="bg-muted px-1 rounded text-xs">partner_mailbox.payment_abandoned</code>.
+              Nothing real ever activated on that account, so there&apos;s no customer data to preserve.
+            </p>
+            <p className="text-muted-foreground">
+              This is also why{' '}
+              <code className="bg-muted px-1 rounded text-xs">DELETE /v1/hosting/mailboxes/{'{id}'}</code>{' '}
+              behaves differently depending on whether the mailbox ever got paid: deleting a mailbox that&apos;s
+              still <code className="bg-muted px-1 rounded text-xs">&quot;pending_payment&quot;</code> deletes the
+              underlying account too, same as the automatic 7-day cleanup — there&apos;s nothing to keep.
+              Deleting any other mailbox (already active, whether pay-as-you-go or slot-funded) only deactivates
+              the account and removes the mailbox/slot; the account&apos;s data (subscription, mail, forwarding
+              rules) is left intact in case it needs to be looked up later.
             </p>
           </section>
 
@@ -451,6 +527,7 @@ export default function PartnerApiPage() {
                     ['partner_mailbox.payment_confirmed', "A pay-as-you-go client's payment clears (first payment or any renewal)"],
                     ['partner_mailbox.payment_failed', "A pay-as-you-go client's renewal charge fails"],
                     ['partner_mailbox.expired', "A pay-as-you-go client cancels"],
+                    ['partner_mailbox.payment_abandoned', "A pay-as-you-go mailbox's first payment was never completed within 7 days — it and its account were deleted"],
                   ].map(([e, d]) => (
                     <tr key={e}>
                       <td className="p-3 font-mono text-xs text-foreground">{e}</td>
