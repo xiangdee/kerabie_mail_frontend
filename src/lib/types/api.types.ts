@@ -38,6 +38,7 @@ export interface RegisterRequest {
   password: string;
   full_name?: string;
   captcha_token?: string;
+  referral_code?: string;
 }
 
 // ── Alias ─────────────────────────────────────────────────────────────────────

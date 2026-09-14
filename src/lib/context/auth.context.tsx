@@ -93,7 +93,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const register = async (username: string, password: string, full_name?: string, captchaToken?: string) => {
-    const res = await authService.register({ username, password, full_name, captcha_token: captchaToken });
+    // First-touch referral attribution — see components/ReferralCapture.tsx,
+    // which sets this cookie when the user first arrives via ?ref=CODE.
+    const refMatch = typeof document !== 'undefined' ? document.cookie.match(/(?:^|; )kerabie_ref=([^;]+)/) : null;
+    const referral_code = refMatch ? decodeURIComponent(refMatch[1]) : undefined;
+    const res = await authService.register({ username, password, full_name, captcha_token: captchaToken, referral_code });
     if (res.status === true) {
       const { user: u } = res.response as { user: User };
       setUser(u);
