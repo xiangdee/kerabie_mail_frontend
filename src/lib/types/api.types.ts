@@ -171,6 +171,13 @@ export interface DnsRecord {
   name: string;
   value: string;
   verified: boolean;
+  // Populated once a verify check has actually run against this specific
+  // record — `verified` above was previously hardcoded false regardless
+  // of real DNS state; these two carry the real reason a record failed
+  // (e.g. "Found eforward1.registrar-servers.com instead — looks like
+  // Namecheap Email Forwarding is still enabled...").
+  found_value?: string | null;
+  reason?: string | null;
 }
 
 // ── Subscription ──────────────────────────────────────────────────────────────

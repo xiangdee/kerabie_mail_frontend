@@ -46,16 +46,37 @@ const StatusBadge = ({ status }: { status: Domain['status'] }) => {
   );
 };
 
+// `verified` was previously hardcoded false on every record everywhere it
+// was set (see list_domains) — now it, plus found_value/reason, reflect
+// the last actual DNS check. A record that's never been checked at all
+// still reads `verified: false` (the field has no separate "unchecked"
+// state), so a dash rather than an X avoids implying a real failure that
+// hasn't actually been confirmed yet.
 const DnsRow = ({ record }: { record: DnsRecord }) => {
   const copy = () => navigator.clipboard.writeText(record.value);
+  const checked = record.reason != null || record.found_value != null || record.verified;
   return (
-    <div className="grid grid-cols-[80px_120px_1fr_24px] gap-2 items-center py-2 border-b last:border-0 text-xs">
-      <span className="font-mono text-muted-foreground">{record.type}</span>
-      <span className="font-mono truncate text-muted-foreground">{record.name}</span>
-      <span className="font-mono truncate">{record.value}</span>
-      <button onClick={copy} className="text-muted-foreground hover:text-foreground">
-        <Copy className="h-3 w-3" />
-      </button>
+    <div className="py-2 border-b last:border-0 text-xs">
+      <div className="grid grid-cols-[16px_80px_120px_1fr_24px] gap-2 items-center">
+        {record.verified ? (
+          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+        ) : checked ? (
+          <XCircle className="h-3.5 w-3.5 text-red-600 shrink-0" />
+        ) : (
+          <span className="text-muted-foreground/40 shrink-0">—</span>
+        )}
+        <span className="font-mono text-muted-foreground">{record.type}</span>
+        <span className="font-mono truncate text-muted-foreground">{record.name}</span>
+        <span className="font-mono truncate">{record.value}</span>
+        <button onClick={copy} className="text-muted-foreground hover:text-foreground">
+          <Copy className="h-3 w-3" />
+        </button>
+      </div>
+      {!record.verified && record.reason && (
+        <p className="pl-[24px] mt-1 text-red-600 font-medium">
+          {record.reason}{record.found_value ? ` (found: ${record.found_value})` : ''}
+        </p>
+      )}
     </div>
   );
 };

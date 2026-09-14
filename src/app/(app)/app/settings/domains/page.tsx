@@ -37,12 +37,24 @@ export default function DomainsPage() {
     // result," not "check started." Read the actual outcome instead of treating
     // any successful HTTP call as a pending verification.
     if (res.status === true) {
-      const domain = (res.response as { domain?: { is_verified?: boolean }; message?: string })?.domain;
+      type CheckResult = { type: string; host: string; ok: boolean | null; reason: string | null };
+      const domain = (res.response as {
+        domain?: { is_verified?: boolean; dns_check_results?: CheckResult[] | null };
+        message?: string;
+      })?.domain;
       const message = (res.response as { message?: string })?.message;
       if (domain?.is_verified) {
         success('Domain verified!', { description: message ?? 'DNS records are correctly configured.' });
       } else {
-        toastError('Not verified yet', { description: message ?? 'DNS records don\'t match yet — double-check them and try again.' });
+        // Name the specific record(s) that failed instead of a generic
+        // "don't match yet" — dns_check_results carries a `reason` per
+        // record (e.g. "Found eforward1.registrar-servers.com instead —
+        // looks like Namecheap Email Forwarding is still enabled...").
+        const failing = (domain?.dns_check_results ?? []).filter(c => c.ok === false);
+        const description = failing.length
+          ? failing.map(c => `${c.type} (${c.host}): ${c.reason ?? 'not matching yet'}`).join(' · ')
+          : (message ?? 'DNS records don\'t match yet — double-check them and try again.');
+        toastError('Not verified yet', { description });
       }
     } else {
       toastError('Verification failed', { description: res.response as string });
