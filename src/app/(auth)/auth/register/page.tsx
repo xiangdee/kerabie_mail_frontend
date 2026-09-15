@@ -10,12 +10,19 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/context/auth.context';
 import { authService } from '@/lib/services/auth.service';
 import { useUpdateMailbox } from '@/lib/hooks/useMailboxes';
+import { usePhoneStatus } from '@/lib/hooks/usePhoneVerification';
 import { mailConnectService, type DnsRecord, type DnsSetupInfo, type MailConnectionResponse } from '@/lib/services/mail-connect.service';
 import { cn } from '@/lib/utils';
 import TurnstileWidget from '@/components/TurnstileWidget';
 
 const KERABIE_DOMAIN = 'kerabie.email';
 const USERNAME_RE = /^[a-z0-9]([a-z0-9._-]{1,28}[a-z0-9])?$/;
+
+// Mirrors (app)/app/layout.tsx's own copy — a real paid subscription is
+// exempt from phone verification; trial and free-forever accounts aren't.
+function ownsAPaidPlan(user: { plan_status?: string; is_trial?: boolean } | null | undefined): boolean {
+  return !!user && user.plan_status !== 'free' && user.is_trial !== true;
+}
 
 type AvailState = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
 type Mode = 'kerabie' | 'domain';
@@ -171,7 +178,14 @@ function KerabieForm() {
     setLoading(false);
     if (result.ok) {
       success('Account created!', { description: `Your mailbox ${username}@${KERABIE_DOMAIN} is ready.` });
-      router.push(redirect && redirect.startsWith('/') ? redirect : '/app');
+      // A brand-new signup here is always unverified and always on the
+      // automatic trial (no plan selection in this form, and a duplicate
+      // email is rejected outright) — sending straight to verify-phone
+      // avoids a visible flash of the console before AppLayout's own gate
+      // would otherwise redirect away from it a moment later. An explicit
+      // ?redirect= (e.g. a pricing-page CTA sending them to checkout)
+      // still wins, same as before.
+      router.push(redirect && redirect.startsWith('/') ? redirect : '/auth/verify-phone');
     } else {
       toastError(typeof result.error === 'string' ? result.error : 'Registration failed');
     }
@@ -313,12 +327,17 @@ function KerabieForm() {
 // ── Register/login with your own domain ─────────────────────────────────────
 
 function DomainForm() {
-  const { refreshUser, token } = useAuth();
+  const { refreshUser, token, user } = useAuth();
   const { success, error: toastError } = useAppToast();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect');
   const updateMailbox = useUpdateMailbox(token);
+  // Only fetched to decide where "Skip for now"/"Save & continue" send a
+  // freshly-registered account — AppLayout's own gate would eventually
+  // catch an unverified account anyway, but routing there directly avoids
+  // a visible flash of the console first while that gate's own queries load.
+  const { data: phoneStatus } = usePhoneStatus(token);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -329,7 +348,11 @@ function DomainForm() {
   const [senderName, setSenderName] = useState('');
   const [savingName, setSavingName] = useState(false);
 
-  const goToApp = () => router.push(redirect && redirect.startsWith('/') ? redirect : '/app');
+  const goToApp = () => {
+    if (redirect && redirect.startsWith('/')) { router.push(redirect); return; }
+    const needsPhoneVerification = !ownsAPaidPlan(user) && phoneStatus !== undefined && phoneStatus !== null && !phoneStatus.is_verified;
+    router.push(needsPhoneVerification ? '/auth/verify-phone' : '/app');
+  };
 
   const attemptConnect = async () => {
     setLoading(true);

@@ -26,6 +26,13 @@ function ownsAPaidPlan(user: { plan_status?: string; is_trial?: boolean } | null
   return !!user && user.plan_status !== 'free' && user.is_trial !== true;
 }
 
+// Mirrors the backend's own throttle (app/routes/phone_verify.py) — 1 OTP
+// per 60s per account, independent of which phone number it's sent to, so
+// switching numbers doesn't reset or bypass the cooldown. The backend is
+// the actual source of truth (still enforced there even if this drifts);
+// this just surfaces it instead of only showing a toast after a 429.
+const RESEND_COOLDOWN_SECONDS = 60;
+
 export default function VerifyPhonePage() {
   const router = useRouter();
   const { user, token, isLoading: authLoading, refreshUser } = useAuth();
@@ -38,6 +45,20 @@ export default function VerifyPhonePage() {
   const [channel, setChannel] = useState<'whatsapp' | 'telegram'>('whatsapp');
   const [channelUsed, setChannelUsed] = useState<PhoneChannel | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [dailyLimitMessage, setDailyLimitMessage] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+
+  // Ticks once a cooldown is active so the countdown re-renders each second;
+  // stops itself once it expires rather than running for the whole page life.
+  useEffect(() => {
+    if (!cooldownUntil) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [cooldownUntil]);
+
+  const remainingSeconds = cooldownUntil ? Math.max(0, Math.ceil((cooldownUntil - now) / 1000)) : 0;
+  const onCooldown = remainingSeconds > 0;
 
   const { data: detected } = useDetectCountry();
   // Detected country is only a default — once the user picks one explicitly
@@ -69,15 +90,25 @@ export default function VerifyPhonePage() {
   }, [authLoading, phoneStatusLoading, mailboxesLoading, user, ownsPlan, isImapMailbox, phoneStatus, router]);
 
   const handleSend = async (explicitChannel?: PhoneChannel) => {
-    if (!country || !localNumber.trim()) return;
+    if (!country || !localNumber.trim() || onCooldown || dailyLimitMessage) return;
     const res = await sendOtp.mutateAsync({ phone, channel: explicitChannel });
     if (res.status === true) {
       const used = res.response.channel_used as PhoneChannel;
       setChannelUsed(used);
       success(`Code sent via ${CHANNEL_LABEL[used]}`);
       setStep('otp');
+      setCooldownUntil(Date.now() + RESEND_COOLDOWN_SECONDS * 1000);
     } else {
-      toastError('Failed to send code', { description: res.response?.detail });
+      const detail: string = res.response?.detail ?? '';
+      toastError('Failed to send code', { description: detail });
+      // Same throttle the backend enforces either way — reflected here too
+      // so a resend/number-switch attempt is disabled proactively instead
+      // of only failing after the fact.
+      if (detail.toLowerCase().includes('daily limit')) {
+        setDailyLimitMessage(detail);
+      } else if (detail.toLowerCase().includes('wait 60 seconds') || res.statusCode === 429) {
+        setCooldownUntil(Date.now() + RESEND_COOLDOWN_SECONDS * 1000);
+      }
     }
   };
 
@@ -137,12 +168,12 @@ export default function VerifyPhonePage() {
               <Button
                 className="w-full"
                 onClick={() => handleSend('sms')}
-                disabled={sendOtp.isPending || !country || !localNumber.trim()}
+                disabled={sendOtp.isPending || !country || !localNumber.trim() || onCooldown || !!dailyLimitMessage}
               >
                 {sendOtp.isPending
                   ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   : <Phone className="mr-2 h-4 w-4" />}
-                Send verification code
+                {onCooldown ? `Try again in ${remainingSeconds}s` : 'Send verification code'}
               </Button>
             ) : (
               <div className="space-y-2">
@@ -154,7 +185,7 @@ export default function VerifyPhonePage() {
                     variant={channel === 'whatsapp' ? 'default' : 'outline'}
                     className="w-full justify-center gap-2"
                     onClick={() => { setChannel('whatsapp'); handleSend('whatsapp'); }}
-                    disabled={sendOtp.isPending || !country || !localNumber.trim()}
+                    disabled={sendOtp.isPending || !country || !localNumber.trim() || onCooldown || !!dailyLimitMessage}
                   >
                     <img src="/whatsapp.png" alt="" className="h-4 w-4" />
                     WhatsApp
@@ -163,13 +194,19 @@ export default function VerifyPhonePage() {
                     variant={channel === 'telegram' ? 'default' : 'outline'}
                     className="w-full justify-center gap-2"
                     onClick={() => { setChannel('telegram'); handleSend('telegram'); }}
-                    disabled={sendOtp.isPending || !country || !localNumber.trim()}
+                    disabled={sendOtp.isPending || !country || !localNumber.trim() || onCooldown || !!dailyLimitMessage}
                   >
                     <img src="/telegram.png" alt="" className="h-4 w-4" />
                     Telegram
                   </Button>
                 </div>
+                {onCooldown && (
+                  <p className="text-xs text-muted-foreground text-center">You can request another code in {remainingSeconds}s.</p>
+                )}
               </div>
+            )}
+            {dailyLimitMessage && (
+              <p className="text-xs text-destructive text-center">{dailyLimitMessage}</p>
             )}
           </>
         ) : (
@@ -199,6 +236,20 @@ export default function VerifyPhonePage() {
                 : <ShieldCheck className="mr-2 h-4 w-4" />}
               Verify
             </Button>
+            {dailyLimitMessage ? (
+              <p className="text-xs text-destructive text-center">{dailyLimitMessage}</p>
+            ) : (
+              <div className="flex items-center justify-center gap-1 text-xs">
+                <span className="text-muted-foreground">Didn&apos;t get a code?</span>
+                <button
+                  className="text-primary hover:underline disabled:text-muted-foreground disabled:no-underline disabled:cursor-not-allowed"
+                  disabled={onCooldown || sendOtp.isPending}
+                  onClick={() => handleSend(channelUsed ?? undefined)}
+                >
+                  {onCooldown ? `Resend in ${remainingSeconds}s` : 'Resend code'}
+                </button>
+              </div>
+            )}
             <button
               className="w-full text-xs text-muted-foreground hover:underline"
               onClick={() => { setStep('phone'); setCode(''); }}
