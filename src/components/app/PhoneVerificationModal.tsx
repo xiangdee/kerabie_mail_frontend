@@ -27,7 +27,10 @@ const CHANNEL_LABEL: Record<PhoneChannel, string> = {
 
 interface Props {
   open: boolean;
-  token: string;
+  // Always null now — auth is httpOnly-cookie based, see auth.context.tsx.
+  // Forwarded into useSendOtp/useVerifyOtp only because those hooks' API
+  // calls still accept a token param, unused since withCredentials covers it.
+  token: string | null;
   onVerified: () => void;
 }
 

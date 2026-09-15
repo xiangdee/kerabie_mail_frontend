@@ -53,7 +53,12 @@ export function useMigrationStatus(token: string | null, email: string | null, e
       const res = await customAxiosGet(`${base}/mail/mailbox/${encodeURIComponent(email!)}/migration-status`, undefined, token ?? undefined);
       return (res.status === true ? (res.response as MigrationStatus | null) : null);
     },
-    enabled: enabled && !!email && !!token,
+    // NOT gated on !!token — this app is httpOnly-cookie authenticated,
+    // token is always null (see auth.context.tsx), so an `!!token` guard
+    // here meant this query — and the migration-progress polling depending
+    // on it — could never run at all. Same class of bug as the phone-
+    // verification gate in (app)/app/layout.tsx.
+    enabled: enabled && !!email,
     refetchInterval: (query) => (query.state.data?.status === 'running' ? 4000 : false),
   });
 }

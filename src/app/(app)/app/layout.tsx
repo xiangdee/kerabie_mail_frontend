@@ -81,7 +81,7 @@ function PhoneVerificationGate({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
-      {token && needsVerification && (
+      {needsVerification && (
         <PhoneVerificationModal
           open
           token={token}
