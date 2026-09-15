@@ -10,8 +10,9 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/context/auth.context';
 import { authService } from '@/lib/services/auth.service';
 import { useUpdateMailbox } from '@/lib/hooks/useMailboxes';
-import { usePhoneStatus } from '@/lib/hooks/usePhoneVerification';
 import { mailConnectService, type DnsRecord, type DnsSetupInfo, type MailConnectionResponse } from '@/lib/services/mail-connect.service';
+import { customAxiosGet } from '@/lib/utils/CustomAxiosRequest';
+import { apiLink } from '@/lib/constants/links';
 import { cn } from '@/lib/utils';
 import TurnstileWidget from '@/components/TurnstileWidget';
 
@@ -333,11 +334,6 @@ function DomainForm() {
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect');
   const updateMailbox = useUpdateMailbox(token);
-  // Only fetched to decide where "Skip for now"/"Save & continue" send a
-  // freshly-registered account — AppLayout's own gate would eventually
-  // catch an unverified account anyway, but routing there directly avoids
-  // a visible flash of the console first while that gate's own queries load.
-  const { data: phoneStatus } = usePhoneStatus(token);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -348,10 +344,24 @@ function DomainForm() {
   const [senderName, setSenderName] = useState('');
   const [savingName, setSavingName] = useState(false);
 
-  const goToApp = () => {
+  const goToApp = async () => {
     if (redirect && redirect.startsWith('/')) { router.push(redirect); return; }
-    const needsPhoneVerification = !ownsAPaidPlan(user) && phoneStatus !== undefined && phoneStatus !== null && !phoneStatus.is_verified;
-    router.push(needsPhoneVerification ? '/auth/verify-phone' : '/app');
+    if (ownsAPaidPlan(user)) { router.push('/app'); return; }
+    // A fresh, uncached call — this component mounts (and usePhoneStatus
+    // would too) before the user is even registered yet, so a React-Query
+    // hook keyed the normal way would cache that first unauthenticated 401
+    // as "not verified" and never refetch afterward once login actually
+    // succeeds a moment later (queryKey includes `token`, which is always
+    // null — see auth.context.tsx — so the key never changes to trigger
+    // one). Confirmed live: this is exactly why "Skip for now" kept landing
+    // on the console instead of verify-phone.
+    try {
+      const res = await customAxiosGet(`${apiLink}/phone/status`);
+      const verified = res.status === true && res.response?.is_verified === true;
+      router.push(verified ? '/app' : '/auth/verify-phone');
+    } catch {
+      router.push('/auth/verify-phone');
+    }
   };
 
   const attemptConnect = async () => {
