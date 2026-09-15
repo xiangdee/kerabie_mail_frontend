@@ -9,7 +9,7 @@ import {
 import { useAppToast } from '@/components/ui/app-toast';
 import { siteUrl } from '@/lib/constants/links';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -126,7 +126,7 @@ export default function UpgradePlanModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Choose a plan</DialogTitle>
           <DialogDescription>
@@ -134,160 +134,174 @@ export default function UpgradePlanModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5 py-2">
-          {/* Plan picker */}
-          <div className="grid grid-cols-2 gap-3">
-            {plansLoading ? (
-              <div className="col-span-2 h-32 flex items-center justify-center">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : paidPlans.map(plan => {
-              const PlanIcon = PLAN_ICONS[plan.id] ?? Crown;
-              const selected = upgradePlan === plan.id;
-              return (
-                <button
-                  key={plan.id}
-                  type="button"
-                  onClick={() => setUpgradePlan(plan.id as 'pro' | 'premium')}
-                  className={cn(
-                    'rounded-xl border p-4 text-left transition-colors',
-                    selected
-                      ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                      : 'border-border hover:border-primary/50',
-                  )}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <PlanIcon className={cn('h-4 w-4', selected ? 'text-primary' : 'text-muted-foreground')} />
-                    {selected && <Check className="h-3.5 w-3.5 text-primary" />}
-                  </div>
-                  <p className="font-semibold text-sm">{plan.name}</p>
-                  <ul className="mt-2 space-y-1">
-                    {plan.features.slice(0, 3).map(f => (
-                      <li key={f} className="text-xs text-muted-foreground">{f}</li>
-                    ))}
-                  </ul>
-                </button>
-              );
-            })}
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-6 py-2">
+          {/* Left: options */}
+          <div className="space-y-5 min-w-0">
+            {/* Plan picker */}
+            <div className="grid grid-cols-2 gap-3">
+              {plansLoading ? (
+                <div className="col-span-2 h-32 flex items-center justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : paidPlans.map(plan => {
+                const PlanIcon = PLAN_ICONS[plan.id] ?? Crown;
+                const selected = upgradePlan === plan.id;
+                return (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    onClick={() => setUpgradePlan(plan.id as 'pro' | 'premium')}
+                    className={cn(
+                      'rounded-xl border p-4 text-left transition-colors',
+                      selected
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                        : 'border-border hover:border-primary/50',
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <PlanIcon className={cn('h-4 w-4', selected ? 'text-primary' : 'text-muted-foreground')} />
+                      {selected && <Check className="h-3.5 w-3.5 text-primary" />}
+                    </div>
+                    <p className="font-semibold text-sm">{plan.name}</p>
+                    <ul className="mt-2 space-y-1">
+                      {plan.features.slice(0, 3).map(f => (
+                        <li key={f} className="text-xs text-muted-foreground">{f}</li>
+                      ))}
+                    </ul>
+                  </button>
+                );
+              })}
+            </div>
 
-          {/* Billing cycle */}
-          <div className="space-y-1.5">
-            <Label>Billing cycle</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {(['monthly', 'yearly'] as const).map(cycle => (
-                <button
-                  key={cycle}
-                  type="button"
-                  onClick={() => setUpgradeCycle(cycle)}
-                  className={cn(
-                    'rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors capitalize',
-                    upgradeCycle === cycle
-                      ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-border text-muted-foreground hover:border-primary/50',
-                  )}
-                >
-                  {cycle}
-                  {cycle === 'yearly' && (
-                    <span className="ml-1.5 text-xs rounded-full bg-emerald-100 text-emerald-700 px-1.5 py-0.5">
-                      Save 25%
-                    </span>
-                  )}
-                </button>
-              ))}
+            {/* Billing cycle */}
+            <div className="space-y-1.5">
+              <Label>Billing cycle</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {(['monthly', 'yearly'] as const).map(cycle => (
+                  <button
+                    key={cycle}
+                    type="button"
+                    onClick={() => setUpgradeCycle(cycle)}
+                    className={cn(
+                      'rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors capitalize',
+                      upgradeCycle === cycle
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-border text-muted-foreground hover:border-primary/50',
+                    )}
+                  >
+                    {cycle}
+                    {cycle === 'yearly' && (
+                      <span className="ml-1.5 text-xs rounded-full bg-emerald-100 text-emerald-700 px-1.5 py-0.5">
+                        Save 25%
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Add-ons */}
+            <div className="space-y-2">
+              <Label>Add-ons <span className="text-muted-foreground font-normal">(optional)</span></Label>
+
+              {mailboxAddon && (
+                <div className="flex items-center justify-between rounded-lg border px-4 py-2.5">
+                  <div>
+                    <p className="text-sm font-medium">Extra mailboxes</p>
+                    <p className="text-xs text-muted-foreground">
+                      {mailboxAddon.symbol}{mailboxAddon.amount}/mo each
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Button type="button" variant="outline" size="icon" className="h-7 w-7"
+                      disabled={extraMailboxes <= 0} onClick={() => setExtraMailboxes(n => Math.max(0, n - 1))}>
+                      <Minus className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="w-4 text-center text-sm font-semibold tabular-nums">{extraMailboxes}</span>
+                    <Button type="button" variant="outline" size="icon" className="h-7 w-7"
+                      onClick={() => setExtraMailboxes(n => Math.min(100, n + 1))}>
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {storageAddon && (
+                <div className="flex items-center justify-between rounded-lg border px-4 py-2.5">
+                  <div>
+                    <p className="text-sm font-medium">Extra storage</p>
+                    <p className="text-xs text-muted-foreground">
+                      {storageAddon.symbol}{storageAddon.amount}/mo each (10GB)
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Button type="button" variant="outline" size="icon" className="h-7 w-7"
+                      disabled={extraStorage <= 0} onClick={() => setExtraStorage(n => Math.max(0, n - 1))}>
+                      <Minus className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="w-4 text-center text-sm font-semibold tabular-nums">{extraStorage}</span>
+                    <Button type="button" variant="outline" size="icon" className="h-7 w-7"
+                      onClick={() => setExtraStorage(n => Math.min(100, n + 1))}>
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Add-ons */}
-          <div className="space-y-2">
-            <Label>Add-ons <span className="text-muted-foreground font-normal">(optional)</span></Label>
-
-            {mailboxAddon && (
-              <div className="flex items-center justify-between rounded-lg border px-4 py-2.5">
-                <div>
-                  <p className="text-sm font-medium">Extra mailboxes</p>
-                  <p className="text-xs text-muted-foreground">
-                    {mailboxAddon.symbol}{mailboxAddon.amount}/mo each
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7"
-                    disabled={extraMailboxes <= 0} onClick={() => setExtraMailboxes(n => Math.max(0, n - 1))}>
-                    <Minus className="h-3.5 w-3.5" />
-                  </Button>
-                  <span className="w-4 text-center text-sm font-semibold tabular-nums">{extraMailboxes}</span>
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7"
-                    onClick={() => setExtraMailboxes(n => Math.min(100, n + 1))}>
-                    <Plus className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {storageAddon && (
-              <div className="flex items-center justify-between rounded-lg border px-4 py-2.5">
-                <div>
-                  <p className="text-sm font-medium">Extra storage</p>
-                  <p className="text-xs text-muted-foreground">
-                    {storageAddon.symbol}{storageAddon.amount}/mo each (10GB)
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7"
-                    disabled={extraStorage <= 0} onClick={() => setExtraStorage(n => Math.max(0, n - 1))}>
-                    <Minus className="h-3.5 w-3.5" />
-                  </Button>
-                  <span className="w-4 text-center text-sm font-semibold tabular-nums">{extraStorage}</span>
-                  <Button type="button" variant="outline" size="icon" className="h-7 w-7"
-                    onClick={() => setExtraStorage(n => Math.min(100, n + 1))}>
-                    <Plus className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Price summary */}
-          {selectedPlan && (
-            <div className="rounded-xl border bg-muted/40 px-4 py-3 space-y-1">
-              <div className="flex items-baseline justify-between">
+          {/* Right: summary + CTA — stacks below the options on mobile, sits
+              alongside them as a sidebar from md up. */}
+          <div className="space-y-4 md:border-l md:pl-6">
+            {selectedPlan && (
+              <div className="rounded-xl border bg-muted/40 px-4 py-3 space-y-1">
                 <p className="text-sm text-muted-foreground">
                   {selectedPlan.name} · {upgradeCycle}
-                  {extraMailboxes > 0 && ` + ${extraMailboxes} mailbox${extraMailboxes > 1 ? 'es' : ''}`}
-                  {extraStorage > 0 && ` + ${extraStorage * 10}GB`}
                 </p>
-                <p className="font-bold text-lg">
+                <p className="font-bold text-2xl">
                   {currencySymbol}{price.toLocaleString()}
                   <span className="text-sm font-normal text-muted-foreground">
                     /{upgradeCycle === 'monthly' ? 'mo' : 'yr'}
                   </span>
                 </p>
+                {(mailboxTotal > 0 || storageTotal > 0) && (
+                  <div className="pt-1.5 mt-1.5 border-t space-y-0.5">
+                    <p className="text-xs text-muted-foreground flex justify-between">
+                      <span>{selectedPlan.name} plan</span><span>{currencySymbol}{planPrice.toLocaleString()}</span>
+                    </p>
+                    {mailboxTotal > 0 && (
+                      <p className="text-xs text-muted-foreground flex justify-between">
+                        <span>{extraMailboxes} extra mailbox{extraMailboxes > 1 ? 'es' : ''}</span>
+                        <span>{currencySymbol}{mailboxTotal.toLocaleString()}</span>
+                      </p>
+                    )}
+                    {storageTotal > 0 && (
+                      <p className="text-xs text-muted-foreground flex justify-between">
+                        <span>+{extraStorage * 10}GB storage</span>
+                        <span>{currencySymbol}{storageTotal.toLocaleString()}</span>
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
-              {(mailboxTotal > 0 || storageTotal > 0) && (
-                <p className="text-xs text-muted-foreground text-right">
-                  {currencySymbol}{planPrice.toLocaleString()} plan
-                  {mailboxTotal > 0 && ` + ${currencySymbol}${mailboxTotal.toLocaleString()} mailboxes`}
-                  {storageTotal > 0 && ` + ${currencySymbol}${storageTotal.toLocaleString()} storage`}
-                </p>
-              )}
+            )}
+
+            <p className="text-xs text-muted-foreground">
+              Payment is processed securely via {defaultCurrency === 'ngn' ? 'Flutterwave' : 'our payment partner'}.
+              You can cancel anytime from Settings → Billing.
+            </p>
+
+            <div className="flex flex-col gap-2">
+              <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full gap-1.5">
+                {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                Continue to payment
+              </Button>
+              <Button variant="outline" onClick={() => { reset(); onClose(); }} disabled={isSubmitting} className="w-full">
+                Cancel
+              </Button>
             </div>
-          )}
-
-          <p className="text-xs text-muted-foreground">
-            Payment is processed securely via {defaultCurrency === 'ngn' ? 'Flutterwave' : 'our payment partner'}.
-            You can cancel anytime from Settings → Billing.
-          </p>
+          </div>
         </div>
-
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => { reset(); onClose(); }} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-1.5">
-            {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            Continue to payment
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
