@@ -10,7 +10,6 @@ import { blackblazebucket } from '@/lib/constants/links';
 import { AppSidebar } from '@/components/app/AppSidebar';
 import { useAuth } from '@/lib/context/auth.context';
 import { usePhoneStatus } from '@/lib/hooks/usePhoneVerification';
-import PhoneVerificationModal from '@/components/app/PhoneVerificationModal';
 import AlternateEmailNagModal from '@/components/app/AlternateEmailNagModal';
 import { ConnectionRibbon } from '@/components/app/ConnectionRibbon';
 import { useMailboxes } from '@/lib/hooks/useMailboxes';
@@ -58,11 +57,13 @@ function ownsAPaidPlan(user: { plan_status?: string; is_trial?: boolean } | null
   return !!user && user.plan_status !== 'free' && user.is_trial !== true;
 }
 
+const VERIFY_PHONE_PATH = '/auth/verify-phone';
+
 function PhoneVerificationGate({ children }: { children: React.ReactNode }) {
   const { user, token } = useAuth();
-  const { data: phoneStatus, refetch } = usePhoneStatus(token);
+  const router = useRouter();
+  const { data: phoneStatus } = usePhoneStatus(token);
   const { data: mailboxes } = useMailboxes(token);
-  const [dismissed, setDismissed] = useState(false);
 
   // Mailboxes supplied by an outside hosting provider (IMAP-connected, not
   // Kerabie-hosted DNS) don't get free mailboxes handed out for the taking,
@@ -75,24 +76,18 @@ function PhoneVerificationGate({ children }: { children: React.ReactNode }) {
     !isImapMailbox &&
     phoneStatus !== undefined &&
     phoneStatus !== null &&
-    !phoneStatus.is_verified &&
-    !dismissed;
+    !phoneStatus.is_verified;
 
-  return (
-    <>
-      {children}
-      {needsVerification && (
-        <PhoneVerificationModal
-          open
-          token={token}
-          onVerified={() => {
-            refetch();
-            setDismissed(true);
-          }}
-        />
-      )}
-    </>
-  );
+  // A dedicated page (outside this layout's tree entirely — see
+  // (auth)/auth/verify-phone) rather than a modal overlaid on whatever page
+  // was open: an overlay meant "Upgrade to skip verification" landed the
+  // user on the billing page with the SAME modal still stuck on top of it,
+  // since billing is itself under this same gated layout.
+  useEffect(() => {
+    if (needsVerification) router.replace(VERIFY_PHONE_PATH);
+  }, [needsVerification, router]);
+
+  return <>{children}</>;
 }
 
 // SidebarTrigger (components/ui/sidebar.tsx) hardcodes its own icon as
