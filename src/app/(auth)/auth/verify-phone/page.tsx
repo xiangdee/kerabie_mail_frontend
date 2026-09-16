@@ -146,6 +146,15 @@ export default function VerifyPhonePage() {
         </p>
       </div>
 
+      {user?.is_trial && (
+        <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
+          <p className="text-sm font-medium text-foreground">You're on a free 3-day Pro trial</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Full Pro features, no card required. Verify your phone below to activate your mailbox.
+          </p>
+        </div>
+      )}
+
       <div className="space-y-4">
         {step === 'phone' ? (
           <>

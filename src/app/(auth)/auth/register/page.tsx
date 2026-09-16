@@ -178,7 +178,7 @@ function KerabieForm() {
     const result = await register(username.toLowerCase().trim(), password, fullName || undefined, captchaToken);
     setLoading(false);
     if (result.ok) {
-      success('Account created!', { description: `Your mailbox ${username}@${KERABIE_DOMAIN} is ready.` });
+      success('Account created!', { description: `Your mailbox ${username}@${KERABIE_DOMAIN} is ready — and you're on a free 3-day Pro trial.` });
       // A brand-new signup here is always unverified and always on the
       // automatic trial (no plan selection in this form, and a duplicate
       // email is rejected outright) — sending straight to verify-phone
