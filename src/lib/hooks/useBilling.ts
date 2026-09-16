@@ -55,7 +55,13 @@ export function usePlans(currency?: string) {
       if (res.status !== true) throw new Error(typeof res.response === 'string' ? res.response : 'Failed to load plans');
       return res.response as PlansResponse;
     },
-    staleTime: 1000 * 60 * 60, // 1 hour — prices don't change often
+    // Shared across every page that shows pricing (homepage, billing,
+    // UpgradePlanModal) via the same ['plans', currency] key — an hour-long
+    // staleTime meant whichever page fetched first "won" for up to an hour
+    // everywhere else, with no way to force a refresh short of a reload.
+    // 5 minutes still avoids refetching on every render/navigation while
+    // actually catching a same-session price/product change.
+    staleTime: 1000 * 60 * 5,
   });
 }
 
