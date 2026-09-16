@@ -11,7 +11,6 @@ export interface User {
   is_trial?: boolean;
   trial_end?: string | null;
   is_phone_verified?: boolean;
-  is_verified: boolean;
   phone?: string;
   phone_verified?: boolean;
   avatar_url?: string;

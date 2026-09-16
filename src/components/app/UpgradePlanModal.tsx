@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '@/lib/context/auth.context';
+import { useCurrency } from '@/lib/utils/useCurrency';
 import {
   usePlans, useSubscription, useCreateSubscription,
   useUpgradeFromTrial, useUpgradeExistingSubscription,
@@ -51,7 +52,14 @@ export default function UpgradePlanModal({
   const [extraStorage, setExtraStorage] = useState(0);
 
   const { data: subscription } = useSubscription(token);
-  const defaultCurrency: 'ngn' | 'usd' = subscription?.currency?.toLowerCase() === 'ngn' ? 'ngn' : 'usd';
+  // Falls back to the visitor's detected preferred_currency (see
+  // useCurrency/CurrencyDetector) rather than hardcoding USD for anyone
+  // without an active subscription yet — same fix as the billing page.
+  const { currency: detectedCurrency } = useCurrency();
+  const defaultCurrency: 'ngn' | 'usd' =
+    subscription?.currency?.toLowerCase() === 'ngn' ? 'ngn'
+    : subscription?.currency?.toLowerCase() === 'usd' ? 'usd'
+    : detectedCurrency;
   const { data: plansData, isLoading: plansLoading } = usePlans(defaultCurrency.toUpperCase());
 
   const createMutation = useCreateSubscription(token);

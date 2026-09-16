@@ -2,6 +2,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/context/auth.context';
+import { useCurrency } from '@/lib/utils/useCurrency';
 import {
   useSubscription,
   useCancelSubscription,
@@ -92,8 +93,15 @@ function BillingPageInner() {
   // `user.currency`, which was always undefined, so every upgrade
   // unconditionally defaulted to NGN regardless of the visitor. An existing
   // subscriber upgrades in the currency they're already billed in; anyone
-  // without a subscription yet (free/no-sub) defaults to USD.
-  const defaultCurrency: 'ngn' | 'usd' = subscription?.currency?.toLowerCase() === 'ngn' ? 'ngn' : 'usd';
+  // without a subscription yet (free/no-sub) falls back to their detected
+  // preferred_currency (see useCurrency/CurrencyDetector) instead of a
+  // hardcoded USD — confirmed live: an NGN visitor with no subscription yet
+  // saw USD here regardless of their IP-detected currency.
+  const { currency: detectedCurrency } = useCurrency();
+  const defaultCurrency: 'ngn' | 'usd' =
+    subscription?.currency?.toLowerCase() === 'ngn' ? 'ngn'
+    : subscription?.currency?.toLowerCase() === 'usd' ? 'usd'
+    : detectedCurrency;
 
   const { data: plansData } = usePlans(defaultCurrency.toUpperCase());
 

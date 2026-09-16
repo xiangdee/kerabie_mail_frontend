@@ -84,15 +84,6 @@ export function ProfileView({
               <Mail className="h-3.5 w-3.5" />
               {user?.email}
             </p>
-            {user?.is_verified ? (
-              <Badge variant="outline" className="text-[10px] h-4 px-1.5 text-emerald-600 border-emerald-300">
-                Verified
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="text-[10px] h-4 px-1.5 text-amber-600 border-amber-300">
-                Unverified
-              </Badge>
-            )}
           </div>
           <Badge variant="secondary" className="mt-1 capitalize text-xs">
             {user?.plan_status ?? 'free'} plan
