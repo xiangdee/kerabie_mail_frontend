@@ -201,6 +201,11 @@ const PricingCard = ({
       >
         {isFree ? 'Start for free' : `Upgrade to ${name}`}
       </NavLink>
+      {isFree && (
+        <p className="mt-2.5 text-center text-[11.5px] text-muted-foreground">
+          Includes a free 3-day Pro trial — no card required.
+        </p>
+      )}
     </div>
   );
 };
