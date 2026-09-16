@@ -22,6 +22,7 @@ export default function PartnerApiPage() {
               ['Overview', 'overview'], ['Authentication', 'auth'], ['IP restrictions', 'ip'],
               ['Mailboxes', 'mailboxes'], ['Domains', 'domains'],
               ['White-labeling', 'white-labeling'], ['Pay-as-you-go', 'pay-as-you-go'],
+              ['Mailbox management', 'mailbox-management'],
               ['Add-ons', 'addons'],
               ['Stats', 'stats'], ['Webhooks', 'webhooks'], ['Errors', 'errors'],
             ].map(([l, id]) => (
@@ -489,6 +490,118 @@ export default function PartnerApiPage() {
 }`}</pre>
               </div>
             </EndpointBlock>
+          </section>
+
+          {/* Mailbox management */}
+          <section id="mailbox-management" className="scroll-mt-8">
+            <h2 className="text-2xl font-bold mb-4 pb-3 border-b">Mailbox management</h2>
+            <p className="text-muted-foreground mb-4">
+              The full toolset a client would get if they ever logged into Kerabie directly —
+              forwarding rules, aliases, signature/sender name, contacts, and campaigns — all
+              available on their behalf through your own systems, since there&apos;s no
+              end-customer self-service portal. Every endpoint below takes the mailbox&apos;s{' '}
+              <code className="bg-muted px-1 rounded text-xs">id</code> from Mailboxes above.
+            </p>
+
+            <h3 className="text-lg font-semibold mt-6 mb-3">Forwarding</h3>
+            <EndpointBlock method="GET" path="/v1/hosting/mailboxes/{id}/forwarding" desc="List forwarding rules on this mailbox." />
+            <EndpointBlock method="POST" path="/v1/hosting/mailboxes/{id}/forwarding" desc="Create a forwarding rule. Only one active rule per mailbox — delete the existing one first. The destination address gets a confirmation email; mail doesn't actually forward until they confirm it.">
+              <ParamTable rows={[
+                ['email', 'string', 'yes', 'The mailbox to forward from (must be this mailbox\'s address)'],
+                ['forward_to', 'string', 'yes', 'Destination email address'],
+                ['keep_copy', 'boolean', 'no', 'Keep a copy in the original mailbox too (default true)'],
+              ]} />
+            </EndpointBlock>
+            <EndpointBlock method="PATCH" path="/v1/hosting/mailboxes/{id}/forwarding/{rule_id}" desc="Pause or resume a rule without deleting it.">
+              <ParamTable rows={[['enabled', 'boolean', 'yes', 'Mail only actually forwards while enabled AND confirmed']]} />
+            </EndpointBlock>
+            <EndpointBlock method="DELETE" path="/v1/hosting/mailboxes/{id}/forwarding/{rule_id}" desc="Remove a forwarding rule." />
+
+            <h3 className="text-lg font-semibold mt-6 mb-3">Aliases</h3>
+            <EndpointBlock method="GET" path="/v1/hosting/mailboxes/{id}/aliases" desc="List aliases delivering to this mailbox. Paginated.">
+              <ParamTable rows={[['page', 'integer', 'no', 'Default 1'], ['page_size', 'integer', 'no', 'Default 20, max 100']]} />
+            </EndpointBlock>
+            <EndpointBlock method="POST" path="/v1/hosting/mailboxes/{id}/aliases" desc="Create an alias address that delivers to this mailbox.">
+              <ParamTable rows={[
+                ['mailbox', 'string', 'yes', 'This mailbox\'s address (the delivery target)'],
+                ['alias_address', 'string', 'yes', 'The new alias address'],
+              ]} />
+            </EndpointBlock>
+            <EndpointBlock method="DELETE" path="/v1/hosting/mailboxes/{id}/aliases/{alias_id}" desc="Remove an alias." />
+
+            <h3 className="text-lg font-semibold mt-6 mb-3">Signature &amp; sender name</h3>
+            <EndpointBlock method="PATCH" path="/v1/hosting/mailboxes/{id}/identity" desc="Update the mailbox's sender display name and/or HTML signature. Omit a field to leave it unchanged.">
+              <ParamTable rows={[
+                ['display_name', 'string', 'no', 'Name shown to recipients'],
+                ['signature_html', 'string', 'no', 'HTML signature appended to outgoing mail'],
+              ]} />
+            </EndpointBlock>
+
+            <h3 className="text-lg font-semibold mt-6 mb-3">Contacts</h3>
+            <p className="text-muted-foreground mb-4">
+              Requires the client&apos;s plan to include contacts (Pro and Premium both do) — 403s
+              otherwise. Contacts belong to the client&apos;s account as a whole, not a specific
+              mailbox.
+            </p>
+            <EndpointBlock method="GET" path="/v1/hosting/mailboxes/{id}/contacts" desc="List/search contacts.">
+              <ParamTable rows={[
+                ['group_id', 'integer', 'no', 'Filter to one group'],
+                ['q', 'string', 'no', 'Search email, name, or company'],
+              ]} />
+            </EndpointBlock>
+            <EndpointBlock method="POST" path="/v1/hosting/mailboxes/{id}/contacts" desc="Create a contact.">
+              <ParamTable rows={[
+                ['email', 'string', 'yes', ''],
+                ['name', 'string', 'no', ''],
+                ['phone', 'string', 'no', ''],
+                ['company', 'string', 'no', ''],
+                ['notes', 'string', 'no', ''],
+                ['group_id', 'integer', 'no', ''],
+              ]} />
+            </EndpointBlock>
+            <EndpointBlock method="PATCH" path="/v1/hosting/mailboxes/{id}/contacts/{contact_id}" desc="Update a contact. Same fields as create, all optional." />
+            <EndpointBlock method="DELETE" path="/v1/hosting/mailboxes/{id}/contacts/{contact_id}" desc="Delete a contact." />
+            <EndpointBlock method="GET" path="/v1/hosting/mailboxes/{id}/contacts/groups" desc="List contact groups." />
+            <EndpointBlock method="POST" path="/v1/hosting/mailboxes/{id}/contacts/groups" desc="Create a contact group.">
+              <ParamTable rows={[['name', 'string', 'yes', '']]} />
+            </EndpointBlock>
+            <EndpointBlock method="DELETE" path="/v1/hosting/mailboxes/{id}/contacts/groups/{group_id}" desc="Delete a contact group." />
+
+            <h3 className="text-lg font-semibold mt-6 mb-3">Campaigns</h3>
+            <p className="text-muted-foreground mb-4">
+              Requires the client&apos;s plan to include campaigns (Pro and Premium both do) —
+              403s otherwise. A campaign starts as a single-step send; add more steps to turn it
+              into a drip sequence.
+            </p>
+            <EndpointBlock method="GET" path="/v1/hosting/mailboxes/{id}/campaigns" desc="List campaigns." />
+            <EndpointBlock method="POST" path="/v1/hosting/mailboxes/{id}/campaigns" desc="Create a campaign (starts in draft status, with one step already set from subject/body_html).">
+              <ParamTable rows={[
+                ['from_email', 'string', 'yes', 'Must be this mailbox\'s address'],
+                ['name', 'string', 'yes', 'Internal campaign name'],
+                ['subject', 'string', 'yes', ''],
+                ['body_html', 'string', 'yes', ''],
+                ['group_id', 'integer', 'no', 'Send to one contact group'],
+                ['segment_filter', 'array', 'no', 'Or send to a filtered segment — see the dashboard for the filter shape'],
+              ]} />
+            </EndpointBlock>
+            <EndpointBlock method="GET" path="/v1/hosting/mailboxes/{id}/campaigns/{campaign_id}" desc="Get one campaign." />
+            <EndpointBlock method="PUT" path="/v1/hosting/mailboxes/{id}/campaigns/{campaign_id}" desc="Edit a draft campaign. 400s once it's left draft status." />
+            <EndpointBlock method="DELETE" path="/v1/hosting/mailboxes/{id}/campaigns/{campaign_id}" desc="Delete a campaign. 400s while it's actively sending or paused." />
+            <EndpointBlock method="GET" path="/v1/hosting/mailboxes/{id}/campaigns/{campaign_id}/steps" desc="List drip steps." />
+            <EndpointBlock method="POST" path="/v1/hosting/mailboxes/{id}/campaigns/{campaign_id}/steps" desc="Add a drip step to a draft campaign.">
+              <ParamTable rows={[
+                ['delay_hours', 'integer', 'no', 'Hours after the previous step (default 0)'],
+                ['subject', 'string', 'yes', ''],
+                ['subject_b', 'string', 'no', 'A/B variant subject'],
+                ['ab_split_percent', 'integer', 'no', '0-100, default 50'],
+                ['body_html', 'string', 'yes', ''],
+              ]} />
+            </EndpointBlock>
+            <EndpointBlock method="DELETE" path="/v1/hosting/mailboxes/{id}/campaigns/{campaign_id}/steps/{step_id}" desc="Remove a drip step. Step 0 can't be deleted — edit the campaign's subject/body instead." />
+            <EndpointBlock method="POST" path="/v1/hosting/mailboxes/{id}/campaigns/{campaign_id}/send" desc="Start sending a draft campaign. 429s if the recipient count exceeds today's remaining send quota on this mailbox." />
+            <EndpointBlock method="POST" path="/v1/hosting/mailboxes/{id}/campaigns/{campaign_id}/pause" desc="Pause a campaign that's currently sending." />
+            <EndpointBlock method="POST" path="/v1/hosting/mailboxes/{id}/campaigns/{campaign_id}/resume" desc="Resume a paused campaign." />
+            <EndpointBlock method="GET" path="/v1/hosting/mailboxes/{id}/campaigns/{campaign_id}/stats" desc="Send stats: total, sent, suppressed, opened, clicked, bounced." />
           </section>
 
           {/* Add-ons */}
