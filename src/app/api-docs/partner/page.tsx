@@ -432,6 +432,63 @@ export default function PartnerApiPage() {
               the account and removes the mailbox/slot; the account&apos;s data (subscription, mail, forwarding
               rules) is left intact in case it needs to be looked up later.
             </p>
+
+            <h3 className="text-lg font-semibold mt-6 mb-3">6. Manage a client&apos;s subscription</h3>
+            <p className="text-muted-foreground mb-4">
+              Once a pay-as-you-go mailbox is active, you can check its billing status, cancel it,
+              move the client to a different plan tier, or sell them an add-on — all without them
+              ever needing to log in anywhere themselves. These only work for{' '}
+              <code className="bg-muted px-1 rounded text-xs">is_pay_as_you_go: true</code> mailboxes;
+              calling any of them on a slot-funded mailbox returns <code className="bg-muted px-1 rounded text-xs">400</code>{' '}
+              — manage those with <code className="bg-muted px-1 rounded text-xs">renew</code>/<code className="bg-muted px-1 rounded text-xs">DELETE</code> instead.
+            </p>
+
+            <EndpointBlock method="GET" path="/v1/hosting/mailboxes/{id}/subscription" desc="Live billing status for one mailbox's underlying subscription — plan, price, current period, next renewal date, auto_renew.">
+              <div className="border-t px-4 pt-3 pb-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Response 200</p>
+                <pre className="bg-muted rounded-xl p-4 text-sm font-mono overflow-x-auto">{`{
+  "mailbox_id": 8,
+  "plan_type": "premium",
+  "billing_cycle": "monthly",
+  "status": "active",
+  "currency": "usd",
+  "total_price": 6.0,
+  "current_period_start": "2026-09-05",
+  "current_period_end": "2026-10-05",
+  "next_billing_date": "2026-10-05",
+  "auto_renew": true,
+  "payment_provider": "bachs"
+}`}</pre>
+              </div>
+            </EndpointBlock>
+
+            <EndpointBlock method="POST" path="/v1/hosting/mailboxes/{id}/cancel-subscription" desc="Stop future charges for this client — at the end of the current period by default, or immediately. Doesn't delete the mailbox itself; call DELETE /mailboxes/{id} separately if you want that too.">
+              <ParamTable rows={[
+                ['immediate', 'boolean', 'no', 'Cancel right away instead of at period end (default false)'],
+              ]} />
+            </EndpointBlock>
+
+            <EndpointBlock method="POST" path="/v1/hosting/mailboxes/{id}/upgrade" desc="Move the client to a different plan tier (pro <-> premium), billed at YOUR retail price for that tier — never Kerabie's standard price. Requires a retail price already set for the target plan/currency (step 1) or this 400s.">
+              <ParamTable rows={[
+                ['new_plan_type', 'string', 'yes', '"pro" or "premium" — must differ from the mailbox\'s current plan'],
+              ]} />
+            </EndpointBlock>
+
+            <EndpointBlock method="POST" path="/v1/hosting/mailboxes/{id}/addons/purchase" desc="Sell the client an extra mailbox or extra storage add-on, at Kerabie's standard add-on price (add-ons sit outside your retail pricing). Returns a checkout URL for the client to pay — same pattern as step 2's mailbox checkout.">
+              <ParamTable rows={[
+                ['type', 'string', 'yes', '"extra_mailbox" or "extra_storage"'],
+                ['quantity', 'integer', 'no', 'Default 1'],
+                ['return_url', 'string', 'yes', 'Where the client\'s checkout redirects after payment'],
+              ]} />
+              <div className="border-t px-4 pt-3 pb-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Response 200</p>
+                <pre className="bg-muted rounded-xl p-4 text-sm font-mono overflow-x-auto">{`{
+  "payment_method_id": 91,
+  "checkout_url": "https://checkout.bachs.io/c/9fK2mQwLp0aXcRt",
+  "status": "pending_payment"
+}`}</pre>
+              </div>
+            </EndpointBlock>
           </section>
 
           {/* Add-ons */}
