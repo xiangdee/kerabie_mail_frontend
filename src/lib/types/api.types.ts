@@ -16,6 +16,10 @@ export interface User {
   phone_verified?: boolean;
   avatar_url?: string;
   created_at: string;
+  // True when this mailbox was auto-provisioned by a Hosting Partner for
+  // their own client (see app.routes.partner.provision_mailbox on the
+  // backend) — billing is managed by the partner, not self-service here.
+  is_hosting_partner_managed?: boolean;
 }
 
 export interface AuthTokens {

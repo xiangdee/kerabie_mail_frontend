@@ -30,6 +30,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -201,6 +202,26 @@ function BillingPageInner() {
 
   const mailboxAddon = plansData?.addons?.find(a => a.type === 'extra_mailbox');
   const storageAddon = plansData?.addons?.find(a => a.type === 'extra_storage');
+
+  // A Hosting Partner's auto-provisioned client — billing (plan, cancel,
+  // add-ons) is managed by the partner on their behalf, not self-service
+  // here (the backend's require_primary_mailbox 403s these actions anyway).
+  // Usage is still their own, so that stays visible below.
+  if (user?.is_hosting_partner_managed) {
+    return (
+      <div className="space-y-6">
+        <Card className="p-5">
+          <h2 className="text-lg font-semibold mb-2">Billing is managed by your provider</h2>
+          <p className="text-sm text-muted-foreground">
+            This mailbox was set up by your hosting provider, so your plan, billing, and add-ons
+            are managed through them, not here. Contact your hosting provider to make changes to
+            your subscription.
+          </p>
+        </Card>
+        <UsageSummaryView usage={usage} isLoading={usageLoading} />
+      </div>
+    );
+  }
 
   return (
     <>
