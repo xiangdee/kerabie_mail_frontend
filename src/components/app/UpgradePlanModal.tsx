@@ -53,12 +53,17 @@ export default function UpgradePlanModal({
 
   const { data: subscription } = useSubscription(token);
   // Falls back to the visitor's detected preferred_currency (see
-  // useCurrency/CurrencyDetector) rather than hardcoding USD for anyone
-  // without an active subscription yet — same fix as the billing page.
+  // useCurrency/CurrencyDetector) rather than a real subscription's own
+  // currency for anyone without one yet, OR still on the free trial — a
+  // trial's currency is just whatever registration-time IP geolocation
+  // guessed (see get_or_create_user), never actually billed, so it
+  // shouldn't permanently override a visitor's real detected currency.
+  // Same fix as the billing page.
   const { currency: detectedCurrency } = useCurrency();
+  const hasBillingHistoryCurrency = subscription && subscription.status !== 'trial';
   const defaultCurrency: 'ngn' | 'usd' =
-    subscription?.currency?.toLowerCase() === 'ngn' ? 'ngn'
-    : subscription?.currency?.toLowerCase() === 'usd' ? 'usd'
+    hasBillingHistoryCurrency && subscription!.currency?.toLowerCase() === 'ngn' ? 'ngn'
+    : hasBillingHistoryCurrency && subscription!.currency?.toLowerCase() === 'usd' ? 'usd'
     : detectedCurrency;
   const { data: plansData, isLoading: plansLoading } = usePlans(defaultCurrency.toUpperCase());
 

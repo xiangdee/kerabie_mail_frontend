@@ -91,16 +91,21 @@ function BillingPageInner() {
 
   // `User` has no `currency` field (see api.types.ts) — this used to read
   // `user.currency`, which was always undefined, so every upgrade
-  // unconditionally defaulted to NGN regardless of the visitor. An existing
-  // subscriber upgrades in the currency they're already billed in; anyone
-  // without a subscription yet (free/no-sub) falls back to their detected
-  // preferred_currency (see useCurrency/CurrencyDetector) instead of a
-  // hardcoded USD — confirmed live: an NGN visitor with no subscription yet
-  // saw USD here regardless of their IP-detected currency.
+  // unconditionally defaulted to NGN regardless of the visitor. A real,
+  // ever-billed subscriber upgrades in the currency they're already billed
+  // in; everyone else — no subscription yet, OR still on the free 3-day
+  // trial (a Subscription row exists but nothing has ever actually been
+  // charged, so its currency is just whatever the registration-time IP
+  // lookup guessed, see get_or_create_user) — falls back to the visitor's
+  // detected preferred_currency instead. Confirmed live: registration-time
+  // IP geolocation resolved a Nigerian visitor to a different country
+  // (VPN/proxy), producing a USD trial that then permanently overrode their
+  // real NGN preference here even after this file's first currency fix.
   const { currency: detectedCurrency } = useCurrency();
+  const hasBillingHistoryCurrency = subscription && subscription.status !== 'trial';
   const defaultCurrency: 'ngn' | 'usd' =
-    subscription?.currency?.toLowerCase() === 'ngn' ? 'ngn'
-    : subscription?.currency?.toLowerCase() === 'usd' ? 'usd'
+    hasBillingHistoryCurrency && subscription!.currency?.toLowerCase() === 'ngn' ? 'ngn'
+    : hasBillingHistoryCurrency && subscription!.currency?.toLowerCase() === 'usd' ? 'usd'
     : detectedCurrency;
 
   const { data: plansData } = usePlans(defaultCurrency.toUpperCase());
