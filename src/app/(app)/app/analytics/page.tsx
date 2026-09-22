@@ -2,12 +2,68 @@
 import { useState } from 'react';
 import { useAuth } from '@/lib/context/auth.context';
 import { useMailboxes } from '@/lib/hooks/useMailboxes';
-import { useMailAnalytics } from '@/lib/hooks/useMailAnalytics';
+import { useMailAnalytics, useMailActivity, type MailActivityEvent } from '@/lib/hooks/useMailAnalytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Table2 } from 'lucide-react';
+import { Sparkles, Table2, Download, Send, XCircle, Eye, MousePointerClick, AlertTriangle, Flag, UserMinus } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { apiLink } from '@/lib/constants/links';
+
+const EVENT_META: Record<MailActivityEvent['type'], { icon: typeof Send; label: string; color: string }> = {
+  sent: { icon: Send, label: 'Sent', color: 'text-muted-foreground' },
+  failed: { icon: XCircle, label: 'Failed', color: 'text-destructive' },
+  opened: { icon: Eye, label: 'Opened', color: 'text-[#1c6b47]' },
+  clicked: { icon: MousePointerClick, label: 'Clicked', color: 'text-[#1c6b47]' },
+  bounced: { icon: AlertTriangle, label: 'Bounced', color: 'text-amber-600' },
+  complained: { icon: Flag, label: 'Complained', color: 'text-destructive' },
+  unsubscribed: { icon: UserMinus, label: 'Unsubscribed', color: 'text-amber-600' },
+};
+
+// Polled (useMailActivity's 8s refetchInterval), not socket-pushed -- see
+// that hook's own comment for why this is the right tradeoff here.
+function ActivityFeed({ events, isLoading }: { events: MailActivityEvent[] | undefined; isLoading: boolean }) {
+  if (isLoading) return <Skeleton className="h-48" />;
+  const rows = events ?? [];
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <div>
+          <CardTitle className="text-base flex items-center gap-2">
+            Live activity
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1c6b47] opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1c6b47]" />
+            </span>
+          </CardTitle>
+          <CardDescription>Sends, opens, and clicks as they happen</CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {rows.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-8 text-center">No activity in the last 7 days.</p>
+        ) : (
+          <div className="max-h-72 overflow-y-auto space-y-1">
+            {rows.map((e, i) => {
+              const meta = EVENT_META[e.type];
+              const Icon = meta.icon;
+              return (
+                <div key={`${e.scheduled_id}-${e.type}-${i}`} className="flex items-center gap-3 text-sm py-1.5">
+                  <Icon className={`h-4 w-4 shrink-0 ${meta.color}`} />
+                  <span className={`font-medium shrink-0 ${meta.color}`}>{meta.label}</span>
+                  <span className="truncate flex-1" title={e.subject}>{e.subject || '(no subject)'}</span>
+                  <span className="text-muted-foreground truncate max-w-[160px] shrink-0" title={e.to.join(', ')}>{e.to[0] ?? ''}</span>
+                  <span className="text-muted-foreground text-xs shrink-0 w-20 text-right">{formatDistanceToNow(new Date(e.at), { addSuffix: true })}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 // Single-hue, single-series chart (opens per day is one series: count) --
 // reuses the app's own primary/console-accent brand color rather than an
@@ -100,6 +156,18 @@ export default function AnalyticsPage() {
 
   const { data: result, isLoading } = useMailAnalytics(token, activeEmail, days);
   const analytics = result?.data;
+  const { data: activityEvents, isLoading: isLoadingActivity } = useMailActivity(token, activeEmail);
+
+  // Auth here is the httpOnly session cookie (CustomAxiosRequest.ts's
+  // withCredentials), not the bearer token, so a plain new-tab navigation
+  // carries it same as any other authenticated request — no need to fetch
+  // a blob in JS just to attach an Authorization header. The backend's
+  // Content-Disposition: attachment header handles the actual save-as.
+  const handleExport = () => {
+    if (!activeEmail) return;
+    const url = `${apiLink}/mail/analytics/export?email=${encodeURIComponent(activeEmail)}&days=${days}`;
+    window.open(url, '_blank');
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -125,8 +193,13 @@ export default function AnalyticsPage() {
               ))}
             </SelectContent>
           </Select>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={!activeEmail || !analytics}>
+            <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSV
+          </Button>
         </div>
       </div>
+
+      {activeEmail && <ActivityFeed events={activityEvents} isLoading={isLoadingActivity} />}
 
       {isLoading ? (
         <div className="grid gap-4 md:grid-cols-3">

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { customAxiosGet, customAxiosPost, customAxiosDelete, customAxiosRequest } from '@/lib/utils/CustomAxiosRequest';
 import { apiLink } from '@/lib/constants/links';
 import type {
-  Campaign, CampaignStep, CampaignStats, CampaignAnalytics, CampaignsSummary, SegmentCondition,
+  Campaign, CampaignStep, CampaignStats, CampaignAnalytics, CampaignsSummary, ContactEngagement, SegmentCondition,
 } from '@/lib/types/api.types';
 
 const base = apiLink;
@@ -28,6 +28,16 @@ export function useCampaignsSummary(token: string | null, days = 30) {
     queryFn: async () => {
       const res = await customAxiosGet(`${base}/campaigns/stats/summary`, { days }, token ?? undefined);
       return res.status === true ? (res.response as CampaignsSummary) : null;
+    },
+  });
+}
+
+export function useContactEngagement(token: string | null) {
+  return useQuery({
+    queryKey: ['contact-engagement', token],
+    queryFn: async () => {
+      const res = await customAxiosGet(`${base}/campaigns/contacts/engagement`, undefined, token ?? undefined);
+      return res.status === true ? (res.response as ContactEngagement[]) : ([] as ContactEngagement[]);
     },
   });
 }

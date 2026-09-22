@@ -270,6 +270,18 @@ export interface CampaignsSummary {
   daily: CampaignDailyPoint[];
 }
 
+export interface ContactEngagement {
+  contact_id: number;
+  email: string;
+  name: string | null;
+  sent: number;
+  opened: number;
+  clicked: number;
+  open_rate: number;
+  last_engaged_at: string | null;
+  tier: 'engaged' | 'at_risk' | 'new';
+}
+
 export interface CampaignStep {
   id: number;
   step_order: number;

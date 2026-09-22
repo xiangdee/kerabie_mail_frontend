@@ -234,6 +234,11 @@ export default function CampaignsListView({ campaigns, isLoading, summary, isLoa
           </div>
         </div>
         <div className="flex-1" />
+        <Link href="/app/campaigns/engagement">
+          <button type="button" className="border border-console-border bg-white h-9 px-4 text-[13px] text-console-ink hover:border-console-accent hover:text-console-accent transition-colors">
+            List health
+          </button>
+        </Link>
         <div className="flex items-center gap-2 border border-console-border h-9 px-3 bg-white">
           <Search className="h-3.5 w-3.5 text-console-muted2" />
           <input
