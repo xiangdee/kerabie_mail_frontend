@@ -420,26 +420,31 @@ export interface WebhookDelivery {
 }
 
 // ── Partner ───────────────────────────────────────────────────────────────────
+export type LapseAction = 'suspend' | 'downgrade_free';
+
 export interface Partner {
   id: number;
   user_id: number;
   referral_code: string;
-  status: 'pending' | 'approved' | 'suspended';
+  status: 'pending' | 'active' | 'suspended' | 'rejected';
   commission_rate: number;
   total_referrals: number;
   total_earnings_usd: number;
   payout_method?: string;
   payout_details?: Record<string, string>;
-  hosting_status: 'none' | 'trial' | 'active';
+  hosting_status: 'none' | 'trial' | 'active' | 'expired' | 'suspended';
   trial_expires_at?: string;
+  wholesale_discount_pct?: number;
+  default_client_lapse_action?: LapseAction;
 }
 
 export interface HostingMailbox {
   id: number;
+  client_id: number | null;
   email_address: string;
   domain: string;
   display_name?: string;
-  status: 'trial' | 'active' | 'suspended' | 'expired';
+  status: 'trial' | 'active' | 'suspended' | 'expired' | 'pending_payment';
   is_trial: boolean;
   trial_expires_at?: string;
   monthly_rate_usd: number;
@@ -447,6 +452,38 @@ export interface HostingMailbox {
   mailu_provisioned: boolean;
   is_no_reply?: boolean;
   created_at: string;
+}
+
+export interface PartnerClient {
+  id: number;
+  name: string;
+  lapse_action_override: LapseAction | null;
+  domain_count: number;
+  mailbox_count: number;
+  created_at: string;
+}
+
+export interface PartnerDomain {
+  id: number;
+  client_id: number | null;
+  domain_name: string;
+  status: 'pending' | 'verified' | 'failed';
+  is_verified: boolean;
+  mailu_added: boolean;
+  no_reply_domain: boolean;
+  claimed_at: string;
+  verified_at?: string | null;
+  last_checked_at?: string | null;
+}
+
+export interface HostingPlan {
+  plan_id: string;
+  name: string;
+  retail_usd: number;
+  retail_ngn: number;
+  wholesale_usd: number;
+  wholesale_ngn: number;
+  discount_pct: number;
 }
 
 // ── AI Compose ────────────────────────────────────────────────────────────────

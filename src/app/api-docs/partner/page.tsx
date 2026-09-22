@@ -20,7 +20,8 @@ export default function PartnerApiPage() {
           <div className="sticky top-8 space-y-1 text-sm">
             {[
               ['Overview', 'overview'], ['Authentication', 'auth'], ['IP restrictions', 'ip'],
-              ['Mailboxes', 'mailboxes'], ['Domains', 'domains'],
+              ['Mailboxes', 'mailboxes'], ['Domains', 'domains'], ['Clients', 'clients'],
+              ['Settings', 'settings'],
               ['White-labeling', 'white-labeling'], ['Pay-as-you-go', 'pay-as-you-go'],
               ['Mailbox management', 'mailbox-management'],
               ['Add-ons', 'addons'],
@@ -82,6 +83,7 @@ export default function PartnerApiPage() {
                     ['partner:addons:read', 'Read add-on pricing and purchase status'],
                     ['partner:addons:write', 'Purchase domain-slot and storage add-ons'],
                     ['partner:stats:read', 'Read aggregate stats and account summary'],
+                    ['partner:settings:write', 'Change account-wide settings (e.g. the default client lapse policy)'],
                   ].map(([s, d]) => (
                     <tr key={s}><td className="p-3 font-mono text-xs text-foreground">{s}</td><td className="p-3">{d}</td></tr>
                   ))}
@@ -171,7 +173,10 @@ export default function PartnerApiPage() {
             </p>
 
             <EndpointBlock method="POST" path="/v1/hosting/domains" desc="Claim a client domain. Returns the DNS records to configure — the domain isn't usable until it's verified.">
-              <ParamTable rows={[['domain_name', 'string', 'yes', 'Domain name (e.g. yourclientdomain.com)']]} />
+              <ParamTable rows={[
+                ['domain_name', 'string', 'yes', 'Domain name (e.g. yourclientdomain.com)'],
+                ['client_id', 'integer', 'no', 'Attach to an existing client (see Clients below) — omit to auto-create a new one named after the domain'],
+              ]} />
               <div className="border-t px-4 pt-3 pb-4">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Response 201</p>
                 <pre className="bg-muted rounded-xl p-4 text-sm font-mono overflow-x-auto">{`{
@@ -267,6 +272,70 @@ export default function PartnerApiPage() {
             </EndpointBlock>
 
             <EndpointBlock method="DELETE" path="/v1/hosting/domains/{id}" desc="Remove a domain. Fails with 409 if any mailboxes still use it — delete those first." />
+          </section>
+
+          {/* Clients */}
+          <section id="clients" className="scroll-mt-8">
+            <h2 className="text-2xl font-bold mb-4 pb-3 border-b">Clients</h2>
+            <p className="text-muted-foreground mb-6">
+              A client is your real-world customer — the entity a domain (and, through it, every
+              mailbox provisioned on that domain) belongs to. One client can own several domains.
+              Every domain is attached to exactly one client; adding a domain without a{' '}
+              <code className="bg-muted px-1 rounded text-xs">client_id</code> auto-creates a new
+              single-domain client named after it, so you never have to think about this if you don&apos;t
+              need the grouping. Each client also carries its own optional{' '}
+              <code className="bg-muted px-1 rounded text-xs">lapse_action_override</code>, which takes
+              priority over your account-wide default (see <a href="#settings" className="text-primary hover:underline">Settings</a> below)
+              for what happens when one of that client&apos;s mailboxes lapses.
+            </p>
+
+            <EndpointBlock method="GET" path="/v1/hosting/clients" desc="List your clients, each with its domain/mailbox counts and resolved lapse override." />
+
+            <EndpointBlock method="POST" path="/v1/hosting/clients" desc="Create a client.">
+              <ParamTable rows={[['name', 'string', 'yes', 'Display name, e.g. "Acme Corp"']]} />
+              <div className="border-t px-4 pt-3 pb-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Response 201</p>
+                <pre className="bg-muted rounded-xl p-4 text-sm font-mono overflow-x-auto">{`{
+  "id": 7,
+  "name": "Acme Corp",
+  "lapse_action_override": null,
+  "domain_count": 0,
+  "mailbox_count": 0,
+  "created_at": "2026-09-22T10:00:00Z"
+}`}</pre>
+              </div>
+            </EndpointBlock>
+
+            <EndpointBlock method="PATCH" path="/v1/hosting/clients/{id}" desc="Rename a client and/or set its lapse policy override.">
+              <ParamTable rows={[
+                ['name', 'string', 'no', 'New display name'],
+                ['lapse_action_override', 'string', 'no', '"suspend" | "downgrade_free" | null — null clears the override, falling back to your account default'],
+              ]} />
+            </EndpointBlock>
+
+            <EndpointBlock method="DELETE" path="/v1/hosting/clients/{id}" desc="Remove a client. Fails with 409 if any domains still belong to it — reassign or delete those first." />
+          </section>
+
+          {/* Settings */}
+          <section id="settings" className="scroll-mt-8">
+            <h2 className="text-2xl font-bold mb-4 pb-3 border-b">Settings</h2>
+            <p className="text-muted-foreground mb-6">
+              Account-wide hosting settings. Today this is just the default lapse policy — what
+              happens to a client&apos;s mailbox when its trial/prepaid term ends, or a pay-as-you-go
+              payment fails: <code className="bg-muted px-1 rounded text-xs">suspend</code> locks it
+              out entirely (the only behavior before this setting existed), while{' '}
+              <code className="bg-muted px-1 rounded text-xs">downgrade_free</code> keeps it reachable
+              on the Free plan instead. A client&apos;s own <code className="bg-muted px-1 rounded text-xs">lapse_action_override</code> (see{' '}
+              <a href="#clients" className="text-primary hover:underline">Clients</a> above) takes priority over this default.
+            </p>
+
+            <EndpointBlock method="PATCH" path="/v1/hosting/settings" desc="Set your account-wide default lapse policy.">
+              <ParamTable rows={[['default_client_lapse_action', 'string', 'yes', '"suspend" or "downgrade_free"']]} />
+              <div className="border-t px-4 pt-3 pb-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Request</p>
+                <pre className="bg-muted rounded-xl p-4 text-sm font-mono overflow-x-auto">{`{ "default_client_lapse_action": "downgrade_free" }`}</pre>
+              </div>
+            </EndpointBlock>
           </section>
 
           {/* White-labeling */}
