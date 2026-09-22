@@ -101,3 +101,15 @@ export function useRetryWebhookDelivery(token: string | null) {
     onSuccess: (_res, { endpointId }) => qc.invalidateQueries({ queryKey: ['webhook-deliveries', endpointId] }),
   });
 }
+
+// Unlike retry (dead/failed only, reuses the same row), replay works on any
+// delivery and creates a new row pointing back at the original via
+// replayed_from_id -- see app/routes/webhooks_user.py's replay_delivery.
+export function useReplayWebhookDelivery(token: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ endpointId, deliveryId }: { endpointId: number; deliveryId: number }) =>
+      customAxiosPost(`${base}/webhooks/${endpointId}/deliveries/${deliveryId}/replay`, {}, '', token ?? ''),
+    onSuccess: (_res, { endpointId }) => qc.invalidateQueries({ queryKey: ['webhook-deliveries', endpointId] }),
+  });
+}

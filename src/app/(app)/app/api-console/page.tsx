@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -82,6 +83,7 @@ function SendTestTab() {
     ? extractTemplateVariables(selectedTemplate.subject, selectedTemplate.body_html).filter((n) => n !== 'unsubscribe_url')
     : [];
 
+  const [sandbox, setSandbox] = useState(false);
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<ApiResponse | null>(null);
 
@@ -100,8 +102,8 @@ function SendTestTab() {
 
   const requestBody =
     mode === 'template'
-      ? { from_email: from || 'you@domain.com', to: [to || 'recipient@example.com'], template_id: templateId ? Number(templateId) : 0, variables }
-      : { from_email: from || 'you@domain.com', to: [to || 'recipient@example.com'], subject, body_html: body };
+      ? { from_email: from || 'you@domain.com', to: [to || 'recipient@example.com'], template_id: templateId ? Number(templateId) : 0, variables, sandbox }
+      : { from_email: from || 'you@domain.com', to: [to || 'recipient@example.com'], subject, body_html: body, sandbox };
 
   const handleSend = async () => {
     if (!from || !to) return;
@@ -119,15 +121,15 @@ function SendTestTab() {
         },
         body: JSON.stringify(
           mode === 'template'
-            ? { from_email: from, to: [to], template_id: Number(templateId), variables }
-            : { from_email: from, to: [to], subject, body_html: body },
+            ? { from_email: from, to: [to], template_id: Number(templateId), variables, sandbox }
+            : { from_email: from, to: [to], subject, body_html: body, sandbox },
         ),
       });
 
       const text = await res.text();
       setResponse({ status: res.status, body: text, durationMs: Date.now() - start });
 
-      if (res.ok) success('Email sent', { description: `Delivered to ${to}` });
+      if (res.ok) success(sandbox ? 'Sandbox send complete' : 'Email sent', { description: sandbox ? 'Validated and simulated — nothing was actually delivered.' : `Delivered to ${to}` });
       else toastError('Send failed', { description: `HTTP ${res.status}` });
     } catch (e: any) {
       setResponse({ status: 0, body: e.message, durationMs: Date.now() - start });
@@ -248,6 +250,16 @@ function SendTestTab() {
               </div>
             </>
           )}
+
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="sandbox-toggle">Sandbox mode</Label>
+              <p className="text-xs text-muted-foreground">
+                Runs the full pipeline (validation, tracking, webhooks) but skips real delivery — doesn&apos;t count against your send quota.
+              </p>
+            </div>
+            <Switch id="sandbox-toggle" checked={sandbox} onCheckedChange={setSandbox} />
+          </div>
 
           <Button
             onClick={handleSend}

@@ -273,6 +273,7 @@ function SendSection() {
           ['scheduled_at','string','no','ISO 8601 datetime (future, UTC) — queues instead of sending immediately'],
           ['unsend_window','integer','no','Seconds to hold before dispatch (max 30), for an "undo send" window'],
           ['attachments','object[]','no','Array of {filename, content_base64, content_type}. Total size capped by the sender’s plan'],
+          ['sandbox','boolean','no','Runs the full pipeline (validation, quota checks skipped, tracking, webhooks) without an actual SMTP delivery — for integration testing. Doesn’t count against your daily/hourly quota, and is tagged "sandbox": true on any webhook events it triggers. Not supported together with scheduled_at.'],
         ]} />
         <div className="border-t px-4 pt-3 pb-1">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Request — inline content</p>

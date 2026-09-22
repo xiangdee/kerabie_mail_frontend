@@ -5,6 +5,7 @@ import { useDomains, useAddDomain, useDeleteDomain, useVerifyDomain, useSendDnsI
 import { useAppToast } from '@/components/ui/app-toast';
 import { ConfirmDialog } from '@/components/ui/app-toast';
 import { DomainsView } from '@/components/app/settings/DomainsView';
+import TrackingDomainCard from '@/components/app/settings/TrackingDomainCard';
 
 export default function DomainsPage() {
   const { token } = useAuth();
@@ -109,6 +110,7 @@ export default function DomainsPage() {
         onToggleNoReply={handleToggleNoReply}
         togglingNoReplyId={togglingNoReplyId}
       />
+      <TrackingDomainCard />
       <ConfirmDialog
         open={confirmDeleteId != null}
         title="Remove domain?"

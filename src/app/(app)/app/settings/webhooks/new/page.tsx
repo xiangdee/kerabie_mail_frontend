@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 const MONO = "font-[family-name:var(--font-plex-mono)]";
 const DISPLAY = "font-[family-name:var(--font-barlow-condensed)]";
 
-const FALLBACK_EVENTS = ['email.received', 'email.sent', 'email.failed', 'email.opened', 'email.bounced', 'email.spam_reported', 'email.forwarded', 'mailbox.created', 'mailbox.deleted', 'mailbox.quota_reached', 'domain.verified', 'domain.verification_failed'];
+const FALLBACK_EVENTS = ['email.received', 'email.sent', 'email.failed', 'email.opened', 'email.clicked', 'email.bounced', 'email.spam_reported', 'email.forwarded', 'mailbox.created', 'mailbox.deleted', 'mailbox.quota_reached', 'domain.verified', 'domain.verification_failed'];
 
 export default function NewWebhookPage() {
   const router = useRouter();

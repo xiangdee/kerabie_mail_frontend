@@ -6,13 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Trash2, Webhook, Loader2, Shield, Activity, RefreshCw, Send, RotateCw } from 'lucide-react';
+import { Trash2, Webhook, Loader2, Shield, Activity, RefreshCw, Send, RotateCw, Repeat } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { PlusCorners } from '@/components/app/console/PlusCorners';
 import { useAuth } from '@/lib/context/auth.context';
 import { useAppToast } from '@/components/ui/app-toast';
-import { useWebhookDeliveries, useRetryWebhookDelivery, useRotateWebhookSecret, useTestWebhook } from '@/lib/hooks/useWebhooks';
+import { useWebhookDeliveries, useRetryWebhookDelivery, useReplayWebhookDelivery, useRotateWebhookSecret, useTestWebhook } from '@/lib/hooks/useWebhooks';
 import { RevealSecretBanner, IpListEditor } from './ApiKeysView';
 import type { WebhookEndpoint, WebhookDelivery } from '@/lib/types/api.types';
 
@@ -197,12 +197,23 @@ function DeliveriesDialog({ webhook, onClose }: { webhook: WebhookEndpoint; onCl
   const { success, error: toastError } = useAppToast();
   const { data: deliveries = [], isLoading } = useWebhookDeliveries(token, webhook.id);
   const retry = useRetryWebhookDelivery(token);
+  const replay = useReplayWebhookDelivery(token);
   const test = useTestWebhook(token);
 
   const handleRetry = async (d: WebhookDelivery) => {
     const res = await retry.mutateAsync({ endpointId: webhook.id, deliveryId: d.id });
     if (res.status === true) success('Delivery re-queued');
     else toastError('Failed to retry delivery', { description: res.response?.detail });
+  };
+
+  // Unlike retry (only for dead/failed, reuses the same row), replay works
+  // regardless of status and creates a new delivery row — for re-sending
+  // something that already succeeded (e.g. a newly added consumer needs to
+  // backfill) without touching the original's own attempt history.
+  const handleReplay = async (d: WebhookDelivery) => {
+    const res = await replay.mutateAsync({ endpointId: webhook.id, deliveryId: d.id });
+    if (res.status === true) success('Delivery replayed');
+    else toastError('Failed to replay delivery', { description: res.response?.detail });
   };
 
   const handleTest = async () => {
@@ -239,13 +250,19 @@ function DeliveriesDialog({ webhook, onClose }: { webhook: WebhookEndpoint; onCl
                     {d.attempts} attempt{d.attempts === 1 ? '' : 's'}
                     {d.response_status != null && ` · HTTP ${d.response_status}`}
                     {' · '}{format(new Date(d.created_at), 'PPp')}
+                    {d.replayed_from_id != null && ` · ↳ replay of #${d.replayed_from_id}`}
                   </p>
                 </div>
-                {(d.status === 'dead' || d.status === 'failed') && (
-                  <Button variant="outline" size="sm" onClick={() => handleRetry(d)} disabled={retry.isPending}>
-                    <RefreshCw className="h-3 w-3 mr-1.5" /> Retry
+                <div className="flex items-center gap-2 shrink-0">
+                  {(d.status === 'dead' || d.status === 'failed') && (
+                    <Button variant="outline" size="sm" onClick={() => handleRetry(d)} disabled={retry.isPending}>
+                      <RefreshCw className="h-3 w-3 mr-1.5" /> Retry
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" onClick={() => handleReplay(d)} disabled={replay.isPending}>
+                    <Repeat className="h-3 w-3 mr-1.5" /> Replay
                   </Button>
-                )}
+                </div>
               </div>
             ))}
           </div>

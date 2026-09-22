@@ -172,6 +172,20 @@ export default function WebhooksDocsPage() {
                   for one fresh attempt — resets its attempt count. 400 if the delivery isn&apos;t currently dead/failed.
                 </div>
               </div>
+
+              <div className="border rounded-xl overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-3 bg-muted/50 border-b">
+                  <span className="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-700">POST</span>
+                  <code className="text-sm font-mono">/webhooks/{'{id}'}/deliveries/{'{delivery_id}'}/replay</code>
+                </div>
+                <div className="px-4 py-3 text-sm text-muted-foreground">
+                  Re-sends any delivery regardless of status — unlike <code className="bg-muted px-1 rounded text-xs">retry</code>,
+                  which only works on dead/failed deliveries and overwrites that same row, this creates a brand-new delivery
+                  (with its own id, pointing back at the original via <code className="bg-muted px-1 rounded text-xs">replayed_from_id</code>)
+                  so the original attempt&apos;s history is never lost. Useful for backfilling a newly added endpoint, or
+                  just re-confirming your receiving side handles an event correctly.
+                </div>
+              </div>
             </div>
           </section>
 
@@ -190,6 +204,7 @@ export default function WebhooksDocsPage() {
                     ['email.sent','An email is successfully sent'],
                     ['email.failed','Sending fails permanently (all retries exhausted)'],
                     ['email.opened','A tracked email is opened by the recipient'],
+                    ['email.clicked','A tracked link inside a sent email is clicked (fires per click, not deduped)'],
                     ['email.bounced','A sent email hard-bounces'],
                     ['email.spam_reported','Recipient marks the email as spam'],
                     ['email.forwarded','A forwarding rule delivers an email to another address'],
@@ -253,6 +268,14 @@ export default function WebhooksDocsPage() {
   "opened_at": "2026-05-17T11:30:00Z",
   "location_country": "NG",
   "client": "Apple Mail / macOS"
+}`}</pre>
+
+            <h3 className="text-lg font-semibold mt-8 mb-3">email.clicked data</h3>
+            <p className="text-muted-foreground mb-3 text-sm">Fires once per click — a message with several tracked links clicked fires this once per click, not once per message.</p>
+            <pre className="bg-muted rounded-xl p-4 text-sm font-mono overflow-x-auto">{`{
+  "message_id": "<abc123@kerabie.email>",
+  "url": "https://yourdomain.com/receipts/4421",
+  "clicked_at": "2026-05-17T11:32:00Z"
 }`}</pre>
 
             <h3 className="text-lg font-semibold mt-8 mb-3">domain.verified data</h3>

@@ -404,6 +404,7 @@ export interface WebhookDelivery {
   last_attempt_at?: string | null;
   response_status: number | null;
   created_at: string;
+  replayed_from_id?: number | null;
 }
 
 // ── Partner ───────────────────────────────────────────────────────────────────

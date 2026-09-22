@@ -48,6 +48,7 @@ const DEVELOPER_LINKS = [
   { label: 'API Keys', href: '/app/settings/api-keys' },
   { label: 'Webhooks', href: '/app/settings/webhooks' },
   { label: 'API Console', href: '/app/api-console' },
+  { label: 'Analytics', href: '/app/analytics' },
   { label: 'Partner', href: 'https://partner.kerabie.email', external: true },
 ];
 
