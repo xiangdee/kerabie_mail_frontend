@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { customAxiosGet } from '@/lib/utils/CustomAxiosRequest';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { customAxiosGet, customAxiosPost } from '@/lib/utils/CustomAxiosRequest';
 import { apiLink } from '@/lib/constants/links';
 
 const base = apiLink;
@@ -11,6 +11,29 @@ export interface MailAnalytics {
   open_rate: number;
   opens_per_day: Array<{ date: string; opens: number }>;
   top_links: Array<{ url: string; clicks: number }>;
+}
+
+export interface SpamCheckIssue {
+  rule: string;
+  severity: 'low' | 'medium' | 'high';
+  message: string;
+}
+
+export interface SpamCheckResult {
+  score: number;
+  risk_level: 'low' | 'medium' | 'high';
+  issues: SpamCheckIssue[];
+}
+
+// Heuristic pre-send check, ungated on every plan -- see the backend's
+// app/utils/spam_check.py for what it actually checks.
+export function useSpamCheck(token: string | null) {
+  return useMutation({
+    mutationFn: async (data: { subject: string; body_html?: string; body_text?: string }) => {
+      const res = await customAxiosPost(`${base}/mail/spam-check`, data, '', token ?? '');
+      return res.status === true ? (res.response as SpamCheckResult) : null;
+    },
+  });
 }
 
 export type MailActivityEventType = 'sent' | 'failed' | 'opened' | 'clicked' | 'bounced' | 'complained' | 'unsubscribed';

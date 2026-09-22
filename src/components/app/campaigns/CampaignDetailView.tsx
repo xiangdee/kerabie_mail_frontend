@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Trash2, Send, Plus, Loader2 } from 'lucide-react';
+import { Trash2, Send, Plus, Loader2, ShieldCheck } from 'lucide-react';
 import { PlusCorners } from '@/components/app/console/PlusCorners';
 import { TemplatePicker } from '@/components/app/campaigns/TemplatePicker';
 import { HtmlBodyField } from '@/components/app/campaigns/HtmlBodyField';
+import SpamCheckDialog from '@/components/app/campaigns/SpamCheckDialog';
 import { cn } from '@/lib/utils';
 import type {
   Campaign, CampaignStep, CampaignStats, CampaignAnalytics, ContactGroup, SegmentCondition,
@@ -274,20 +275,35 @@ function CampaignDetailForm({
         </div>
 
         {isDraft && (
-          <button
-            type="button"
-            disabled={isSaving}
-            onClick={() => onSave({
-              name, subject, body_html: bodyHtml,
-              group_id: groupId === 'none' ? null : Number(groupId),
-              segment_filter: conditions.filter((c) => c.field && c.op),
-            })}
-            className={cn('relative bg-console-accent text-white border-0 h-9 px-5 hover:bg-console-accent-dark transition-colors disabled:opacity-50', DISPLAY, 'font-semibold text-[15px] tracking-[0.04em] flex items-center gap-2')}
-          >
-            {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-            SAVE
-            <PlusCorners variant="all" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={isSaving}
+              onClick={() => onSave({
+                name, subject, body_html: bodyHtml,
+                group_id: groupId === 'none' ? null : Number(groupId),
+                segment_filter: conditions.filter((c) => c.field && c.op),
+              })}
+              className={cn('relative bg-console-accent text-white border-0 h-9 px-5 hover:bg-console-accent-dark transition-colors disabled:opacity-50', DISPLAY, 'font-semibold text-[15px] tracking-[0.04em] flex items-center gap-2')}
+            >
+              {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+              SAVE
+              <PlusCorners variant="all" />
+            </button>
+            <SpamCheckDialog
+              subject={subject}
+              bodyHtml={bodyHtml}
+              trigger={
+                <button
+                  type="button"
+                  disabled={!subject.trim() && !bodyHtml.trim()}
+                  className="border border-console-border bg-white h-9 px-4 text-[13px] text-console-ink hover:border-console-accent hover:text-console-accent transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" /> Check spam risk
+                </button>
+              }
+            />
+          </div>
         )}
       </Panel>
 
