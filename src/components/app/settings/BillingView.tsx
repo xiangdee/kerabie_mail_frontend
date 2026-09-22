@@ -7,6 +7,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import type { Subscription } from '@/lib/types/api.types';
 import type { RefundRequest, Plan, AddonSummary } from '@/lib/hooks/useBilling';
+import { CURRENCY_SYMBOLS, type Currency as CurrencyCode } from '@/lib/utils/useCurrency';
+
+const currencySymbolFor = (currency: string | undefined | null): string =>
+  CURRENCY_SYMBOLS[(currency ?? 'usd').toLowerCase() as CurrencyCode] ?? '$';
 
 const PLAN_ICONS = {
   free: Zap,
@@ -116,7 +120,7 @@ export function BillingView({
               if (!isComped) {
                 return (
                   <p className="text-2xl font-bold">
-                    {subscription.currency?.toLowerCase() === 'ngn' ? '₦' : '$'}
+                    {currencySymbolFor(subscription.currency)}
                     {price.toLocaleString()}
                     <span className="text-sm font-normal text-muted-foreground">/{subscription.billing_cycle}</span>
                   </p>
@@ -314,7 +318,7 @@ export function BillingView({
                         {a.quantity > 1 ? 'es' : ''}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {subscription.currency?.toLowerCase() === 'ngn' ? '₦' : '$'}{a.price.toLocaleString()}/mo
+                        {currencySymbolFor(subscription.currency)}{a.price.toLocaleString()}/mo
                       </p>
                     </div>
                   </div>
@@ -380,7 +384,7 @@ export function BillingView({
               refunds.map((r) => {
                 const cfg = REFUND_STATUS_CONFIG[r.status] ?? REFUND_STATUS_CONFIG.pending;
                 const StatusIcon = cfg.icon;
-                const currencySymbol = r.currency?.toLowerCase() === 'ngn' ? '₦' : '$';
+                const currencySymbol = currencySymbolFor(r.currency);
                 return (
                   <div key={r.id} className="flex items-center justify-between rounded-lg border px-4 py-3 text-sm">
                     <div className="flex items-center gap-3">

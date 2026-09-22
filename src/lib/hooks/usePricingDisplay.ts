@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Zap, Crown, Building2, LucideIcon } from "lucide-react";
-import { useCurrency } from "@/lib/utils/useCurrency";
+import { useCurrency, CURRENCY_SYMBOLS, type Currency as CurrencyCode } from "@/lib/utils/useCurrency";
 import { useGetUserIpDetails } from "@/lib/utils/useGetUserIpDetails";
 import { usePlans, type Plan } from "@/lib/hooks/useBilling";
 
@@ -54,20 +54,42 @@ function writePlansCache(currency: string, plans: Plan[]) {
 // app/services/plan_pricing.py) — update both sides together if pricing
 // changes, since this is never overwritten by a successful fetch's
 // numbers automatically.
-function buildFallbackPlans(currency: 'usd' | 'ngn'): Plan[] {
+// Mirrors kerabie-mail-backend/app/services/plan_pricing.py's PLAN_PRICES
+// exactly, including its own comment: EUR/GBP/GHS/XAF/XOF are placeholder
+// prices derived from the USD price at a fixed reference rate (EUR ~0.92,
+// GBP ~0.79, GHS ~11.5, XAF/XOF ~570 per USD, Sept 2026), not live FX —
+// update both sides together if these change.
+const PRO_PRICES: Record<CurrencyCode, { monthly: number; yearly: number; biennial: number; triennial: number }> = {
+  usd: { monthly: 2.80, yearly: 26.88, biennial: 47.04, triennial: 60.48 },
+  ngn: { monthly: 3500.00, yearly: 33600.00, biennial: 58800.00, triennial: 75600.00 },
+  eur: { monthly: 2.58, yearly: 24.73, biennial: 43.28, triennial: 55.64 },
+  gbp: { monthly: 2.21, yearly: 21.24, biennial: 37.16, triennial: 47.78 },
+  ghs: { monthly: 32.20, yearly: 309.12, biennial: 540.96, triennial: 695.52 },
+  xaf: { monthly: 1596.00, yearly: 15321.60, biennial: 26812.80, triennial: 34473.60 },
+  xof: { monthly: 1596.00, yearly: 15321.60, biennial: 26812.80, triennial: 34473.60 },
+};
+
+const PREMIUM_PRICES: Record<CurrencyCode, { monthly: number; yearly: number; biennial: number; triennial: number }> = {
+  usd: { monthly: 7.50, yearly: 72.00, biennial: 126.00, triennial: 162.00 },
+  ngn: { monthly: 7500.00, yearly: 96000.00, biennial: 126000.00, triennial: 162000.00 },
+  eur: { monthly: 6.90, yearly: 66.24, biennial: 115.92, triennial: 149.04 },
+  gbp: { monthly: 5.93, yearly: 56.88, biennial: 99.54, triennial: 127.98 },
+  ghs: { monthly: 86.25, yearly: 828.00, biennial: 1449.00, triennial: 1863.00 },
+  xaf: { monthly: 4275.00, yearly: 41040.00, biennial: 71820.00, triennial: 92340.00 },
+  xof: { monthly: 4275.00, yearly: 41040.00, biennial: 71820.00, triennial: 92340.00 },
+};
+
+function buildFallbackPlans(currency: CurrencyCode): Plan[] {
   const cur = currency.toUpperCase();
-  const cycle = (usd: number, ngn: number) => ({
-    amount: currency === 'ngn' ? ngn : usd,
-    currency: cur,
-    symbol: currency === 'ngn' ? '₦' : '$',
-  });
+  const symbol = CURRENCY_SYMBOLS[currency];
+  const cycle = (amount: number) => ({ amount, currency: cur, symbol });
 
   return [
     {
       id: 'free',
       name: 'Free',
       description: 'Get started with one mailbox',
-      billing_cycles: { forever: cycle(0, 0) },
+      billing_cycles: { forever: cycle(0) },
       features: ['1 mailbox', '500 MB storage', '50 emails/day', 'Basic spam filter', 'API access'],
       limits: { mailboxes: 1, storage_gb: 0.5, emails_per_day: 50 },
       highlighted: false,
@@ -77,10 +99,10 @@ function buildFallbackPlans(currency: 'usd' | 'ngn'): Plan[] {
       name: 'Pro',
       description: 'For professionals and small teams',
       billing_cycles: {
-        monthly: cycle(2.8, 3500),
-        yearly: cycle(26.88, 33600),
-        biennial: cycle(47.04, 58800),
-        triennial: cycle(60.48, 75600),
+        monthly: cycle(PRO_PRICES[currency].monthly),
+        yearly: cycle(PRO_PRICES[currency].yearly),
+        biennial: cycle(PRO_PRICES[currency].biennial),
+        triennial: cycle(PRO_PRICES[currency].triennial),
       },
       features: [
         '3 mailboxes', '10 GB per mailbox', 'AI compose', 'Calendar & contacts',
@@ -94,10 +116,10 @@ function buildFallbackPlans(currency: 'usd' | 'ngn'): Plan[] {
       name: 'Premium',
       description: 'For businesses that need full control',
       billing_cycles: {
-        monthly: cycle(7.5, 7500),
-        yearly: cycle(72, 96000),
-        biennial: cycle(126, 126000),
-        triennial: cycle(162, 162000),
+        monthly: cycle(PREMIUM_PRICES[currency].monthly),
+        yearly: cycle(PREMIUM_PRICES[currency].yearly),
+        biennial: cycle(PREMIUM_PRICES[currency].biennial),
+        triennial: cycle(PREMIUM_PRICES[currency].triennial),
       },
       features: [
         '10 mailboxes', '50 GB per mailbox', 'Everything in Pro', 'Shared inboxes',

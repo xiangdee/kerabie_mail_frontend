@@ -9,8 +9,35 @@ const CURRENCY_STORAGE_KEY = "preferred_currency";
 // (fixed server-side). Clearing lets them re-detect correctly; guarded so it
 // only ever runs once per browser.
 const MIGRATION_FLAG_KEY = "currency_stale_ngn_migration_v2";
-export const AVAILABLE_CURRENCIES = ["usd", "ngn"] as const;
-type Currency = typeof AVAILABLE_CURRENCIES[number];
+export const AVAILABLE_CURRENCIES = ["usd", "ngn", "eur", "gbp", "ghs", "xaf", "xof"] as const;
+export type Currency = typeof AVAILABLE_CURRENCIES[number];
+
+// Shared display symbol per currency code (lowercase key) — used anywhere
+// a plan price needs a symbol instead of just the raw ISO code.
+export const CURRENCY_SYMBOLS: Record<Currency, string> = {
+    usd: "$",
+    ngn: "₦",
+    eur: "€",
+    gbp: "£",
+    ghs: "₵",
+    xaf: "FCFA",
+    xof: "FCFA",
+};
+
+// A representative country per currency for checkout's country_code field —
+// the backend accepts but doesn't actually use this today (informational
+// only), so a single representative country per shared currency (e.g. one
+// EUR country, one XOF country) is fine; it isn't used to pick a specific
+// country's price or routing.
+export const COUNTRY_CODE_BY_CURRENCY: Record<Currency, string> = {
+    usd: "US",
+    ngn: "NG",
+    eur: "DE",
+    gbp: "GB",
+    ghs: "GH",
+    xaf: "CM",
+    xof: "BJ",
+};
 
 const getInitialCurrency = (defaultCurrency: Currency = "usd"): Currency => {
     try {

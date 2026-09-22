@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '@/lib/context/auth.context';
-import { useCurrency } from '@/lib/utils/useCurrency';
+import { useCurrency, CURRENCY_SYMBOLS, COUNTRY_CODE_BY_CURRENCY, type Currency as CurrencyCode } from '@/lib/utils/useCurrency';
 import {
   usePlans, useSubscription, useCreateSubscription,
   useUpgradeFromTrial, useUpgradeExistingSubscription,
@@ -61,9 +61,9 @@ export default function UpgradePlanModal({
   // Same fix as the billing page.
   const { currency: detectedCurrency } = useCurrency();
   const hasBillingHistoryCurrency = subscription && subscription.status !== 'trial';
-  const defaultCurrency: 'ngn' | 'usd' =
-    hasBillingHistoryCurrency && subscription!.currency?.toLowerCase() === 'ngn' ? 'ngn'
-    : hasBillingHistoryCurrency && subscription!.currency?.toLowerCase() === 'usd' ? 'usd'
+  const subCurrency = subscription?.currency?.toLowerCase() as CurrencyCode | undefined;
+  const defaultCurrency: CurrencyCode =
+    hasBillingHistoryCurrency && subCurrency && CURRENCY_SYMBOLS[subCurrency] ? subCurrency
     : detectedCurrency;
   const { data: plansData, isLoading: plansLoading } = usePlans(defaultCurrency.toUpperCase());
 
@@ -74,7 +74,7 @@ export default function UpgradePlanModal({
 
   const paidPlans = (plansData?.plans ?? []).filter(p => p.id !== 'free') as Plan[];
   const selectedPlan = paidPlans.find(p => p.id === upgradePlan) ?? null;
-  const currencySymbol = plansData?.currency === 'NGN' ? '₦' : '$';
+  const currencySymbol = CURRENCY_SYMBOLS[(plansData?.currency ?? defaultCurrency).toLowerCase() as CurrencyCode] ?? '$';
   const mailboxAddon = plansData?.addons?.find(a => a.type === 'extra_mailbox');
   const storageAddon = plansData?.addons?.find(a => a.type === 'extra_storage');
   const planPrice = selectedPlan?.billing_cycles[upgradeCycle]?.amount ?? 0;
@@ -120,7 +120,7 @@ export default function UpgradePlanModal({
         billing_cycle: upgradeCycle,
         currency: defaultCurrency,
         return_url: `${siteUrl}/app/settings/billing`,
-        country_code: defaultCurrency === 'ngn' ? 'NG' : 'US',
+        country_code: COUNTRY_CODE_BY_CURRENCY[defaultCurrency],
         addons: addonsArg,
       };
       // Every signup starts a 3-day Pro trial automatically — /subscriptions/create

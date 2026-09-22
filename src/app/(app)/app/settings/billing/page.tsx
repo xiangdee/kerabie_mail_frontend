@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/context/auth.context';
-import { useCurrency } from '@/lib/utils/useCurrency';
+import { useCurrency, CURRENCY_SYMBOLS, type Currency as CurrencyCode } from '@/lib/utils/useCurrency';
 import {
   useSubscription,
   useCancelSubscription,
@@ -103,9 +103,9 @@ function BillingPageInner() {
   // real NGN preference here even after this file's first currency fix.
   const { currency: detectedCurrency } = useCurrency();
   const hasBillingHistoryCurrency = subscription && subscription.status !== 'trial';
-  const defaultCurrency: 'ngn' | 'usd' =
-    hasBillingHistoryCurrency && subscription!.currency?.toLowerCase() === 'ngn' ? 'ngn'
-    : hasBillingHistoryCurrency && subscription!.currency?.toLowerCase() === 'usd' ? 'usd'
+  const subCurrency = subscription?.currency?.toLowerCase() as CurrencyCode | undefined;
+  const defaultCurrency: CurrencyCode =
+    hasBillingHistoryCurrency && subCurrency && CURRENCY_SYMBOLS[subCurrency] ? subCurrency
     : detectedCurrency;
 
   const { data: plansData } = usePlans(defaultCurrency.toUpperCase());

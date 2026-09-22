@@ -3,6 +3,7 @@ import { Check, Minus, Plus } from "lucide-react";
 import { Corners } from "@/components/ui/corners";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/lib/context/auth.context";
+import { CURRENCY_SYMBOLS, type Currency as CurrencyCode } from "@/lib/utils/useCurrency";
 import type { ComponentType } from "react";
 
 interface PricingCardProps {
@@ -16,7 +17,7 @@ interface PricingCardProps {
   limitations?: string[];
   highlighted: boolean;
   billingCycle: 'monthly' | 'yearly' | 'biennial' | 'triennial';
-  currency: 'usd' | 'ngn';
+  currency: CurrencyCode;
   savings?: {
     yearly?: number;
     biennial?: number;
@@ -24,7 +25,7 @@ interface PricingCardProps {
   };
   /** Per-unit extra-mailbox add-on price, flat per cycle (matches how the
    * backend actually charges it — see CreateSubscriptionRequest.addons). */
-  addonPrice?: { usd: number; ngn: number };
+  addonPrice?: Partial<Record<CurrencyCode, number>>;
 }
 
 const PricingCard = ({
@@ -44,9 +45,10 @@ const PricingCard = ({
   const { isAuthenticated } = useAuth();
 
   const formatPrice = (val: number) => {
-    return currency === 'ngn'
-      ? `₦${val.toLocaleString()}`
-      : `$${val % 1 === 0 ? val : val.toFixed(2)}`;
+    const symbol = CURRENCY_SYMBOLS[currency];
+    return currency === 'ngn' || currency === 'ghs' || currency === 'xaf' || currency === 'xof'
+      ? `${symbol}${val.toLocaleString()}`
+      : `${symbol}${val % 1 === 0 ? val : val.toFixed(2)}`;
   };
 
   const getCycleLabel = () => {
@@ -92,7 +94,7 @@ const PricingCard = ({
     : isAuthenticated
     ? billingTarget
     : `/auth/register?redirect=${encodeURIComponent(billingTarget)}`;
-  const addonUnit = addonPrice ? (currency === 'ngn' ? addonPrice.ngn : addonPrice.usd) : 0;
+  const addonUnit = addonPrice?.[currency] ?? 0;
   // Flat per-cycle add-on, matching how the backend actually charges it
   // (CreateSubscriptionRequest.addons — added once per cycle, not scaled
   // by the cycle's length).

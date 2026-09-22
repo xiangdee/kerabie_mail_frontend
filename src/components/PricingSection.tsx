@@ -77,7 +77,7 @@ const PricingSection = () => {
             savings={getSavings(plan)}
             currency={currency}
             billingCycle={billingCycle}
-            addonPrice={plan.id === 'free' ? undefined : { usd: 2, ngn: 2000 }}
+            addonPrice={plan.id === 'free' ? undefined : { usd: 2, ngn: 2000, eur: 1.84, gbp: 1.58, ghs: 23, xaf: 1140, xof: 1140 }}
           />
         ))}
       </div>

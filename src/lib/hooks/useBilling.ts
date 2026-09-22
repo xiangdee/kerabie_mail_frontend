@@ -139,8 +139,8 @@ export function useMyRefunds(token: string | null) {
 export interface CreateSubscriptionPayload {
   plan: 'pro' | 'premium';
   billing_cycle: 'monthly' | 'yearly';
-  currency: 'ngn' | 'usd';
-  /** Flutterwave redirects here after payment */
+  currency: 'ngn' | 'usd' | 'eur' | 'gbp' | 'ghs' | 'xaf' | 'xof';
+  /** Flutterwave/Bachs redirects here after payment */
   return_url: string;
   country_code?: string;
   addons?: { type: 'extra_storage' | 'extra_mailbox'; quantity: number }[];
