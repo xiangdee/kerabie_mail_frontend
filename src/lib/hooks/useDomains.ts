@@ -78,6 +78,51 @@ export function useSetDomainNoReply(token: string | null) {
   });
 }
 
+export function useSetDomainBimi(token: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (opts: { id: number; bimi_logo_url: string | null; bimi_vmc_url: string | null }) =>
+      customAxiosRequest('patch', `${base}/domains/${opts.id}/bimi`, {
+        bimi_logo_url: opts.bimi_logo_url || null,
+        bimi_vmc_url: opts.bimi_vmc_url || null,
+      }, '', token ?? ''),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['domains'] }),
+  });
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Same queued-upload-then-poll shape as useUploadTemplateImage (useTemplates.ts)
+// — the actual B2 upload + SVG validation happens in a Celery task, which
+// also sets bimi_logo_url on the domain directly once it succeeds.
+export function useUploadBimiLogo(token: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    onSuccess: (res) => { if (res.status === true) qc.invalidateQueries({ queryKey: ['domains'] }); },
+    mutationFn: async (opts: { domainId: number; file: File }) => {
+      const queued = await customAxiosPost(`${base}/domains/${opts.domainId}/bimi/logo`, { file: opts.file }, 'upload', token ?? '');
+      if (queued.status !== true) return queued;
+      const jobId = (queued.response as { job_id: string }).job_id;
+
+      for (let attempt = 0; attempt < 40; attempt++) {
+        await sleep(1000);
+        const poll = await customAxiosGet(`${base}/domains/${opts.domainId}/bimi/logo/${jobId}`, undefined, token ?? undefined);
+        if (poll.status !== true) return poll;
+        const body = poll.response as { status: 'pending' | 'done' | 'failed'; url?: string; error?: string };
+        if (body.status === 'done') {
+          return { status: true, response: { url: body.url }, statusCode: 200 };
+        }
+        if (body.status === 'failed') {
+          return { status: false, response: body.error ?? 'Upload failed.', statusCode: 500 };
+        }
+      }
+      return { status: false, response: 'Upload timed out.', statusCode: 504 };
+    },
+  });
+}
+
 export function useSendDnsInstructions(token: string | null) {
   return useMutation({
     mutationFn: (opts: { domain: string; developer_email: string; developer_name?: string; message?: string }) =>

@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '@/lib/context/auth.context';
-import { useDomains, useAddDomain, useDeleteDomain, useVerifyDomain, useSendDnsInstructions, useSetDomainNoReply, useDomainUsage } from '@/lib/hooks/useDomains';
+import { useDomains, useAddDomain, useDeleteDomain, useVerifyDomain, useSendDnsInstructions, useSetDomainNoReply, useSetDomainBimi, useUploadBimiLogo, useDomainUsage } from '@/lib/hooks/useDomains';
 import { useAppToast } from '@/components/ui/app-toast';
 import { ConfirmDialog } from '@/components/ui/app-toast';
 import { DomainsView } from '@/components/app/settings/DomainsView';
@@ -12,6 +12,8 @@ export default function DomainsPage() {
   const { success, error: toastError } = useAppToast();
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [togglingNoReplyId, setTogglingNoReplyId] = useState<number | null>(null);
+  const [savingBimiId, setSavingBimiId] = useState<number | null>(null);
+  const [uploadingBimiLogoId, setUploadingBimiLogoId] = useState<number | null>(null);
 
   const { data: domains = [], isLoading } = useDomains(token);
   const { data: usage } = useDomainUsage(token);
@@ -20,6 +22,8 @@ export default function DomainsPage() {
   const verifyMutation = useVerifyDomain(token);
   const sendInstructionsMutation = useSendDnsInstructions(token);
   const noReplyMutation = useSetDomainNoReply(token);
+  const bimiMutation = useSetDomainBimi(token);
+  const bimiLogoUploadMutation = useUploadBimiLogo(token);
 
   const handleAdd = async (domain: string) => {
     const res = await addMutation.mutateAsync(domain);
@@ -82,6 +86,32 @@ export default function DomainsPage() {
     }
   };
 
+  const handleSaveBimi = async (id: number, bimiLogoUrl: string, bimiVmcUrl: string) => {
+    setSavingBimiId(id);
+    const res = await bimiMutation.mutateAsync({
+      id,
+      bimi_logo_url: bimiLogoUrl.trim() || null,
+      bimi_vmc_url: bimiVmcUrl.trim() || null,
+    });
+    setSavingBimiId(null);
+    if (res.status === true) {
+      success(bimiLogoUrl.trim() ? 'BIMI logo saved' : 'BIMI logo cleared');
+    } else {
+      toastError('Failed to update BIMI settings', { description: res.response as string });
+    }
+  };
+
+  const handleUploadBimiLogo = async (id: number, file: File) => {
+    setUploadingBimiLogoId(id);
+    const res = await bimiLogoUploadMutation.mutateAsync({ domainId: id, file });
+    setUploadingBimiLogoId(null);
+    if (res.status === true) {
+      success('BIMI logo uploaded');
+    } else {
+      toastError('Failed to upload logo', { description: res.response as string });
+    }
+  };
+
   const handleDeleteConfirmed = async () => {
     if (confirmDeleteId == null) return;
     const res = await deleteMutation.mutateAsync(confirmDeleteId);
@@ -109,6 +139,10 @@ export default function DomainsPage() {
         onSendInstructions={handleSendInstructions}
         onToggleNoReply={handleToggleNoReply}
         togglingNoReplyId={togglingNoReplyId}
+        onSaveBimi={handleSaveBimi}
+        savingBimiId={savingBimiId}
+        onUploadBimiLogo={handleUploadBimiLogo}
+        uploadingBimiLogoId={uploadingBimiLogoId}
       />
       <TrackingDomainCard />
       <ConfirmDialog

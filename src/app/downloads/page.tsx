@@ -4,7 +4,7 @@ import { Corners } from "@/components/ui/corners";
 import { NavLink } from "@/components/NavLink";
 import Image from "next/image";
 import { Smartphone, Tablet, Globe } from "lucide-react";
-import { blackblazebucket, IMAP_HOST, SMTP_HOST } from "@/lib/constants/links";
+import { blackblazebucket, IMAP_HOST, SMTP_HOST, APP_STORE_URL, PLAY_STORE_URL } from "@/lib/constants/links";
 
 const apps = [
   {
@@ -12,6 +12,7 @@ const apps = [
     title: "iOS",
     description: "iPhone and iPad, with Face ID unlock and push in under a second.",
     cta: "App Store",
+    href: APP_STORE_URL,
     tint: false,
   },
   {
@@ -19,6 +20,7 @@ const apps = [
     title: "Android",
     description: "Material design, work-profile support and offline drafts.",
     cta: "Google Play",
+    href: PLAY_STORE_URL,
     tint: false,
   },
   {
@@ -26,6 +28,7 @@ const apps = [
     title: "Web client",
     description: "Nothing to install — full keyboard control in any modern browser.",
     cta: "Open webmail",
+    href: undefined,
     tint: true,
   },
 ];
@@ -127,9 +130,9 @@ const Downloads = () => {
               <h3 className="mb-1.5 mt-3.5 text-[21px]">{app.title}</h3>
               <p className="mb-4 text-[13.5px] leading-relaxed text-muted-foreground">{app.description}</p>
               <a
-                href={app.title === "Web client" ? webmailUrl : "/auth/register"}
-                target={app.title === "Web client" ? "_blank" : undefined}
-                rel={app.title === "Web client" ? "noopener noreferrer" : undefined}
+                href={app.href ?? webmailUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className={`inline-flex items-center gap-2 border border-border px-4 py-2.5 text-[13.5px] font-semibold text-foreground transition-colors hover:bg-primary-muted ${app.tint ? "bg-white" : ""}`}
               >
                 {app.cta}

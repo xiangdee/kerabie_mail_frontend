@@ -16,3 +16,6 @@ export const siteUrl = 'https://www.kerabie.email';
 
 export const IMAP_HOST = process.env.NEXT_PUBLIC_IMAP_HOST ?? 'imap.kerabie.email';
 export const SMTP_HOST = process.env.NEXT_PUBLIC_SMTP_HOST ?? 'smtp.kerabie.email';
+
+export const APP_STORE_URL = 'https://apps.apple.com/ng/app/kerabie-mail/id6794335852';
+export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.kerabiedigital.kerabie_mail';

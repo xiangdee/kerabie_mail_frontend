@@ -168,6 +168,8 @@ export interface Domain {
   created_at: string;
   verified_at?: string;
   dns_records?: DnsRecord[];
+  bimi_logo_url?: string | null;
+  bimi_vmc_url?: string | null;
 }
 
 export interface DnsRecord {

@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Plus, Trash2, Globe, CheckCircle2, XCircle, Clock, AlertTriangle, RefreshCw, ChevronDown, ChevronUp, Copy, CopyCheck, Loader2, Mail } from 'lucide-react';
+import { Plus, Trash2, Globe, CheckCircle2, XCircle, Clock, AlertTriangle, RefreshCw, ChevronDown, ChevronUp, Copy, CopyCheck, Loader2, Mail, ImageIcon, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -28,6 +28,10 @@ interface DomainsViewProps {
   onSendInstructions: (domain: string, developerEmail: string) => Promise<void>;
   onToggleNoReply: (id: number, noReplyDomain: boolean) => void;
   togglingNoReplyId?: number | null;
+  onSaveBimi: (id: number, bimiLogoUrl: string, bimiVmcUrl: string) => Promise<void>;
+  savingBimiId?: number | null;
+  onUploadBimiLogo: (id: number, file: File) => Promise<void>;
+  uploadingBimiLogoId?: number | null;
 }
 
 const StatusBadge = ({ status }: { status: Domain['status'] }) => {
@@ -81,6 +85,93 @@ const DnsRow = ({ record }: { record: DnsRecord }) => {
   );
 };
 
+const BimiSection = ({
+  domain, isSaving, isUploading, onSave, onUploadLogo,
+}: {
+  domain: Domain;
+  isSaving: boolean;
+  isUploading: boolean;
+  onSave: (bimiLogoUrl: string, bimiVmcUrl: string) => Promise<void>;
+  onUploadLogo: (file: File) => Promise<void>;
+}) => {
+  const [vmcUrl, setVmcUrl] = useState(domain.bimi_vmc_url ?? '');
+  const vmcDirty = vmcUrl !== (domain.bimi_vmc_url ?? '');
+
+  const handleFilePicked = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (file) onUploadLogo(file);
+  };
+
+  return (
+    <div className="border-t px-4 py-3 space-y-2.5">
+      <div className="flex items-center gap-2">
+        <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          BIMI logo
+        </span>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Shows your brand logo next to messages from this domain in supporting inboxes.
+        Upload an SVG logo, then enforce your DMARC record (quarantine or reject) for it
+        to actually render.
+      </p>
+
+      {domain.bimi_logo_url ? (
+        <div className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 border border-border">
+          <img src={domain.bimi_logo_url} alt="BIMI logo" className="h-8 w-8 object-contain shrink-0" />
+          <span className="text-xs text-muted-foreground truncate flex-1">{domain.bimi_logo_url}</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-destructive hover:text-destructive shrink-0"
+            disabled={isSaving}
+            onClick={() => onSave('', domain.bimi_vmc_url ?? '')}
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      ) : null}
+
+      <label className="inline-flex">
+        <input
+          type="file"
+          accept="image/svg+xml,.svg"
+          className="hidden"
+          onChange={handleFilePicked}
+          disabled={isUploading}
+        />
+        <span className={cn(
+          'inline-flex items-center gap-1.5 h-7 px-3 rounded-md border border-border text-xs font-medium cursor-pointer hover:bg-muted/50 transition-colors',
+          isUploading && 'opacity-60 pointer-events-none'
+        )}>
+          {isUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+          {domain.bimi_logo_url ? 'Replace logo' : 'Upload logo (SVG)'}
+        </span>
+      </label>
+
+      <div className="flex gap-2 items-center pt-1">
+        <Input
+          value={vmcUrl}
+          onChange={(e) => setVmcUrl(e.target.value)}
+          placeholder="VMC certificate URL (optional)"
+          className="text-xs h-8 max-w-sm"
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs gap-1 shrink-0"
+          disabled={!vmcDirty || isSaving}
+          onClick={() => onSave(domain.bimi_logo_url ?? '', vmcUrl)}
+        >
+          {isSaving && <Loader2 className="h-3 w-3 animate-spin" />}
+          Save
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 // The backend uses this as its internal "no real cap" sentinel for
 // Pro/Premium (see PLAN_LIMITS in plan.py) rather than a dedicated
 // unlimited marker — mirrored here just for display purposes.
@@ -89,6 +180,7 @@ const UNLIMITED_SENTINEL = 999999;
 export function DomainsView({
   domains, usage, isLoading, isAdding, isVerifying, isDeleting, isSendingInstructions,
   onAdd, onVerify, onDelete, onSendInstructions, onToggleNoReply, togglingNoReplyId,
+  onSaveBimi, savingBimiId, onUploadBimiLogo, uploadingBimiLogoId,
 }: DomainsViewProps) {
   const [newDomain, setNewDomain] = useState('');
   const [expanded, setExpanded] = useState<number | null>(null);
@@ -231,6 +323,15 @@ export function DomainsView({
                         Reject all incoming mail to this domain (including addresses not created yet)
                       </span>
                     </div>
+                  )}
+                  {d.status === 'verified' && (
+                    <BimiSection
+                      domain={d}
+                      isSaving={savingBimiId === d.id}
+                      isUploading={uploadingBimiLogoId === d.id}
+                      onSave={(logoUrl, vmcUrl) => onSaveBimi(d.id, logoUrl, vmcUrl)}
+                      onUploadLogo={(file) => onUploadBimiLogo(d.id, file)}
+                    />
                   )}
                   {d.dns_records && d.dns_records.length > 0 && (
                     <div className="border-t px-4 py-3">
