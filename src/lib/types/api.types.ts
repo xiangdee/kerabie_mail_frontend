@@ -400,6 +400,18 @@ export interface ApiKeyUsage {
   daily: { date: string; count: number }[];
 }
 
+// ── Integrations ─────────────────────────────────────────────────────────────
+export interface Integration {
+  id: string;
+  name: string;
+  description: string;
+  docs_url: string;
+  flag: string;
+  kind: 'webhook' | 'mcp';
+  endpoint?: string;
+  enabled: boolean;
+}
+
 // ── Webhook ───────────────────────────────────────────────────────────────────
 export interface WebhookEndpoint {
   id: number;

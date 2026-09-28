@@ -6,45 +6,65 @@ import Image from "next/image";
 export const Footer = () => {
   return (
     <footer className="mt-[88px] bg-primary text-primary-foreground">
-      <div className="container mx-auto grid grid-cols-1 gap-8 px-4 pb-7 pt-[52px] sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
-        <div>
-          <Image
-            src={blackblazebucket + "/assets/images/logo-white.png"}
-            alt="Kerabie"
-            width={40}
-            height={25}
-            className="mb-3"
-          />
-          <p className="mb-4 max-w-[34ch] text-sm text-white/70">
-            Professional email built for growing teams.
-          </p>
+      <div className="container mx-auto px-4 pt-[52px]">
+        <div className="mb-9 flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <Image
+              src={blackblazebucket + "/assets/images/logo-white.png"}
+              alt="Kerabie"
+              width={40}
+              height={25}
+            />
+            <p className="max-w-[68ch] text-sm leading-relaxed text-white/70">
+              Kerabie Mail is a free business email platform, with paid plans available once you
+              outgrow it. Get a mailbox on your own domain in minutes, with full outgoing send
+              over API included from day one, so you can wire up transactional or automated email
+              without a paid plan first. Manage everything from clean webmail and a mobile app,
+              with AI-assisted compose, calendar, campaigns, and email templates built in. Already
+              have mail hosted somewhere else, cPanel, DirectAdmin, anywhere? Connect it in the
+              same app, no IMAP settings to configure; Kerabie Mail detects the connection for
+              you. And for agencies and web hosts who manage mail for their own clients, an
+              optional hosting-partner program lets you provision and brand mailboxes under your
+              own name too.
+            </p>
+          </div>
           <NavLink
             href="/auth/register"
-            className="inline-flex items-center gap-2 border border-white/35 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+            className="inline-flex shrink-0 items-center gap-2 border border-white/35 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
           >
             Get free mailbox
           </NavLink>
         </div>
 
-        <div className="grid content-start gap-2.5">
-          <span className="font-mono text-[10.5px] tracking-wider text-white/70">PRODUCT</span>
-          <NavLink href="/features" className="text-sm text-white/85 transition-colors hover:text-white">Features</NavLink>
-          <NavLink href="/downloads" className="text-sm text-white/85 transition-colors hover:text-white">Downloads</NavLink>
-          <NavLink href="/pricing" className="text-sm text-white/85 transition-colors hover:text-white">Pricing</NavLink>
-        </div>
+        <div className="grid grid-cols-1 gap-8 pb-7 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid content-start gap-2.5">
+            <span className="font-mono text-[10.5px] tracking-wider text-white/70">PRODUCT</span>
+            <NavLink href="/features" className="text-sm text-white/85 transition-colors hover:text-white">Features</NavLink>
+            <NavLink href="/downloads" className="text-sm text-white/85 transition-colors hover:text-white">Downloads</NavLink>
+            <NavLink href="/pricing" className="text-sm text-white/85 transition-colors hover:text-white">Pricing</NavLink>
+          </div>
 
-        <div className="grid content-start gap-2.5">
-          <span className="font-mono text-[10.5px] tracking-wider text-white/70">COMPANY</span>
-          <NavLink href="/about" className="text-sm text-white/85 transition-colors hover:text-white">About</NavLink>
-          <NavLink href="/contact" className="text-sm text-white/85 transition-colors hover:text-white">Contact</NavLink>
-          <NavLink href="/partner" className="text-sm text-white/85 transition-colors hover:text-white">Partner</NavLink>
-        </div>
+          <div className="grid content-start gap-2.5">
+            <span className="font-mono text-[10.5px] tracking-wider text-white/70">RESOURCES</span>
+            <NavLink href="/app/tools" className="text-sm text-white/85 transition-colors hover:text-white">Tools &amp; Integrations</NavLink>
+            <NavLink href="/blog" className="text-sm text-white/85 transition-colors hover:text-white">Blog</NavLink>
+            <NavLink href="/help" className="text-sm text-white/85 transition-colors hover:text-white">Help Center</NavLink>
+            <NavLink href="/api-docs" className="text-sm text-white/85 transition-colors hover:text-white">API Docs</NavLink>
+          </div>
 
-        <div className="grid content-start gap-2.5">
-          <span className="font-mono text-[10.5px] tracking-wider text-white/70">PRIVACY &amp; LEGAL</span>
-          <NavLink href="/privacy" className="text-sm text-white/85 transition-colors hover:text-white">Privacy</NavLink>
-          <NavLink href="/refund-policy" className="text-sm text-white/85 transition-colors hover:text-white">Refund Policy</NavLink>
-          <NavLink href="/terms" className="text-sm text-white/85 transition-colors hover:text-white">Terms</NavLink>
+          <div className="grid content-start gap-2.5">
+            <span className="font-mono text-[10.5px] tracking-wider text-white/70">COMPANY</span>
+            <NavLink href="/about" className="text-sm text-white/85 transition-colors hover:text-white">About</NavLink>
+            <NavLink href="/contact" className="text-sm text-white/85 transition-colors hover:text-white">Contact</NavLink>
+            <NavLink href="/partner" className="text-sm text-white/85 transition-colors hover:text-white">Partner</NavLink>
+          </div>
+
+          <div className="grid content-start gap-2.5">
+            <span className="font-mono text-[10.5px] tracking-wider text-white/70">PRIVACY &amp; LEGAL</span>
+            <NavLink href="/privacy" className="text-sm text-white/85 transition-colors hover:text-white">Privacy</NavLink>
+            <NavLink href="/refund-policy" className="text-sm text-white/85 transition-colors hover:text-white">Refund Policy</NavLink>
+            <NavLink href="/terms" className="text-sm text-white/85 transition-colors hover:text-white">Terms</NavLink>
+          </div>
         </div>
       </div>
 

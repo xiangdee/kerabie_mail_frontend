@@ -41,6 +41,7 @@ const CRUMBS: { match: (path: string) => boolean; label: string }[] = [
   { match: (p) => p.startsWith('/app/settings/api-keys'), label: 'API keys' },
   { match: (p) => p.startsWith('/app/settings/webhooks'), label: 'Webhooks' },
   { match: (p) => p.startsWith('/app/api-console'), label: 'API console' },
+  { match: (p) => p.startsWith('/app/tools'), label: 'Tools' },
   { match: (p) => p.startsWith('/app/partner'), label: 'Partner' },
 ];
 
