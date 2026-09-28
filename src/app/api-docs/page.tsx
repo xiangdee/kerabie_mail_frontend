@@ -27,6 +27,10 @@ export default function ApiDocsPage() {
             <div className="pt-4 space-y-1 border-t">
               <Link href="/api-docs/webhooks" className="block px-3 py-1.5 rounded-lg text-primary hover:underline text-sm">Webhooks →</Link>
               <Link href="/api-docs/partner" className="block px-3 py-1.5 rounded-lg text-primary hover:underline text-sm">Partner API →</Link>
+              <Link href="/api-docs/zapier" className="block px-3 py-1.5 rounded-lg text-primary hover:underline text-sm">Zapier →</Link>
+              <Link href="/api-docs/n8n" className="block px-3 py-1.5 rounded-lg text-primary hover:underline text-sm">n8n →</Link>
+              <Link href="/api-docs/make" className="block px-3 py-1.5 rounded-lg text-primary hover:underline text-sm">Make →</Link>
+              <Link href="/api-docs/mcp" className="block px-3 py-1.5 rounded-lg text-primary hover:underline text-sm">MCP / Claude agents →</Link>
               <a href="/llms.txt" className="block px-3 py-1.5 rounded-lg text-primary hover:underline text-sm">llms.txt →</a>
             </div>
           </div>
@@ -44,6 +48,10 @@ export default function ApiDocsPage() {
             <div className="flex flex-wrap gap-3 mt-4">
               <Link href="/api-docs/webhooks" className="text-sm text-primary hover:underline">Webhooks docs →</Link>
               <Link href="/api-docs/partner" className="text-sm text-primary hover:underline">Partner API →</Link>
+              <Link href="/api-docs/zapier" className="text-sm text-primary hover:underline">Zapier →</Link>
+              <Link href="/api-docs/n8n" className="text-sm text-primary hover:underline">n8n →</Link>
+              <Link href="/api-docs/make" className="text-sm text-primary hover:underline">Make →</Link>
+              <Link href="/api-docs/mcp" className="text-sm text-primary hover:underline">MCP / Claude agents →</Link>
               <a href="/llms.txt" className="text-sm text-primary hover:underline">llms.txt (for AI agents) →</a>
             </div>
           </div>
