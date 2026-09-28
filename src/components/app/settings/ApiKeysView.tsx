@@ -143,8 +143,8 @@ export function RevealSecretBanner({ label, secret, onDismiss }: { label: string
         <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{label} — copy it now</p>
         <p className="text-xs text-emerald-700/80 dark:text-emerald-400/80 mt-0.5">This will not be shown again after you close this.</p>
       </div>
-      <div className={cn(MONO, 'flex items-center gap-2 text-sm bg-white border border-console-border px-3 py-2')}>
-        <span className="flex-1 truncate">{revealed ? secret : '•'.repeat(Math.min(secret.length, 40))}</span>
+      <div className={cn(MONO, 'flex items-center gap-2 text-sm bg-white text-console-ink border border-console-border px-3 py-2')}>
+        <span className="flex-1 truncate text-console-ink">{revealed ? secret : '•'.repeat(Math.min(secret.length, 40))}</span>
         <button onClick={() => setRevealed(!revealed)} className="text-console-muted2 hover:text-console-accent">
           {revealed ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
         </button>
