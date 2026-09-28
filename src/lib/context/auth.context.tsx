@@ -1,5 +1,6 @@
 'use client';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { authService } from '@/lib/services/auth.service';
 import { refreshAccessToken } from '@/lib/utils/tokenRefresh';
 import type { User } from '@/lib/types/api.types';
@@ -32,6 +33,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   // Auth is httpOnly-cookie based — no token to read client-side. Just ask
   // the API who's logged in; a non-2xx response means there's no valid
@@ -76,6 +78,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (body.requires_2fa) {
         return { ok: false, requires2fa: true, pendingToken: body.two_factor_pending_token! };
       }
+      // Wipe anything cached under the previous session (or a guest/logged-out
+      // state) before this account's own data loads — query keys can't rely
+      // on `token` to scope by user any more (see the comment above, it's
+      // always null now), so a stale login-switch would otherwise keep
+      // serving whatever the last account had cached until a full reload.
+      queryClient.clear();
       setUser(body.user!);
       return { ok: true };
     }
@@ -86,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const res = await authService.verifyTwoFactorLogin(pendingToken, code);
     if (res.status === true) {
       const { user: u } = res.response as { user: User };
+      queryClient.clear();
       setUser(u);
       return { ok: true };
     }
@@ -116,6 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     if (res.status === true) {
       const { user: u } = res.response as { user: User };
+      queryClient.clear();
       setUser(u);
       return { ok: true };
     }
@@ -124,6 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     await authService.logout();
+    queryClient.clear();
     setUser(null);
   };
 
