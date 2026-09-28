@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { AuthProvider } from '@/lib/context/auth.context';
 import { AppToastProvider } from '@/components/ui/app-toast';
 import ReferralCapture from '@/components/ReferralCapture';
+import UtmCapture from '@/components/UtmCapture';
 import CurrencyDetector from '@/components/CurrencyDetector';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -21,6 +22,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <AppToastProvider>
         <AuthProvider>
           <ReferralCapture />
+          <UtmCapture />
           <CurrencyDetector />
           {children}
         </AuthProvider>

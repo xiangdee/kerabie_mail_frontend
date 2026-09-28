@@ -97,7 +97,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // which sets this cookie when the user first arrives via ?ref=CODE.
     const refMatch = typeof document !== 'undefined' ? document.cookie.match(/(?:^|; )kerabie_ref=([^;]+)/) : null;
     const referral_code = refMatch ? decodeURIComponent(refMatch[1]) : undefined;
-    const res = await authService.register({ username, password, full_name, captcha_token: captchaToken, referral_code });
+
+    // First-touch UTM attribution — see components/UtmCapture.tsx.
+    const utmMatch = typeof document !== 'undefined' ? document.cookie.match(/(?:^|; )kerabie_utm=([^;]+)/) : null;
+    let utm_source: string | undefined, utm_medium: string | undefined, utm_campaign: string | undefined;
+    if (utmMatch) {
+      try {
+        const parsed = JSON.parse(decodeURIComponent(utmMatch[1]));
+        utm_source = parsed.utm_source;
+        utm_medium = parsed.utm_medium;
+        utm_campaign = parsed.utm_campaign;
+      } catch {}
+    }
+
+    const res = await authService.register({
+      username, password, full_name, captcha_token: captchaToken, referral_code,
+      utm_source, utm_medium, utm_campaign,
+    });
     if (res.status === true) {
       const { user: u } = res.response as { user: User };
       setUser(u);

@@ -42,6 +42,9 @@ export interface RegisterRequest {
   full_name?: string;
   captcha_token?: string;
   referral_code?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
 }
 
 // ── Alias ─────────────────────────────────────────────────────────────────────
