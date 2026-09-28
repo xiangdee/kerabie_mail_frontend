@@ -15,17 +15,8 @@ export const Footer = () => {
               width={40}
               height={25}
             />
-            <p className="max-w-[68ch] text-sm leading-relaxed text-white/70">
-              Kerabie Mail is a free business email platform, with paid plans available once you
-              outgrow it. Get a mailbox on your own domain in minutes, with full outgoing send
-              over API included from day one, so you can wire up transactional or automated email
-              without a paid plan first. Manage everything from clean webmail and a mobile app,
-              with AI-assisted compose, calendar, campaigns, and email templates built in. Already
-              have mail hosted somewhere else, cPanel, DirectAdmin, anywhere? Connect it in the
-              same app, no IMAP settings to configure; Kerabie Mail detects the connection for
-              you. And for agencies and web hosts who manage mail for their own clients, an
-              optional hosting-partner program lets you provision and brand mailboxes under your
-              own name too.
+            <p className="text-sm leading-relaxed text-white/70">
+              Professional email built for growing teams.
             </p>
           </div>
           <NavLink
