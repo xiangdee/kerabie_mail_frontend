@@ -1,11 +1,13 @@
 'use client';
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Webhook, KeyRound } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { ExternalLink, Webhook, KeyRound, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { apiLink } from '@/lib/constants/links';
 import type { Integration } from '@/lib/types/api.types';
@@ -66,6 +68,83 @@ export default function ToolsView({ integrations, isLoading }: Props) {
   );
 }
 
+// One block per line the target install surface reads directly off — a copy
+// button next to a bare URL still makes the user hand-assemble the actual
+// install step themselves. These are already-complete: paste into a shell,
+// or drop straight into a client's config file, nothing left to fill in
+// besides the API key placeholder.
+function CopyBlock({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <div className="relative">
+      <pre className={cn(MONO, 'text-[11px] leading-relaxed overflow-x-auto whitespace-pre-wrap break-all border border-console-border-soft bg-console-accent-tint px-2.5 py-2 pr-9')}>
+        {text}
+      </pre>
+      <button
+        type="button"
+        onClick={handleCopy}
+        aria-label="Copy"
+        className="absolute top-2 right-2 text-console-muted2 hover:text-console-accent"
+      >
+        {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+      </button>
+    </div>
+  );
+}
+
+// Complete, paste-ready install snippets for the MCP server, one per client
+// surface — a Claude Code CLI one-liner, a claude_desktop_config.json block
+// (same mcpServers shape most other MCP clients also read), and a raw curl
+// sanity check to confirm the key/endpoint work before wiring up a client.
+function McpInstallBlock({ url }: { url: string }) {
+  const cliCommand = `claude mcp add --transport http kerabie-mail ${url} --header "X-API-Key: YOUR_API_KEY"`;
+
+  const desktopConfig = JSON.stringify(
+    {
+      mcpServers: {
+        'kerabie-mail': {
+          url,
+          headers: { 'X-API-Key': 'YOUR_API_KEY' },
+        },
+      },
+    },
+    null,
+    2
+  );
+
+  const curlCheck = `curl -X POST ${url} \\\n  -H "X-API-Key: YOUR_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'`;
+
+  return (
+    <Tabs defaultValue="cli" className="w-full">
+      <TabsList className="h-8">
+        <TabsTrigger value="cli" className="text-xs px-2.5 py-1">Claude Code</TabsTrigger>
+        <TabsTrigger value="desktop" className="text-xs px-2.5 py-1">Claude Desktop / JSON</TabsTrigger>
+        <TabsTrigger value="curl" className="text-xs px-2.5 py-1">Test with curl</TabsTrigger>
+      </TabsList>
+      <TabsContent value="cli" className="mt-2 space-y-1.5">
+        <p className="text-xs text-console-muted">Run this in a terminal, swapping in a real key from Settings → API Keys:</p>
+        <CopyBlock text={cliCommand} />
+      </TabsContent>
+      <TabsContent value="desktop" className="mt-2 space-y-1.5">
+        <p className="text-xs text-console-muted">
+          Paste into <span className={MONO}>claude_desktop_config.json</span> (or any other MCP
+          client that reads the same <span className={MONO}>mcpServers</span> shape):
+        </p>
+        <CopyBlock text={desktopConfig} />
+      </TabsContent>
+      <TabsContent value="curl" className="mt-2 space-y-1.5">
+        <p className="text-xs text-console-muted">Sanity-check the server responds before wiring up a client:</p>
+        <CopyBlock text={curlCheck} />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
 function IntegrationCard({ integration }: { integration: Integration }) {
   const icon = ICONS[integration.id];
   const isMcp = integration.kind === 'mcp';
@@ -94,14 +173,11 @@ function IntegrationCard({ integration }: { integration: Integration }) {
         {isMcp ? (
           <div className="space-y-2">
             <p className="text-xs text-console-muted">
-              Point your MCP-compatible client (Claude, or any other agent that speaks the Model
-              Context Protocol) at this endpoint, authenticated with an API key.
+              Point your MCP-compatible client (Claude Desktop, Claude Code, or any other agent
+              that speaks the Model Context Protocol) at this server. Paste this straight into
+              your client&apos;s MCP config, swap in a real API key, and you&apos;re connected.
             </p>
-            {mcpUrl && (
-              <p className={cn(MONO, 'text-xs break-all border border-console-border-soft bg-console-accent-tint px-2.5 py-2')}>
-                {mcpUrl}
-              </p>
-            )}
+            {mcpUrl && <McpInstallBlock url={mcpUrl} />}
             <div className="flex items-center gap-3 flex-wrap pt-1">
               <Button asChild variant="outline" size="sm">
                 <Link href="/app/settings/api-keys">
