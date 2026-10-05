@@ -8,7 +8,7 @@ export const authService = {
   // auth_channel: 'web' makes the backend set httpOnly cookies instead of
   // returning tokens in the JSON body — see auth.context.tsx for why.
   login: (data: LoginRequest) =>
-    customAxiosPost(`${base}/auth/login`, { ...data, auth_channel: 'web' }),
+    customAxiosPost(`${base}/auth/login`, { ...data, auth_channel: 'web', client: 'console' }),
 
   register: (data: RegisterRequest) =>
     customAxiosPost(`${base}/auth/register`, { ...data, auth_channel: 'web' }),
