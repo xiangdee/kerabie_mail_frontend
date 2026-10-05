@@ -136,7 +136,7 @@ export default function ConsoleForm() {
         <span className="font-mono text-[11px] uppercase tracking-[.13em] text-primary">Any email</span>
         <h1 className="text-[28px] font-bold tracking-tight">Create your account</h1>
         <p className="text-sm text-muted-foreground">
-          Sign up with any email address, like Gmail or your work email, to use the dashboard. No Kerabie mailbox needed.
+          Sign up with any email address.
         </p>
       </div>
 
