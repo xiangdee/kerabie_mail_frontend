@@ -90,41 +90,44 @@ export default function RegisterPage() {
 }
 
 function RegisterPageInner() {
-  // Default is the plain email + password signup (like Brevo). The mailbox
-  // options are secondary links rather than tabs, so the first screen stays a
-  // single short form. A blocked sign-in on an unverified account lands here
-  // with ?verify= and stays on that default form's code step.
+  // Default is the plain email + password signup (like Brevo). The other ways
+  // to sign up are big buttons at the TOP so they're seen before the form,
+  // not tabs and not links buried underneath. A blocked sign-in on an
+  // unverified account lands here with ?verify= and stays on that default
+  // form's code step.
   const [mode, setMode] = useState<Mode>('console');
+  const optionClass = 'w-full rounded-none h-12 text-sm font-medium';
   return (
     <div className="space-y-6">
-      {mode === 'console' ? <ConsoleForm /> : mode === 'kerabie' ? <KerabieForm /> : <DomainForm />}
-
-      <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground">
-        <div className="h-px flex-1 bg-border" />
-        {mode === 'console' ? 'Or get a mailbox' : 'Or'}
-        <div className="h-px flex-1 bg-border" />
-      </div>
-
       <div className="space-y-3">
-        {mode !== 'console' && (
-          <Button type="button" variant="outline" className="w-full rounded-none h-11" onClick={() => setMode('console')}>
-            Sign up with any email
-          </Button>
-        )}
         {mode !== 'kerabie' && (
-          <Button type="button" variant="outline" className="w-full rounded-none h-11" onClick={() => setMode('kerabie')}>
-            Get a free @{KERABIE_DOMAIN} address
+          <Button type="button" variant="outline" className={optionClass} onClick={() => setMode('kerabie')}>
+            Get a free @{KERABIE_DOMAIN} email address
           </Button>
         )}
         {mode !== 'domain' && (
-          <Button type="button" variant="outline" className="w-full rounded-none h-11" onClick={() => setMode('domain')}>
+          <Button type="button" variant="outline" className={optionClass} onClick={() => setMode('domain')}>
             Use your own domain
           </Button>
         )}
+        {mode !== 'console' && (
+          <Button type="button" variant="outline" className={optionClass} onClick={() => setMode('console')}>
+            Sign up with any email
+          </Button>
+        )}
       </div>
+
+      <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground">
+        <div className="h-px flex-1 bg-border" />
+        {mode === 'console' ? 'Or sign up with your email' : 'Or fill in the form'}
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
+      {mode === 'console' ? <ConsoleForm /> : mode === 'kerabie' ? <KerabieForm /> : <DomainForm />}
     </div>
   );
 }
+
 // ── Free @kerabie.email signup ────────────────────────────────────────────────
 
 function KerabieForm() {
