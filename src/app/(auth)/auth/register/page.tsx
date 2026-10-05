@@ -89,37 +89,33 @@ export default function RegisterPage() {
   );
 }
 
+const MODE_LABEL: Record<Mode, string> = {
+  console: 'Any email',
+  kerabie: `Free @${KERABIE_DOMAIN}`,
+  domain: 'Your own domain',
+};
+
 function RegisterPageInner() {
   // Default is the plain email + password signup (like Brevo). The other ways
-  // to sign up are big buttons at the TOP so they're seen before the form,
-  // not tabs and not links buried underneath. A blocked sign-in on an
-  // unverified account lands here with ?verify= and stays on that default
-  // form's code step.
+  // to sign up sit in one compact row at the TOP (seen before the form, but
+  // only one short row tall so the form stays on screen) rather than as tabs
+  // or links buried underneath. A blocked sign-in on an unverified account
+  // lands here with ?verify= and stays on that default form's code step.
   const [mode, setMode] = useState<Mode>('console');
-  const optionClass = 'w-full rounded-none h-12 text-sm font-medium';
+  const others = (Object.keys(MODE_LABEL) as Mode[]).filter((m) => m !== mode);
   return (
-    <div className="space-y-6">
-      <div className="space-y-3">
-        {mode !== 'kerabie' && (
-          <Button type="button" variant="outline" className={optionClass} onClick={() => setMode('kerabie')}>
-            Get a free @{KERABIE_DOMAIN} email address
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-2">
+        {others.map((m) => (
+          <Button key={m} type="button" variant="outline" className="rounded-none h-10 text-sm font-medium" onClick={() => setMode(m)}>
+            {MODE_LABEL[m]}
           </Button>
-        )}
-        {mode !== 'domain' && (
-          <Button type="button" variant="outline" className={optionClass} onClick={() => setMode('domain')}>
-            Use your own domain
-          </Button>
-        )}
-        {mode !== 'console' && (
-          <Button type="button" variant="outline" className={optionClass} onClick={() => setMode('console')}>
-            Sign up with any email
-          </Button>
-        )}
+        ))}
       </div>
 
       <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground">
         <div className="h-px flex-1 bg-border" />
-        {mode === 'console' ? 'Or sign up with your email' : 'Or fill in the form'}
+        {mode === 'console' ? 'Or sign up with your email' : `Signing up: ${MODE_LABEL[mode]}`}
         <div className="h-px flex-1 bg-border" />
       </div>
 
