@@ -47,6 +47,10 @@ export interface RegisterRequest {
   utm_campaign?: string;
 }
 
+export interface ConsoleRegisterRequest extends Omit<RegisterRequest, 'username'> {
+  email: string;
+}
+
 // ── Alias ─────────────────────────────────────────────────────────────────────
 export interface EmailAlias {
   id: number;

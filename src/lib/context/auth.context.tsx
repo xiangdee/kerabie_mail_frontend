@@ -24,11 +24,33 @@ interface AuthContextValue {
   login: (email: string, password: string, captchaToken?: string) => Promise<LoginResult>;
   verifyTwoFactor: (pendingToken: string, code: string) => Promise<{ ok: boolean; error?: string }>;
   register: (username: string, password: string, full_name?: string, captchaToken?: string) => Promise<{ ok: boolean; error?: string }>;
+  registerConsole: (email: string, password: string, full_name?: string, captchaToken?: string) => Promise<{ ok: boolean; error?: string }>;
+  verifyEmail: (email: string, code: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+// First-touch referral (components/ReferralCapture.tsx, ?ref=CODE) and UTM
+// (components/UtmCapture.tsx) attribution, read from the cookies those set.
+function readSignupAttribution(): { referral_code?: string; utm_source?: string; utm_medium?: string; utm_campaign?: string } {
+  if (typeof document === 'undefined') return {};
+  const refMatch = document.cookie.match(/(?:^|; )kerabie_ref=([^;]+)/);
+  const out: ReturnType<typeof readSignupAttribution> = {
+    referral_code: refMatch ? decodeURIComponent(refMatch[1]) : undefined,
+  };
+  const utmMatch = document.cookie.match(/(?:^|; )kerabie_utm=([^;]+)/);
+  if (utmMatch) {
+    try {
+      const parsed = JSON.parse(decodeURIComponent(utmMatch[1]));
+      out.utm_source = parsed.utm_source;
+      out.utm_medium = parsed.utm_medium;
+      out.utm_campaign = parsed.utm_campaign;
+    } catch {}
+  }
+  return out;
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -102,27 +124,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const register = async (username: string, password: string, full_name?: string, captchaToken?: string) => {
-    // First-touch referral attribution — see components/ReferralCapture.tsx,
-    // which sets this cookie when the user first arrives via ?ref=CODE.
-    const refMatch = typeof document !== 'undefined' ? document.cookie.match(/(?:^|; )kerabie_ref=([^;]+)/) : null;
-    const referral_code = refMatch ? decodeURIComponent(refMatch[1]) : undefined;
-
-    // First-touch UTM attribution — see components/UtmCapture.tsx.
-    const utmMatch = typeof document !== 'undefined' ? document.cookie.match(/(?:^|; )kerabie_utm=([^;]+)/) : null;
-    let utm_source: string | undefined, utm_medium: string | undefined, utm_campaign: string | undefined;
-    if (utmMatch) {
-      try {
-        const parsed = JSON.parse(decodeURIComponent(utmMatch[1]));
-        utm_source = parsed.utm_source;
-        utm_medium = parsed.utm_medium;
-        utm_campaign = parsed.utm_campaign;
-      } catch {}
-    }
-
     const res = await authService.register({
-      username, password, full_name, captcha_token: captchaToken, referral_code,
-      utm_source, utm_medium, utm_campaign,
+      username, password, full_name, captcha_token: captchaToken, ...readSignupAttribution(),
     });
+    if (res.status === true) {
+      const { user: u } = res.response as { user: User };
+      queryClient.clear();
+      setUser(u);
+      return { ok: true };
+    }
+    return { ok: false, error: res.response as string };
+  };
+
+  // Console-only signup: no session yet, the caller moves on to the code step.
+  const registerConsole = async (email: string, password: string, full_name?: string, captchaToken?: string) => {
+    const res = await authService.registerConsole({
+      email, password, full_name, captcha_token: captchaToken, ...readSignupAttribution(),
+    });
+    return res.status === true ? { ok: true } : { ok: false, error: res.response as string };
+  };
+
+  const verifyEmail = async (email: string, code: string) => {
+    const res = await authService.verifyEmail(email, code);
     if (res.status === true) {
       const { user: u } = res.response as { user: User };
       queryClient.clear();
@@ -140,7 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, token: null, isLoading, isAuthenticated: !!user, login, verifyTwoFactor, register, logout, refreshUser }}
+      value={{ user, token: null, isLoading, isAuthenticated: !!user, login, verifyTwoFactor, register, registerConsole, verifyEmail, logout, refreshUser }}
     >
       {children}
     </AuthContext.Provider>

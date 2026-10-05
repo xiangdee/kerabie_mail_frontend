@@ -1,6 +1,6 @@
 import { customAxiosPost, customAxiosGet, customAxiosDelete } from '@/lib/utils/CustomAxiosRequest';
 import { apiLink } from '@/lib/constants/links';
-import type { LoginRequest, RegisterRequest } from '@/lib/types/api.types';
+import type { ConsoleRegisterRequest, LoginRequest, RegisterRequest } from '@/lib/types/api.types';
 
 const base = apiLink;
 
@@ -43,14 +43,16 @@ export const authService = {
   me: (token?: string | null) =>
     customAxiosGet(`${base}/auth/me`, undefined, token ?? undefined),
 
-  // NOTE: this `token` is an email-verification token, not an auth session
-  // token — unrelated to the cookie migration.
-  verifyEmail: (token: string) =>
-    customAxiosPost(`${base}/auth/verify-email`, { token }),
+  // Console-only signup (any email address, no Kerabie mailbox): the API
+  // emails a 6-digit code, and no session exists until verifyEmail succeeds.
+  registerConsole: (data: ConsoleRegisterRequest) =>
+    customAxiosPost(`${base}/auth/register-console`, data),
 
-  resendVerification: (token?: string | null) =>
-    customAxiosPost(`${base}/auth/resend-verification`, {}, '', token ?? undefined),
+  verifyEmail: (email: string, code: string) =>
+    customAxiosPost(`${base}/auth/verify-email`, { email, code, auth_channel: 'web' }),
 
+  resendVerification: (email: string) =>
+    customAxiosPost(`${base}/auth/resend-verification`, { email }),
   changePassword: (token: string | null | undefined, data: { current_password: string; new_password: string }) =>
     customAxiosPost(`${base}/auth/change-password`, data, '', token ?? undefined),
 

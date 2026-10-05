@@ -45,6 +45,9 @@ function LoginForm() {
       goHome();
     } else if (result.requires2fa) {
       setPendingToken(result.pendingToken);
+    } else if (result.error?.toLowerCase().includes('email not verified')) {
+      // Console-only signup that never entered its emailed code: resume there.
+      router.push(`/auth/register?verify=${encodeURIComponent(email)}`);
     } else {
       toastError(result.error || 'Invalid credentials');
     }

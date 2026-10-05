@@ -7,7 +7,9 @@ import { useMailboxes } from '@/lib/hooks/useMailboxes';
 import { useSendOtp, useVerifyOtp, type PhoneChannel } from '@/lib/hooks/usePhoneVerification';
 import { useAppToast } from '@/components/ui/app-toast';
 import { CountrySelect } from '@/components/ui/country-select';
-import { useDetectCountry, type Country } from '@/lib/hooks/useCountries';
+import { useCountries, useDetectCountry, type Country } from '@/lib/hooks/useCountries';
+import { applyPhoneInput, buildPhone } from '@/lib/utils/phone';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import UpgradePlanModal from '@/components/app/UpgradePlanModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,7 +67,13 @@ export default function VerifyPhonePage() {
   // via CountrySelect, that override wins even if the async detection query
   // resolves afterward.
   const country = countryOverride ?? detected ?? null;
-  const phone = `${country?.phonecode ?? ''}${localNumber.replace(/^0+/, '')}`;
+  const phone = buildPhone(country, localNumber);
+  const { data: countries = [] } = useCountries();
+  const handleNumberChange = (raw: string) => {
+    const next = applyPhoneInput(raw, countries, country);
+    if (next.country && next.country !== country) setCountryOverride(next.country);
+    setLocalNumber(next.national);
+  };
 
   const isNigeria = country?.iso2 === 'NG';
 
@@ -167,7 +175,7 @@ export default function VerifyPhonePage() {
                   type="tel"
                   placeholder="555 000 0000"
                   value={localNumber}
-                  onChange={(e) => setLocalNumber(e.target.value)}
+                  onChange={(e) => handleNumberChange(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && isNigeria && handleSend('sms')}
                 />
               </div>
@@ -224,21 +232,25 @@ export default function VerifyPhonePage() {
               <Label htmlFor="otp">
                 Enter the 6-digit code sent to {phone}{channelUsed ? ` via ${CHANNEL_LABEL[channelUsed]}` : ''}
               </Label>
-              <Input
+              <InputOTP
                 id="otp"
-                type="text"
-                inputMode="numeric"
                 maxLength={6}
-                placeholder="123456"
                 value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
-              />
+                onChange={setCode}
+                onComplete={handleVerify}
+                autoFocus
+              >
+                <InputOTPGroup className="gap-2 justify-center w-full">
+                  {Array.from({ length: 6 }, (_, i) => (
+                    <InputOTPSlot key={i} index={i} className="h-12 w-11 rounded-md border text-lg" />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
             </div>
             <Button
               className="w-full"
               onClick={handleVerify}
-              disabled={verifyOtp.isPending || code.length < 4}
+              disabled={verifyOtp.isPending || code.length < 6}
             >
               {verifyOtp.isPending
                 ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />

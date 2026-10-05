@@ -15,6 +15,7 @@ import { customAxiosGet } from '@/lib/utils/CustomAxiosRequest';
 import { apiLink } from '@/lib/constants/links';
 import { cn } from '@/lib/utils';
 import TurnstileWidget from '@/components/TurnstileWidget';
+import ConsoleForm from './ConsoleForm';
 
 const KERABIE_DOMAIN = 'kerabie.email';
 const USERNAME_RE = /^[a-z0-9]([a-z0-9._-]{1,28}[a-z0-9])?$/;
@@ -26,7 +27,7 @@ function ownsAPaidPlan(user: { plan_status?: string; is_trial?: boolean } | null
 }
 
 type AvailState = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
-type Mode = 'kerabie' | 'domain';
+type Mode = 'kerabie' | 'domain' | 'console';
 
 function RecordRow({ record }: { record: DnsRecord }) {
   const [copied, setCopied] = useState(false);
@@ -89,30 +90,41 @@ export default function RegisterPage() {
 }
 
 function RegisterPageInner() {
-  const [mode, setMode] = useState<Mode>('kerabie');
+  // Default is the plain email + password signup (like Brevo). The mailbox
+  // options are secondary links rather than tabs, so the first screen stays a
+  // single short form. A blocked sign-in on an unverified account lands here
+  // with ?verify= and stays on that default form's code step.
+  const [mode, setMode] = useState<Mode>('console');
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 border">
-        <button
-          type="button"
-          onClick={() => setMode('kerabie')}
-          className={cn('py-2.5 text-sm font-medium transition-colors', mode === 'kerabie' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}
-        >
-          Free @{KERABIE_DOMAIN}
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode('domain')}
-          className={cn('py-2.5 text-sm font-medium transition-colors', mode === 'domain' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}
-        >
-          Your own domain
-        </button>
+      {mode === 'console' ? <ConsoleForm /> : mode === 'kerabie' ? <KerabieForm /> : <DomainForm />}
+
+      <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground">
+        <div className="h-px flex-1 bg-border" />
+        {mode === 'console' ? 'Or get a mailbox' : 'Or'}
+        <div className="h-px flex-1 bg-border" />
       </div>
-      {mode === 'kerabie' ? <KerabieForm /> : <DomainForm />}
+
+      <div className="space-y-3">
+        {mode !== 'console' && (
+          <Button type="button" variant="outline" className="w-full rounded-none h-11" onClick={() => setMode('console')}>
+            Sign up with any email
+          </Button>
+        )}
+        {mode !== 'kerabie' && (
+          <Button type="button" variant="outline" className="w-full rounded-none h-11" onClick={() => setMode('kerabie')}>
+            Get a free @{KERABIE_DOMAIN} address
+          </Button>
+        )}
+        {mode !== 'domain' && (
+          <Button type="button" variant="outline" className="w-full rounded-none h-11" onClick={() => setMode('domain')}>
+            Use your own domain
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
-
 // ── Free @kerabie.email signup ────────────────────────────────────────────────
 
 function KerabieForm() {
