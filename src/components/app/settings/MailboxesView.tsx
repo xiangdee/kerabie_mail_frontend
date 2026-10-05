@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Plus, Trash2, Mail, Eye, EyeOff, Loader2, ArrowDownToLine, ArrowUpFromLine, BellOff, Pencil, Check, X, AlertTriangle, RotateCw, CloudUpload, ExternalLink } from 'lucide-react';
 import { ConvertMailboxDialog } from './ConvertMailboxDialog';
 import { UpdateConnectionDialog } from './UpdateConnectionDialog';
@@ -211,11 +212,16 @@ export function MailboxesView({
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 pt-2">
               {domains.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  You need a verified domain before you can create a mailbox on it — add one under
-                  Settings &gt; Domains first.
-                </p>
+                <div className="space-y-4 py-2 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    You need a verified domain before you can create a mailbox on it.
+                  </p>
+                  <Button asChild className="w-full">
+                    <Link href="/app/settings/domains">Add a domain</Link>
+                  </Button>
+                </div>
               ) : (
+                <>
                 <div className="space-y-2">
                   <Label>Email address</Label>
                   <div className="flex gap-2 items-center">
@@ -224,6 +230,7 @@ export function MailboxesView({
                       onChange={set('localPart')}
                       placeholder="sales"
                       className="flex-1"
+                      autoComplete="off"
                       required
                     />
                     <span className="text-muted-foreground">@</span>
@@ -242,13 +249,13 @@ export function MailboxesView({
                     </Select>
                   </div>
                 </div>
-              )}
               <div className="space-y-2">
                 <Label>Display name</Label>
                 <Input
                   value={form.display_name}
                   onChange={set('display_name')}
                   placeholder="Full Name"
+                  autoComplete="off"
                 />
               </div>
               <div className="space-y-2">
@@ -259,6 +266,7 @@ export function MailboxesView({
                     onChange={set('password')}
                     type={showPw ? 'text' : 'password'}
                     placeholder="Leave blank to auto-generate"
+                    autoComplete="new-password"
                     className="pr-10"
                   />
                   <button
@@ -274,11 +282,13 @@ export function MailboxesView({
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isCreating || domains.length === 0}>
+                <Button type="submit" disabled={isCreating}>
                   {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Create
                 </Button>
               </div>
+                </>
+              )}
             </form>
           </DialogContent>
         </Dialog>
