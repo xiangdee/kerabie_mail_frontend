@@ -1,25 +1,44 @@
 'use client';
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/context/auth.context';
 import { useMailboxes } from '@/lib/hooks/useMailboxes';
-import { customAxiosPost } from '@/lib/utils/CustomAxiosRequest';
+import { customAxiosGet, customAxiosPost } from '@/lib/utils/CustomAxiosRequest';
 import { apiLink } from '@/lib/constants/links';
 import { useAppToast } from '@/components/ui/app-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Mail, ShieldCheck, Loader2 } from 'lucide-react';
+import { AlertTriangle, BadgeCheck, Check, ExternalLink, Loader2, Mail } from 'lucide-react';
 
-// Single trusted first-party client for now (see backend's
-// app/routes/oauth.py::_TRUSTED_CLIENTS) — client_id isn't secret, just an
-// identifier, so it's safe to pattern-match here for display purposes only.
-// The actual authorization boundary is enforced server-side in /oauth/consent.
-function clientDisplayName(clientId: string | null): string {
-  if (clientId?.startsWith('kerabie_chat_')) return 'Kerabie Chat';
-  return 'This application';
+// What GET /oauth/client returns: public facts about the application asking, and exactly what for.
+interface ClientInfo {
+  name: string;
+  description: string | null;
+  logo_url: string | null;
+  homepage_url: string | null;
+  verified: boolean; // built and run by Kerabie
+  redirect_host: string; // where the browser goes next
+  scopes: { id: string; label: string; description: string }[];
+  requires_pkce: boolean;
+}
+
+function ClientLogo({ info }: { info: ClientInfo }) {
+  const [failed, setFailed] = useState(false);
+  if (info.logo_url && !failed) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={info.logo_url} alt="" className="w-12 h-12 rounded-xl object-contain bg-muted" onError={() => setFailed(true)} />;
+  }
+  return (
+    <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-lg font-semibold">
+      {info.name.charAt(0).toUpperCase()}
+    </div>
+  );
+}
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-8">{children}</div>;
 }
 
 function AuthorizeInner() {
@@ -31,6 +50,15 @@ function AuthorizeInner() {
   const clientId = params.get('client_id');
   const redirectUri = params.get('redirect_uri');
   const state = params.get('state');
+  const scope = params.get('scope');
+  const codeChallenge = params.get('code_challenge');
+  const codeChallengeMethod = params.get('code_challenge_method');
+
+  // The link's values come from the URL, so they're untrusted until the server confirms them: a crafted link must
+  // never be able to send the browser to an arbitrary redirect_uri (e.g. via Cancel), or show a misleading screen.
+  const [info, setInfo] = useState<ClientInfo | null>(null);
+  const [linkCheck, setLinkCheck] = useState<'checking' | 'valid' | 'invalid'>('checking');
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   const { data: mailboxes = [], isLoading: mailboxesLoading } = useMailboxes(token);
   const [selected, setSelected] = useState<string>('');
@@ -51,6 +79,25 @@ function AuthorizeInner() {
 
   const missingParams = !clientId || !redirectUri;
 
+  useEffect(() => {
+    if (!clientId || !redirectUri) return;
+    let cancelled = false;
+    customAxiosGet(`${apiLink}/oauth/client`, { client_id: clientId, redirect_uri: redirectUri, scope: scope || undefined })
+      .then((res) => {
+        if (cancelled) return;
+        if (res.status === true) {
+          setInfo(res.response as ClientInfo);
+          setLinkCheck('valid');
+        } else {
+          // The server says why a scope request is wrong; anything else stays deliberately vague.
+          setLinkError(typeof res.response === 'string' && /scope|PKCE/i.test(res.response) ? res.response : null);
+          setLinkCheck('invalid');
+        }
+      })
+      .catch(() => { if (!cancelled) setLinkCheck('invalid'); });
+    return () => { cancelled = true; };
+  }, [clientId, redirectUri, scope]);
+
   const handleApprove = async () => {
     if (!clientId || !redirectUri || !selected) return;
     setApproving(true);
@@ -60,6 +107,9 @@ function AuthorizeInner() {
         redirect_uri: redirectUri,
         mailbox_email: selected,
         state: state || undefined,
+        scope: scope || undefined,
+        code_challenge: codeChallenge || undefined,
+        code_challenge_method: codeChallengeMethod || undefined,
       });
       if (res.status === true) {
         window.location.href = (res.response as { redirect_url: string }).redirect_url;
@@ -74,107 +124,150 @@ function AuthorizeInner() {
   };
 
   const handleCancel = () => {
-    if (redirectUri) {
-      window.location.href = `${redirectUri}?error=access_denied`;
+    // Only a redirect_uri the server has confirmed is the registered callback is ever navigated to.
+    if (redirectUri && linkCheck === 'valid') {
+      window.location.href = `${redirectUri}${redirectUri.includes('?') ? '&' : '?'}error=access_denied${state ? `&state=${encodeURIComponent(state)}` : ''}`;
     } else {
       router.push('/app/mail');
     }
   };
 
-  const clientName = useMemo(() => clientDisplayName(clientId), [clientId]);
-
-  if (authLoading || (isAuthenticated && mailboxesLoading)) {
+  if (authLoading || (isAuthenticated && (mailboxesLoading || (!missingParams && linkCheck === 'checking')))) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
+      <Shell>
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 space-y-4">
-            <Skeleton className="h-6 w-2/3" />
-            <Skeleton className="h-4 w-full" />
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-12 w-12 rounded-xl" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-5 w-2/3" />
+                <Skeleton className="h-4 w-1/3" />
+              </div>
+            </div>
+            <Skeleton className="h-20 w-full" />
             <Skeleton className="h-24 w-full" />
           </CardContent>
         </Card>
-      </div>
+      </Shell>
     );
   }
 
   if (!isAuthenticated) return null; // redirecting to login
 
-  if (missingParams) {
+  if (missingParams || linkCheck === 'invalid' || !info) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
+      <Shell>
         <Card className="w-full max-w-md">
-          <CardContent className="pt-6">
+          <CardContent className="pt-6 space-y-2">
+            <p className="font-medium">This authorization link isn&apos;t valid</p>
             <p className="text-sm text-muted-foreground">
-              This authorization link is missing required parameters. Ask the application you were
-              connecting from to try again.
+              {linkError ?? 'Go back to the application you were connecting from and start again.'}
             </p>
           </CardContent>
         </Card>
-      </div>
+      </Shell>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
+    <Shell>
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center space-y-3 pb-2">
-          <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-            <ShieldCheck className="w-6 h-6 text-primary" />
+        <CardHeader className="space-y-4 pb-2">
+          <div className="flex items-center gap-3">
+            <ClientLogo info={info} />
+            <div className="min-w-0">
+              <h1 className="text-lg font-semibold leading-tight truncate">{info.name}</h1>
+              {info.verified ? (
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
+                  <BadgeCheck className="w-3.5 h-3.5" /> Verified by Kerabie
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground">Third-party application</span>
+              )}
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg font-semibold">{clientName} wants to connect a mailbox</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Choose which Kerabie Mail address to connect. {clientName} will be able to read and
-              send email as this address only — nothing else on your account.
+          <p className="text-sm text-muted-foreground">
+            {info.description ? `${info.description} ` : ''}
+            <span className="text-foreground font-medium">{info.name}</span> wants to connect one of your mailboxes.
+          </p>
+        </CardHeader>
+
+        <CardContent className="space-y-5 pt-2">
+          {/* Exactly what access is being asked for */}
+          <div className="rounded-xl border p-4 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">It will be able to</p>
+            <ul className="space-y-2.5">
+              {info.scopes.map((s) => (
+                <li key={s.id} className="flex items-start gap-2.5">
+                  <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium leading-tight">{s.label}</p>
+                    <p className="text-xs text-muted-foreground">{s.description}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-muted-foreground border-t pt-3">
+              Only the mailbox you choose below — nothing else on your account.
             </p>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-5 pt-2">
+
+          {!info.verified && (
+            <div className="flex gap-2.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 p-3 dark:bg-amber-950/30 dark:text-amber-200 dark:border-amber-900">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <p className="text-xs leading-relaxed">
+                {info.name} is not made by Kerabie. Only continue if you trust it with the access listed above.
+              </p>
+            </div>
+          )}
+
           {mailboxes.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
               You don&apos;t have any mailboxes yet. Add one in your Kerabie Mail settings first.
             </p>
           ) : (
-            <RadioGroup value={selected} onValueChange={setSelected} className="space-y-2">
-              {mailboxes.map((mb) => (
-                <label
-                  key={mb.id}
-                  htmlFor={`mb-${mb.id}`}
-                  className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-muted/50 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5"
-                >
-                  <RadioGroupItem value={mb.email_address} id={`mb-${mb.id}`} />
-                  <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{mb.email_address}</p>
-                    {mb.display_name && (
-                      <p className="text-xs text-muted-foreground truncate">{mb.display_name}</p>
-                    )}
-                  </div>
-                </label>
-              ))}
-            </RadioGroup>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Choose a mailbox</p>
+              <RadioGroup value={selected} onValueChange={setSelected} className="space-y-2">
+                {mailboxes.map((mb) => (
+                  <label
+                    key={mb.id}
+                    htmlFor={`mb-${mb.id}`}
+                    className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-muted/50 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5"
+                  >
+                    <RadioGroupItem value={mb.email_address} id={`mb-${mb.id}`} />
+                    <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{mb.email_address}</p>
+                      {mb.display_name && <p className="text-xs text-muted-foreground truncate">{mb.display_name}</p>}
+                    </div>
+                  </label>
+                ))}
+              </RadioGroup>
+            </div>
           )}
 
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2 pt-1">
             <Button variant="outline" className="flex-1" onClick={handleCancel} disabled={approving}>
               Cancel
             </Button>
-            <Button
-              className="flex-1"
-              onClick={handleApprove}
-              disabled={approving || !selected || mailboxes.length === 0}
-            >
+            <Button className="flex-1" onClick={handleApprove} disabled={approving || !selected || mailboxes.length === 0}>
               {approving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Approve
+              Allow access
             </Button>
           </div>
 
-          <p className="text-[11px] text-muted-foreground text-center">
-            You can revoke this at any time from Settings → API Keys in Kerabie Mail.
-          </p>
+          <div className="space-y-1 text-center">
+            <p className="text-xs text-muted-foreground inline-flex items-center gap-1">
+              <ExternalLink className="w-3 h-3" /> You&apos;ll be taken to <span className="font-medium text-foreground">{info.redirect_host}</span>
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              You can revoke this at any time from Settings → API Keys in Kerabie Mail.
+            </p>
+          </div>
         </CardContent>
       </Card>
-    </div>
+    </Shell>
   );
 }
 
