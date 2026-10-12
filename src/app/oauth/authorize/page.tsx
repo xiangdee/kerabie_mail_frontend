@@ -8,7 +8,7 @@ import { apiLink } from '@/lib/constants/links';
 import { useAppToast } from '@/components/ui/app-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle, BadgeCheck, Check, ExternalLink, Loader2, Mail } from 'lucide-react';
 
@@ -45,7 +45,8 @@ function AuthorizeInner() {
   const params = useSearchParams();
   const router = useRouter();
   const { error: toastError } = useAppToast();
-  const { isAuthenticated, isLoading: authLoading, token } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, token, user, logout } = useAuth();
+  const [switching, setSwitching] = useState(false);
 
   const clientId = params.get('client_id');
   const redirectUri = params.get('redirect_uri');
@@ -61,7 +62,8 @@ function AuthorizeInner() {
   const [linkError, setLinkError] = useState<string | null>(null);
 
   const { data: mailboxes = [], isLoading: mailboxesLoading } = useMailboxes(token);
-  const [selected, setSelected] = useState<string>('');
+  const [selected, setSelected] = useState<string[]>([]);
+  const [preselected, setPreselected] = useState(false);
   const [approving, setApproving] = useState(false);
 
   useEffect(() => {
@@ -72,10 +74,17 @@ function AuthorizeInner() {
   }, [authLoading, isAuthenticated, params, router]);
 
   useEffect(() => {
-    if (!selected && mailboxes.length > 0) {
-      setSelected(mailboxes[0].email_address);
+    // Start with the first mailbox ticked, once. After that the user's choices are never overridden.
+    if (!preselected && mailboxes.length > 0) {
+      setSelected([mailboxes[0].email_address]);
+      setPreselected(true);
     }
-  }, [mailboxes, selected]);
+  }, [mailboxes, preselected]);
+
+  const toggleMailbox = (email: string) =>
+    setSelected((cur) => (cur.includes(email) ? cur.filter((e) => e !== email) : [...cur, email]));
+  const allSelected = mailboxes.length > 0 && selected.length === mailboxes.length;
+  const toggleAll = () => setSelected(allSelected ? [] : mailboxes.map((m) => m.email_address));
 
   const missingParams = !clientId || !redirectUri;
 
@@ -99,13 +108,13 @@ function AuthorizeInner() {
   }, [clientId, redirectUri, scope]);
 
   const handleApprove = async () => {
-    if (!clientId || !redirectUri || !selected) return;
+    if (!clientId || !redirectUri || selected.length === 0) return;
     setApproving(true);
     try {
       const res = await customAxiosPost(`${apiLink}/oauth/consent`, {
         client_id: clientId,
         redirect_uri: redirectUri,
-        mailbox_email: selected,
+        mailbox_emails: selected,
         state: state || undefined,
         scope: scope || undefined,
         code_challenge: codeChallenge || undefined,
@@ -121,6 +130,12 @@ function AuthorizeInner() {
       toastError('Could not complete authorization');
       setApproving(false);
     }
+  };
+
+  // Signing out drops back to the login screen (the effect above), which returns here afterwards.
+  const handleSwitchAccount = async () => {
+    setSwitching(true);
+    try { await logout(); } finally { setSwitching(false); }
   };
 
   const handleCancel = () => {
@@ -188,7 +203,7 @@ function AuthorizeInner() {
           </div>
           <p className="text-sm text-muted-foreground">
             {info.description ? `${info.description} ` : ''}
-            <span className="text-foreground font-medium">{info.name}</span> wants to connect one of your mailboxes.
+            <span className="text-foreground font-medium">{info.name}</span> wants to connect to your mailboxes.
           </p>
         </CardHeader>
 
@@ -208,7 +223,7 @@ function AuthorizeInner() {
               ))}
             </ul>
             <p className="text-xs text-muted-foreground border-t pt-3">
-              Only the mailbox you choose below — nothing else on your account.
+              Only the mailboxes you choose below — nothing else on your account.
             </p>
           </div>
 
@@ -227,15 +242,26 @@ function AuthorizeInner() {
             </p>
           ) : (
             <div className="space-y-2">
-              <p className="text-sm font-medium">Choose a mailbox</p>
-              <RadioGroup value={selected} onValueChange={setSelected} className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">Choose mailboxes</p>
+                {mailboxes.length > 1 && (
+                  <button type="button" onClick={toggleAll} disabled={approving} className="text-xs text-primary hover:underline disabled:opacity-50">
+                    {allSelected ? 'Clear all' : 'Select all'}
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2">
                 {mailboxes.map((mb) => (
                   <label
                     key={mb.id}
                     htmlFor={`mb-${mb.id}`}
                     className="flex items-center gap-3 rounded-lg border p-3 cursor-pointer hover:bg-muted/50 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5"
                   >
-                    <RadioGroupItem value={mb.email_address} id={`mb-${mb.id}`} />
+                    <Checkbox
+                      id={`mb-${mb.id}`}
+                      checked={selected.includes(mb.email_address)}
+                      onCheckedChange={() => toggleMailbox(mb.email_address)}
+                    />
                     <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{mb.email_address}</p>
@@ -243,17 +269,29 @@ function AuthorizeInner() {
                     </div>
                   </label>
                 ))}
-              </RadioGroup>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Each mailbox gets its own separate access. {info.name} sees only the ones you tick.
+              </p>
             </div>
+          )}
+
+          {user && (
+            <p className="text-center text-xs text-muted-foreground">
+              Signed in as <span className="font-medium text-foreground">{user.email}</span>.{' '}
+              <button type="button" onClick={handleSwitchAccount} disabled={switching || approving} className="text-primary hover:underline disabled:opacity-50">
+                Not you? Switch account
+              </button>
+            </p>
           )}
 
           <div className="flex gap-2 pt-1">
             <Button variant="outline" className="flex-1" onClick={handleCancel} disabled={approving}>
               Cancel
             </Button>
-            <Button className="flex-1" onClick={handleApprove} disabled={approving || !selected || mailboxes.length === 0}>
+            <Button className="flex-1" onClick={handleApprove} disabled={approving || selected.length === 0 || mailboxes.length === 0}>
               {approving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Allow access
+              {selected.length > 1 ? `Allow access to ${selected.length} mailboxes` : 'Allow access'}
             </Button>
           </div>
 
